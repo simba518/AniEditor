@@ -1,0 +1,33 @@
+/*analysis the stability problem of the hessian H in animation editing.*/
+
+kill(all);
+
+wk : 20;
+alpha[k]: 0.1;
+alpha[m]: 0.2;
+lambda: 2.5;
+h : 3.0;
+vk: 2;
+zk: 4;
+
+eq1: vk1 -  (vk + h*(wk-(alpha[m]+alpha[k]*lambda)*vk1 - lambda*(zk + h*vk1)));
+vv : map(second,solve(eq1,vk1))[1];
+zz : zk + h*vv;
+
+/*
+
+f(zk,vk,wk) := ev(vv);
+g(zk,vk,wk) := ev(zz);
+
+a1 : diff(f(zk,vk,wk),vk);
+a2 : diff(f(zk,vk,wk),zk);
+a3 : diff(g(zk,vk,wk),vk);
+a4 : diff(g(zk,vk,wk),zk);
+
+b1 : diff(f(zk,vk,wk),wk);
+b2 : diff(g(zk,vk,wk),wk);
+
+G  : matrix([a1,a2],[a3,a4]);
+B  : matrix([b1],[b2]);
+E  : eigenvalues(G);
+invE : eigenvalues(invert(G));*/

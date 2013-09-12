@@ -1,0 +1,31 @@
+kill(all);
+
+CROSS(V):= matrix([0,-V[3][1],V[2][1]],[V[3][1],0,-V[1][1]],[-V[2][1],V[1][1],0])$
+
+SYMETRIC(V):= matrix([V[1][1],V[2][1],V[3][1]],[V[2][1],V[4][1],V[5][1]],[V[3][1],V[5][1],V[6][1]])$
+
+NORM(X) := mat_norm(X,frobenius)$
+
+I : matrix([1,0,0],[0,1,0],[0,0,1])$
+
+R(W,t) := I + CROSS(W/NORM(W)) * sin(NORM(W*t)) + (CROSS(W/NORM(W)) . CROSS(W/NORM(W))) * (1 - cos(NORM(W*t)))$
+
+integR(W,t) := I + CROSS(W/NORM(W)) * ((1 - cos(NORM(W*t)))/NORM(W*t)) + (CROSS(W/NORM(W)) . CROSS(W/NORM(W))) * (1 - sin(NORM(W*t))/NORM(W*t))$
+
+V3(w) := matrix([w[1]],[w[2]],[w[3]])$
+
+V6(s) := matrix([s[1]],[s[2]],[s[3]],[s[3]],[s[4]],[s[5]])$
+
+u(t,w,q) := (integR(V3(w),t) . V3(q))*t$
+
+xw : [0.0255692,-0.00756894,-6.88084]$
+xq : [-3.40225,-98.7975,0.0599001]$
+A : matrix([-2.02209 ,  -0.183529,     481.767],[    1.45624,   -0.559159,    -160.557],[-0.00854273, 0.000232544,     2.51666])$
+
+r(t) := u(t,xw,xq)$
+g(t) := (I + A*t) . u(t,xw,xq)$
+
+load("draw");
+
+draw3d(nticks=400,color=red,parametric(r(t)[1,1],r(t)[2,1],r(t)[3,1],t,0.001,1),
+		color=blue,parametric(g(t)[1,1],g(t)[2,1],g(t)[3,1],t,0.001,1));

@@ -1,0 +1,1077 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>828</width>
+    <height>666</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>PhyAE</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout_2">
+    <item>
+     <widget class="QSplitter" name="splitter_2">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <widget class="QSplitter" name="splitter">
+       <property name="lineWidth">
+        <number>12</number>
+       </property>
+       <property name="midLineWidth">
+        <number>10</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="handleWidth">
+        <number>12</number>
+       </property>
+       <widget class="QWidget" name="widget" native="true">
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <property name="margin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="BaseViewer" name="left_view" native="true"/>
+         </item>
+         <item>
+          <widget class="AniSliderBar" name="ani_slider">
+           <property name="cursor">
+            <cursorShape>PointingHandCursor</cursorShape>
+           </property>
+           <property name="mouseTracking">
+            <bool>true</bool>
+           </property>
+           <property name="autoFillBackground">
+            <bool>true</bool>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+      <widget class="BaseViewer" name="right_view" native="true"/>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>828</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu_File">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="actionLoadInitFile"/>
+    <addaction name="actionLoadScene"/>
+    <addaction name="actionReloadInitFile"/>
+    <addaction name="separator"/>
+    <addaction name="actionSaveKeyframe"/>
+    <addaction name="actionSavePartialCon"/>
+    <addaction name="actionLoadPartialCon"/>
+    <addaction name="actionLoadConPath"/>
+    <addaction name="actionSaveConPositions"/>
+    <addaction name="actionSaveDragOp"/>
+    <addaction name="actionLoadDragOp"/>
+    <addaction name="separator"/>
+    <addaction name="actionLoadStateFile"/>
+    <addaction name="actionSaveStateFile"/>
+    <addaction name="actionSaveRotModalMat"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionResetWindows"/>
+    <addaction name="actionResetViewer"/>
+    <addaction name="actionPreview"/>
+    <addaction name="actionShowall"/>
+    <addaction name="actionPrintSelNodes"/>
+    <addaction name="separator"/>
+    <addaction name="actionShowScene"/>
+    <addaction name="actionShowInputObj"/>
+    <addaction name="actionShowInputVol"/>
+    <addaction name="actionShowOutputObj"/>
+    <addaction name="actionShowOutputVol"/>
+    <addaction name="actionShowKeyframe"/>
+    <addaction name="actionShowConNodes"/>
+    <addaction name="actionShowConPath"/>
+    <addaction name="actionMouseCircle"/>
+    <addaction name="actionConCircle"/>
+    <addaction name="separator"/>
+    <addaction name="actionLights"/>
+    <addaction name="actionConTracball"/>
+    <addaction name="actionPushViewerStatus"/>
+    <addaction name="actionPopViewerStatus"/>
+    <addaction name="actionRestoreViewerStatus"/>
+    <addaction name="actionPhoneShading"/>
+    <addaction name="actionPrintEigenvalues"/>
+   </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+    <addaction name="actionViewerHelp"/>
+   </widget>
+   <widget class="QMenu" name="menuAnimation">
+    <property name="title">
+     <string>Animation</string>
+    </property>
+    <addaction name="actionPlay"/>
+    <addaction name="actionStop"/>
+    <addaction name="actionPause"/>
+    <addaction name="actionPlayCircle"/>
+    <addaction name="actionStepByStep"/>
+    <addaction name="separator"/>
+    <addaction name="actionBackward"/>
+    <addaction name="actionForward"/>
+    <addaction name="actionFastforward"/>
+    <addaction name="actionFastbackward"/>
+    <addaction name="separator"/>
+    <addaction name="actionSaveOutputMeshes"/>
+    <addaction name="actionSaveInputMeshes"/>
+    <addaction name="actionLoadMeshSeq"/>
+    <addaction name="actionSaveCurrentOutputMesh"/>
+    <addaction name="actionSaveCurrentInputMesh"/>
+    <addaction name="actionSaveCurrentOutputVolMesh"/>
+    <addaction name="actionSaveVolFullU"/>
+    <addaction name="actionSaveCurrentVolFullU"/>
+    <addaction name="separator"/>
+    <addaction name="actionPlay_preview"/>
+    <addaction name="actionPause_preview"/>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>Edit</string>
+    </property>
+    <addaction name="actionUpdateRefSeq"/>
+    <addaction name="actionInterpolate"/>
+    <addaction name="actionUseWarp"/>
+    <addaction name="actionEnableDrag"/>
+    <addaction name="actionEnableSelect"/>
+    <addaction name="actionRemoveAllConNodes"/>
+    <addaction name="actionRecordDragOp"/>
+    <addaction name="actionPlayDragOp"/>
+    <addaction name="actionSaveCuReducedEdit"/>
+    <addaction name="actionLoadCuReducedEdit"/>
+    <addaction name="actionSaveAllReducedEdit"/>
+    <addaction name="actionLoadAllReducedEdit"/>
+    <addaction name="actionUpdateConTrajectory"/>
+   </widget>
+   <widget class="QMenu" name="menuSnapshots">
+    <property name="title">
+     <string>Snapshots</string>
+    </property>
+    <addaction name="actionSetDirectory"/>
+    <addaction name="actionSaveAllAnimation"/>
+    <addaction name="actionStartSave"/>
+   </widget>
+   <addaction name="menu_File"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuAnimation"/>
+   <addaction name="menuView"/>
+   <addaction name="menuSnapshots"/>
+   <addaction name="menuHelp"/>
+  </widget>
+  <action name="actionLoadInitFile">
+   <property name="text">
+    <string>LoadInitFile</string>
+   </property>
+  </action>
+  <action name="actionLoadVolMesh">
+   <property name="text">
+    <string>LoadVolMesh</string>
+   </property>
+  </action>
+  <action name="actionLoadObjMesh">
+   <property name="text">
+    <string>LoadObjMesh</string>
+   </property>
+  </action>
+  <action name="actionSaveInitFile">
+   <property name="text">
+    <string>SaveInitFile</string>
+   </property>
+  </action>
+  <action name="actionShowObjMesh">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ObjMesh</string>
+   </property>
+  </action>
+  <action name="actionShowVolMesh">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>VolMesh</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+   <property name="shortcut">
+    <string>Q</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="actionViewerHelp">
+   <property name="text">
+    <string>ViewerHelp</string>
+   </property>
+  </action>
+  <action name="actionResetViewer">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>ResetViewer</string>
+   </property>
+  </action>
+  <action name="actionPlay">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>play</string>
+   </property>
+   <property name="shortcut">
+    <string>B</string>
+   </property>
+  </action>
+  <action name="actionStop">
+   <property name="text">
+    <string>stop</string>
+   </property>
+   <property name="shortcut">
+    <string>X</string>
+   </property>
+  </action>
+  <action name="actionPause">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>pause</string>
+   </property>
+   <property name="shortcut">
+    <string>Space</string>
+   </property>
+  </action>
+  <action name="actionInterpolate">
+   <property name="text">
+    <string>Interpolate</string>
+   </property>
+   <property name="shortcut">
+    <string>I</string>
+   </property>
+  </action>
+  <action name="actionComputeWeights">
+   <property name="text">
+    <string>ComputeWeights</string>
+   </property>
+  </action>
+  <action name="actionLoadWeights">
+   <property name="text">
+    <string>LoadWeights</string>
+   </property>
+  </action>
+  <action name="actionSaveWeights">
+   <property name="text">
+    <string>SaveWeights</string>
+   </property>
+  </action>
+  <action name="actionLoadSequence">
+   <property name="text">
+    <string>loadSequence</string>
+   </property>
+  </action>
+  <action name="actionSaveSequence">
+   <property name="text">
+    <string>saveSequence</string>
+   </property>
+  </action>
+  <action name="actionLoadMeshSeq">
+   <property name="text">
+    <string>LoadMeshSequence</string>
+   </property>
+  </action>
+  <action name="actionStepByStep">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>StepByStep</string>
+   </property>
+   <property name="shortcut">
+    <string>S</string>
+   </property>
+  </action>
+  <action name="actionAnimation">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Animation</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="actionDeformation">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Deformation</string>
+   </property>
+  </action>
+  <action name="actionPreviewMesh">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>PreviewMesh</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
+   </property>
+  </action>
+  <action name="actionKeyframe">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Keyframe</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+K</string>
+   </property>
+  </action>
+  <action name="actionDefObjMesh">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>DefObjMesh</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
+   </property>
+  </action>
+  <action name="actionDefVolMesh">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>DefVolMesh</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V</string>
+   </property>
+  </action>
+  <action name="actionDedConNodes">
+   <property name="text">
+    <string>DedConNodes</string>
+   </property>
+  </action>
+  <action name="actionReloadInitFile">
+   <property name="text">
+    <string>ReloadInitFile</string>
+   </property>
+   <property name="shortcut">
+    <string>R</string>
+   </property>
+  </action>
+  <action name="actionShowall">
+   <property name="text">
+    <string>Showall</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+A</string>
+   </property>
+  </action>
+  <action name="actionSaveKeyframe">
+   <property name="text">
+    <string>SaveKeyframe</string>
+   </property>
+  </action>
+  <action name="actionLoadKeyframe">
+   <property name="text">
+    <string>LoadKeyframe</string>
+   </property>
+  </action>
+  <action name="actionFastforward">
+   <property name="text">
+    <string>fastfoward</string>
+   </property>
+   <property name="shortcut">
+    <string>Right</string>
+   </property>
+  </action>
+  <action name="actionFastbackward">
+   <property name="text">
+    <string>fastbackward</string>
+   </property>
+   <property name="shortcut">
+    <string>Left</string>
+   </property>
+  </action>
+  <action name="actionBackward">
+   <property name="text">
+    <string>backward</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Left</string>
+   </property>
+  </action>
+  <action name="actionRedStVKMethod">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>RedStVKMethod</string>
+   </property>
+  </action>
+  <action name="actionSelectNextShape">
+   <property name="text">
+    <string>SelectNextShape</string>
+   </property>
+   <property name="shortcut">
+    <string>N</string>
+   </property>
+  </action>
+  <action name="actionShowUneditSeqence">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ShowUneditSeqence</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+E</string>
+   </property>
+  </action>
+  <action name="actionShowCompareSeqence">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ShowCompareSeqence</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+C</string>
+   </property>
+  </action>
+  <action name="actionForward">
+   <property name="text">
+    <string>forward</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Right</string>
+   </property>
+  </action>
+  <action name="actionLoadCompareSeq">
+   <property name="text">
+    <string>LoadCompareSeq</string>
+   </property>
+  </action>
+  <action name="actionLoadSequence_2">
+   <property name="text">
+    <string>LoadSequence</string>
+   </property>
+  </action>
+  <action name="actionLoadObjMesh_2">
+   <property name="text">
+    <string>LoadObjMesh</string>
+   </property>
+  </action>
+  <action name="actionLoadInitFile_2">
+   <property name="text">
+    <string>LoadInitFile</string>
+   </property>
+  </action>
+  <action name="actionReloadInitFile_2">
+   <property name="text">
+    <string>ReloadInitFile</string>
+   </property>
+   <property name="shortcut">
+    <string>L</string>
+   </property>
+  </action>
+  <action name="actionPrintSelNodes">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>PrintSelNodes</string>
+   </property>
+  </action>
+  <action name="actionHideSelAni">
+   <property name="text">
+    <string>HideSelAni</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+X</string>
+   </property>
+  </action>
+  <action name="actionShowAllAni">
+   <property name="text">
+    <string>ShowAllAni</string>
+   </property>
+  </action>
+  <action name="actionSelNextAni">
+   <property name="text">
+    <string>SelNextAni</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+N</string>
+   </property>
+  </action>
+  <action name="actionAddAniIni">
+   <property name="text">
+    <string>AddAniIni</string>
+   </property>
+  </action>
+  <action name="actionRemoveSelAni">
+   <property name="text">
+    <string>RemoveSelAni</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+D</string>
+   </property>
+  </action>
+  <action name="actionHideAllAni">
+   <property name="text">
+    <string>HideAllAni</string>
+   </property>
+  </action>
+  <action name="actionLoadScene">
+   <property name="text">
+    <string>LoadScene</string>
+   </property>
+  </action>
+  <action name="actionUpdate">
+   <property name="text">
+    <string>update</string>
+   </property>
+   <property name="shortcut">
+    <string>U</string>
+   </property>
+  </action>
+  <action name="actionSaveOutputMeshes">
+   <property name="text">
+    <string>SaveOutputMeshes</string>
+   </property>
+   <property name="whatsThis">
+    <string comment="save output obj meshes' sequence" extracomment="save output obj meshes' sequence">save output obj meshes' sequence</string>
+   </property>
+  </action>
+  <action name="actionSaveAllAnimation">
+   <property name="text">
+    <string>SaveAllAnimation</string>
+   </property>
+  </action>
+  <action name="actionStartSave">
+   <property name="text">
+    <string>StartSave</string>
+   </property>
+  </action>
+  <action name="actionSetDirectory">
+   <property name="text">
+    <string>SetDirectory</string>
+   </property>
+  </action>
+  <action name="actionUseWarp">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>UseWarp</string>
+   </property>
+   <property name="shortcut">
+    <string>W</string>
+   </property>
+  </action>
+  <action name="actionSaveInputMeshes">
+   <property name="text">
+    <string>SaveInputMeshes</string>
+   </property>
+  </action>
+  <action name="actionSaveKeyframeMeshes">
+   <property name="text">
+    <string>SaveKeyframeMeshes</string>
+   </property>
+  </action>
+  <action name="actionTrackConNodes">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>TrackConNodes</string>
+   </property>
+  </action>
+  <action name="actionConPath">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ConPath</string>
+   </property>
+  </action>
+  <action name="actionLoadPartialCon">
+   <property name="text">
+    <string>LoadPartialCon</string>
+   </property>
+  </action>
+  <action name="actionSavePartialCon">
+   <property name="text">
+    <string>SavePartialCon</string>
+   </property>
+  </action>
+  <action name="actionSelectPreShape">
+   <property name="text">
+    <string>SelectPreShape</string>
+   </property>
+   <property name="shortcut">
+    <string>P</string>
+   </property>
+  </action>
+  <action name="actionSaveConPositions">
+   <property name="text">
+    <string>SaveConPositions</string>
+   </property>
+  </action>
+  <action name="actionInteractiveInterp">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>interactiveInterp</string>
+   </property>
+  </action>
+  <action name="actionShowInputObj">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ShowInputObj</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+E</string>
+   </property>
+  </action>
+  <action name="actionShowOutputObj">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ShowOutputObj</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="actionShowConPath">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ShowConPath</string>
+   </property>
+  </action>
+  <action name="actionShowConNodes">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ShowConNodes</string>
+   </property>
+  </action>
+  <action name="actionEnableDrag">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>EnableDrag</string>
+   </property>
+  </action>
+  <action name="actionEnableSelect">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>EnableSelect</string>
+   </property>
+  </action>
+  <action name="actionShowOutputVol">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>ShowOutputVol</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V</string>
+   </property>
+  </action>
+  <action name="actionShowInputVol">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ShowInputVol</string>
+   </property>
+  </action>
+  <action name="actionShowScene">
+   <property name="text">
+    <string>ShowScene</string>
+   </property>
+  </action>
+  <action name="actionLoadConPath">
+   <property name="text">
+    <string>LoadConPath</string>
+   </property>
+  </action>
+  <action name="actionPlay_preview">
+   <property name="text">
+    <string>play_preview</string>
+   </property>
+  </action>
+  <action name="actionPause_preview">
+   <property name="text">
+    <string>pause_preview</string>
+   </property>
+  </action>
+  <action name="actionResetWindows">
+   <property name="text">
+    <string>ResetWindows</string>
+   </property>
+  </action>
+  <action name="actionPreview">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Preview</string>
+   </property>
+  </action>
+  <action name="actionUpdateRefSeq">
+   <property name="text">
+    <string>UpdateRefSeq</string>
+   </property>
+  </action>
+  <action name="actionRemoveAllConNodes">
+   <property name="text">
+    <string>RemoveAllConNodes</string>
+   </property>
+  </action>
+  <action name="actionPlayCircle">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>playCircle</string>
+   </property>
+  </action>
+  <action name="actionSaveCurrentInputMesh">
+   <property name="text">
+    <string>saveCurrentInputMesh</string>
+   </property>
+  </action>
+  <action name="actionSaveCurrentOutputMesh">
+   <property name="text">
+    <string>saveCurrentOutputMesh</string>
+   </property>
+  </action>
+  <action name="actionSaveDragOp">
+   <property name="text">
+    <string>SaveDragOp</string>
+   </property>
+  </action>
+  <action name="actionLoadDragOp">
+   <property name="text">
+    <string>LoadDragOp</string>
+   </property>
+  </action>
+  <action name="actionRecordDragOp">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>RecordDragOp</string>
+   </property>
+  </action>
+  <action name="actionPlayDragOp">
+   <property name="text">
+    <string>PlayDragOp</string>
+   </property>
+  </action>
+  <action name="actionMouseCircle">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>MouseCircle</string>
+   </property>
+  </action>
+  <action name="actionConCircle">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ConCircle</string>
+   </property>
+  </action>
+  <action name="actionLights">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Lights</string>
+   </property>
+  </action>
+  <action name="actionConTracball">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ConTracball</string>
+   </property>
+  </action>
+  <action name="actionPushViewerStatus">
+   <property name="text">
+    <string>PushViewerStatus</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
+   </property>
+  </action>
+  <action name="actionPopViewerStatus">
+   <property name="text">
+    <string>PopViewerStatus</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionRestoreViewerStatus">
+   <property name="text">
+    <string>RestoreViewerStatus</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+L</string>
+   </property>
+  </action>
+  <action name="actionPhoneShading">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>PhoneShading</string>
+   </property>
+  </action>
+  <action name="actionLoadStateFile">
+   <property name="text">
+    <string>LoadStateFile</string>
+   </property>
+  </action>
+  <action name="actionSaveStateFile">
+   <property name="text">
+    <string>SaveStateFile</string>
+   </property>
+  </action>
+  <action name="actionSaveVolFullU">
+   <property name="text">
+    <string>SaveVolFullU</string>
+   </property>
+  </action>
+  <action name="actionShowKeyframe">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ShowKeyframe</string>
+   </property>
+  </action>
+  <action name="actionSaveCurrentOutputVolMesh">
+   <property name="text">
+    <string>saveCurrentOutputVolMesh</string>
+   </property>
+  </action>
+  <action name="actionSaveCuReducedEdit">
+   <property name="text">
+    <string>SaveCuReducedEdit</string>
+   </property>
+  </action>
+  <action name="actionLoadCuReducedEdit">
+   <property name="text">
+    <string>LoadCuReducedEdit</string>
+   </property>
+  </action>
+  <action name="actionSaveRotModalMat">
+   <property name="text">
+    <string>SaveRotModalMat</string>
+   </property>
+  </action>
+  <action name="actionPrintEigenvalues">
+   <property name="text">
+    <string>PrintEigenvalues</string>
+   </property>
+  </action>
+  <action name="actionUpdateConTrajectory">
+   <property name="text">
+    <string>UpdateConTrajectory</string>
+   </property>
+   <property name="shortcut">
+    <string>U</string>
+   </property>
+  </action>
+  <action name="actionSaveAllReducedEdit">
+   <property name="text">
+    <string>SaveAllReducedEdit</string>
+   </property>
+  </action>
+  <action name="actionSaveCurrentVolFullU">
+   <property name="text">
+    <string>saveCurrentVolFullU</string>
+   </property>
+  </action>
+  <action name="actionLoadCubaturePoints">
+   <property name="text">
+    <string>LoadCubaturePoints</string>
+   </property>
+  </action>
+  <action name="actionLoadCubatureWeights">
+   <property name="text">
+    <string>LoadCubatureWeights</string>
+   </property>
+  </action>
+  <action name="actionLoadAllReducedEdit">
+   <property name="text">
+    <string>LoadAllReducedEdit</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>BaseViewer</class>
+   <extends>QWidget</extends>
+   <header>BaseViewer.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>AniSliderBar</class>
+   <extends>QSlider</extends>
+   <header>AniSliderBar.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>actionExit</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>413</x>
+     <y>332</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

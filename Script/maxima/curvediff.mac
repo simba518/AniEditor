@@ -1,0 +1,13 @@
+VEC_CROSS(V,U) := matrix([0,-V[3][1],V[2][1]],[V[3][1],0,-V[1][1]],[-V[2][1],V[1][1],0]) . U$
+
+TRI_CROSS(V,U,X) := VEC_CROSS(V,U) . X$
+
+dr(r,t) := diff(r,t,1)$
+
+ddr(r,t) := diff(r,t,2)$
+
+dddr(r,t) := diff(r,t,3)$
+
+k(r,t) := mat_norm(VEC_CROSS(dr(r,t), ddr(r,t)),frobenius) / (mat_norm(dr(r,t),frobenius))^3$
+
+tau(r,t) := TRI_CROSS(dr(r,t),ddr(r,t),dddr(r,t))/ (mat_norm(VEC_CROSS(dr(r,t),ddr(r,t)),frobenius))^2$

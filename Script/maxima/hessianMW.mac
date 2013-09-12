@@ -1,0 +1,29 @@
+kill(all)$
+
+r:1$
+T:4$
+
+h:0.01;
+alpha[k]:0.2;
+alpha[m]:0.1;
+La : [0.5];
+
+I : diagmatrix(r,1)$
+/*La: makelist(lambda[i],i,0,r-1);*/
+Lambda: apply( 'diag_matrix, La)$
+
+f(s) := makelist(z[i],i,s*r,s*r+r-1)$
+x : makelist(f(s),s,0,T-1)$
+d : alpha[k]*Lambda + alpha[m]*I;
+g(i) := 1/(h^2)*(x[i+1] - 2*x[i] + x[i-1]) + 1/h*d . (x[i+1]-x[i])+Lambda . x[i]$
+y : makelist(z[i],i,0,r*T-1)$
+
+/* E(y) := 1/2*(sum(transpose(g(i)) . g(i), i, 2,T-1)); */
+
+E(y) := 1/2*(g(2) . g(2) + g(3) . g(3));
+
+/* E(y) := 1/2*(g(2) . g(2) + g(3) . g(3) + g(4) . g(4));*/
+
+H : hessian(E(y),y);
+
+H : factor(ratsimp(H)*h^4);
