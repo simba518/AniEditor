@@ -8,68 +8,81 @@
 using namespace QGLVEXT;
 
 namespace LSW_ANI_EDIT_UI{
-  
-  /**
-   * @class AniEditDM_UI provide singnals and slots for AniEditDM.
-   * 
-   */
+
+#define ANIEDITDM_SAVE(functionName)									\
+  const string fname = file_dialog->save();								\
+  if(fname.size() >0){													\
+	file_dialog->warning(data_model!=NULL&&data_model->functionName(fname)); \
+  }																		
+
+#define ANIEDITDM_LOAD(functionName)									\
+  const string fname = file_dialog->load();								\
+  if(fname.size() >0){													\
+	file_dialog->warning(data_model!=NULL&&data_model->functionName(fname)); \
+	emit update();														\
+  }																		
+
   class AniEditDM_UI:public QObject{
 
 	Q_OBJECT
 
   public:
-	AniEditDM_UI(QMainWindow *main_win, pAniEditDM data_model);
+	AniEditDM_UI(QMainWindow *main_win, pAniEditDM data_model):
+	  data_model(data_model){
+	  this->file_dialog = pFileDialog(new FileDialog(main_win));
+	}
 	
   public slots: 
-	// warping
 	void toggleWarp(){
-
 	  if(data_model){
 		data_model->useWarp( !(data_model->isUseWarp()) );
 		emit update();
 	  }
 	}
-
-	// interpolate
-	void interpolate();
-
-	// update reference sequence
-	void updateRefSeq();
-
-	// manager constraint nodes
-	void removeAllPosCon();
+	void interpolate(){
+	  file_dialog->warning(data_model != NULL && data_model->interpolate());
+	}
+	void removeAllPosCon(){
+	  if (data_model) data_model->removeAllPosCon();
+	}
 	void computeConNodeTrajectory(){
 	  if(data_model){
 		data_model->computeConNodeTrajectory();
 		emit update();
 	  }
 	}
+	void toggleRecord(){
+	  if (data_model){
+		const bool record = data_model->isRecordDrag() ? false : true;
+		data_model->setRecord(record);
+	  }
+	}
+	void playRecodDrag(){
+	  file_dialog->warning(data_model != NULL && data_model->playRecodDrag());
+	}
 
-	// record drag
-	void toggleRecord();
-	void playRecodDrag();
+	void saveParitalCon()const{ANIEDITDM_SAVE(saveParitalCon);}
+	void loadConPath(){ANIEDITDM_LOAD(loadConPath);}
+	void saveOutputMeshes()const{ANIEDITDM_SAVE(saveOutputMeshes);}
+	void saveInputMeshes()const{ANIEDITDM_SAVE(saveInputMeshes);}
+	void saveCurrentOutputMesh()const{ANIEDITDM_SAVE(saveCurrentOutputMesh);}
+	void saveCurrentInputMesh()const{ANIEDITDM_SAVE(saveCurrentInputMesh);}
+	void saveCurrentOutputVolMesh(){ANIEDITDM_SAVE(saveCurrentOutputVolMesh);}
+	void saveVolFullU()const{ANIEDITDM_SAVE(saveVolFullU);}
+	void saveCurrentReducedEdits()const{ANIEDITDM_SAVE(saveCurrentReducedEdits);}
+	void saveAllReducedEdits()const{ANIEDITDM_SAVE(saveAllReducedEdits);}
+	void saveCurrentVolFullU()const{ANIEDITDM_SAVE(saveCurrentVolFullU);}
+	void saveDragRecord()const{ANIEDITDM_SAVE(saveDragRecord);}
 
-	// file io
-	void saveParitalCon()const;
-	void loadParitalCon();
-	void loadConPath();
-	void saveOutputMeshes()const;
-	void saveInputMeshes()const;
-	void saveCurrentOutputMesh()const;
-	void saveCurrentInputMesh()const;
-	void saveCurrentOutputVolMesh();
-	void saveVolFullU()const;
-	void loadCurrentReducedEdits();
-	void saveCurrentReducedEdits()const;
-	void loadAllReducedEdits()const;
-	void saveAllReducedEdits()const;	
-	void saveRotModalMatrix()const;
-	void saveCurrentVolFullU()const;
+	void loadCurrentReducedEdits(){ANIEDITDM_LOAD(loadCurrentReducedEdits);}
+	void loadAllReducedEdits(){ANIEDITDM_LOAD(loadAllReducedEdits);}
+	void loadDragRecord(){ANIEDITDM_LOAD(loadDragRecord);}
 
-	void saveDragRecord()const;
-	void loadDragRecord();
-
-	void printEigenValues()const;
+	void printEigenValues()const{
+	  if (data_model && data_model->getInterpolator()){
+		data_model->getInterpolator()->print("eigenvalues");
+	  }
+	}
 
   signals:
 	void update();
@@ -78,7 +91,6 @@ namespace LSW_ANI_EDIT_UI{
 	pAniEditDM data_model;
 	pFileDialog file_dialog;
   };
-  
   typedef boost::shared_ptr<AniEditDM_UI> pAniEditDM_UI;
   
 }//end of namespace

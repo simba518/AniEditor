@@ -26,6 +26,7 @@ namespace LSW_ANI_EDIT_UI{
 	  if(viewer != NULL){
 
 	  	viewer->addSelfRenderEle(render);
+	  	viewer->addTextForRender(render);
 	  	preview_ani_ctrl = pAniCtrl(new AniCtrl(preview_data_model,viewer));
 	  	preview_ani_ctrl->setPlayCircle(true);
 	  }

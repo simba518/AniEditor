@@ -3,6 +3,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <SelfRenderEle.h>
+#include <TextForRender.h>
 #include "VolNodeGroupRender.h" ///@todo
 #include "AniEditDM.h"
 using namespace QGLVEXT;
@@ -16,13 +17,12 @@ namespace LSW_ANI_EDIT_UI{
 							  OUTPUT_VOL=8,
 							  CON_NODES=16,
 							  CON_PATH=32,
-  							  KEY_FRAME = 64,
 							  CON_TRAJECTORY = 128};
   /**
    * @class AniEditDMRender render the data of class AniEditDM.
    * 
    */
-  class AniEditDMRender: public SelfRenderEle{
+  class AniEditDMRender: public SelfRenderEle, public TextForRender{
 	
   public:
 	AniEditDMRender(pAniEditDM data_model, int render_type, const string title);
@@ -54,7 +54,6 @@ namespace LSW_ANI_EDIT_UI{
 	void drawInputObj()const;
 	void drawInputVol()const;
 	void drawOutputObj()const;
-	void drawKeyframeObj()const;
 	void drawOutputVol()const;
 	void drawConNodes()const;
 	void drawConPath()const;

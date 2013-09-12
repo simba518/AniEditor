@@ -92,7 +92,6 @@ void AniEditMainWin::createConnections(){
 
   // AniEditDM_UI
   connect(m_mainwindow.actionInterpolate, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(interpolate()));
-  connect(m_mainwindow.actionUpdateRefSeq, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(updateRefSeq()));
   connect(m_mainwindow.actionRemoveAllConNodes, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(removeAllPosCon()));
   connect(m_mainwindow.actionSavePartialCon, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveParitalCon()));
   connect(m_mainwindow.actionLoadPartialCon, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(loadParitalCon()));

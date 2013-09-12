@@ -3,6 +3,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <SelfRenderEle.h>
+#include <TextForRender.h>
 #include "PreviewAniDM.h"
 using namespace QGLVEXT;
 
@@ -12,7 +13,7 @@ namespace LSW_ANI_EDIT_UI{
    * @class PreviewAniDMRender render the data of the class PreviewAniDM.
    * 
    */
-  class PreviewAniDMRender: public SelfRenderEle{
+  class PreviewAniDMRender: public SelfRenderEle, public TextForRender{
 	
   public:
 	PreviewAniDMRender(pPreviewAniDM data_model):data_model(data_model){
@@ -41,16 +42,15 @@ namespace LSW_ANI_EDIT_UI{
   
 	  if (data_model != NULL){
 	
-		/// @todo
-		// const int x = 60;
-		// const int y = 70;
-		// const string pre = "Preview";
-		// this->updateText(pre,x,y);
+		const int x = 60;
+		const int y = 70;
+		const string pre = "Preview";
+		this->update(pre,x,y);
 
-		// const string frame_num = boost::lexical_cast<string>(data_model->currentFrameNum());
-		// const string T = boost::lexical_cast<string>( data_model->totalFrameNum() -1 );
-		// const string text = string("Timestep  ") + frame_num + string(" / ")+T;
-		// this->updateText(text,x,y+45);
+		const string frame_num = boost::lexical_cast<string>(data_model->currentFrameNum());
+		const string T = boost::lexical_cast<string>( data_model->totalFrameNum() -1 );
+		const string text = string("Timestep  ") + frame_num + string(" / ")+T;
+		this->update(text,x,y+45);
 	  }
 	}
 	void drawInputObj()const{

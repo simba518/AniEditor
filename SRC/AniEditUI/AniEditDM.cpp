@@ -9,8 +9,6 @@ using namespace std;
 using namespace UTILITY;
 using namespace LSW_ANI_EDIT_UI;
 
-VectorXd AniEditDM::tempt_u0;
-
 AniEditDM::AniEditDM(pVolObjMesh vol_obj, pAniDataModel animation):
   _animation(animation), vol_obj(vol_obj){
 
@@ -96,7 +94,8 @@ pObjRenderMesh_const AniEditDM::getKeyframeObjMesh()const{
 }
 
 const VectorXd &AniEditDM::getVolFullU(const int frame)const{
-  
+
+  static VectorXd tempt_u0;
   assert_in (frame, 0, totalFrameNum() );
   if (interpolator != NULL && totalFrameNum() > 0){
 	return interpolator->getInterpU(frame);
@@ -111,6 +110,7 @@ const VectorXd &AniEditDM::getVolFullU(const int frame)const{
 
 const VectorXd &AniEditDM::getUnwarpedU()const{
   
+  static VectorXd tempt_u0;
   if (interpolator != NULL && totalFrameNum() > 0){
 	return interpolator->getUnwarpedU(currentFrameNum());
   }else{
@@ -124,6 +124,7 @@ const VectorXd &AniEditDM::getUnwarpedU()const{
 
 const VectorXd &AniEditDM::getUforConstraint()const{
   
+  static VectorXd tempt_u0;
   if (interpolator != NULL && totalFrameNum() > 0){
 	return interpolator->getUforConstraint(currentFrameNum());
   }else{
@@ -137,6 +138,7 @@ const VectorXd &AniEditDM::getUforConstraint()const{
 
 const VectorXd &AniEditDM::getInputU(const int frame)const{
   
+  static VectorXd tempt_u0;
   assert_in (frame, 0, totalFrameNum() );
   if (interpolator != NULL && totalFrameNum() > 0){
 	return interpolator->getInputU(frame);
@@ -216,19 +218,6 @@ void AniEditDM::removeAllPosCon(){
   if (interpolator != NULL){
 	interpolator->removeAllPosCon();
   }
-}
-
-/// update reference sequence
-/// @bug when updated, the constrained frames is harder to met the constraints.
-bool AniEditDM::updateRefSeq(){
-  
-  bool succ = false;
-  if( interpolator != NULL ){
-	interpolator->updateRefSeq();
-	this->removeAllPosCon();
-	succ = true;
-  }
-  return succ;
 }
 
 // interpolate

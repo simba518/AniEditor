@@ -16,7 +16,6 @@ SET(NONE_QT_CPP
 #####################################QT#####################################
 SET(UI_SOURCES
 
-  AniEditDM_UI.cpp
   AniEditMainWin.cpp  
   VolObjMeshCtrl.cpp
 )

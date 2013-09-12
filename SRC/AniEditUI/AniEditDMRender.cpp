@@ -44,9 +44,6 @@ void AniEditDMRender::draw()const{
   if (render_type & INPUT_VOL){
   	drawInputVol();
   }
-  if (render_type & KEY_FRAME){
-  	drawKeyframeObj();
-  }
   if (render_type & CON_NODES){
   	drawConNodes();
   }
@@ -60,26 +57,25 @@ void AniEditDMRender::draw()const{
 
 void AniEditDMRender::updateFrameNumText(){
 
-  /// @todo
-  // if (data_model != NULL){
-
-  // 	const int x = 60;
-  // 	const int y = 70;
-  // 	this->updateText(this->title,x,y);
+  if (data_model != NULL){
 	
-  // 	const int f = data_model->currentFrameNum();
-  // 	const string frame_num = boost::lexical_cast<string>(f);
-  // 	const string T = boost::lexical_cast<string>( data_model->totalFrameNum()-1);
-  // 	const string text = string("Timestep  ") + frame_num + string(" / ")+T;
-  // 	this->updateText(text,x,y+45);
+  	const int x = 60;
+  	const int y = 70;
+  	this->update(this->title,x,y);
+	
+  	const int f = data_model->currentFrameNum();
+  	const string frame_num = boost::lexical_cast<string>(f);
+  	const string T = boost::lexical_cast<string>( data_model->totalFrameNum()-1);
+  	const string text = string("Timestep  ") + frame_num + string(" / ")+T;
+  	this->update(text,x,y+45);
 
-  // 	if(data_model->getInterpolator()){
-  // 	  const string interp_method = data_model->getInterpolator()->getName();
-  // 	  this->updateText(interp_method,x,y+90);
-  // 	  const string warp = data_model->getInterpolator()->isUseWarp()? string("warp"):string("unwarp");
-  // 	  this->updateText(warp,x,y+90+45);
-  // 	}
-  // }
+  	if(data_model->getInterpolator()){
+  	  const string interp_method = data_model->getInterpolator()->getName();
+  	  this->update(interp_method,x,y+90);
+  	  const string warp = data_model->getInterpolator()->isUseWarp()? string("warp"):string("unwarp");
+  	  this->update(warp,x,y+90+45);
+  	}
+  }
 }
 
 void AniEditDMRender::drawInputObj()const{
@@ -115,22 +111,6 @@ void AniEditDMRender::drawOutputObj()const{
 	if (obj_mesh != NULL){
 	  /// @bug the glPushAttrib and glPushAttrib can't be used here.
 	  obj_mesh->draw();
-	}
-  }
-}
-
-void AniEditDMRender::drawKeyframeObj()const{
-
-  if (data_model != NULL){
-
-	pObjRenderMesh_const obj_mesh= data_model->getKeyframeObjMesh();
-	if (obj_mesh != NULL){
-
-	  glPushAttrib(GL_COLOR_BUFFER_BIT |  GL_TEXTURE_BIT | GL_LIGHTING_BIT);
-	  glMaterialfv(GL_FRONT, GL_AMBIENT, input_obj_fAmbient);
-	  glMaterialfv(GL_FRONT, GL_DIFFUSE, input_obj_fDiffuse);
-	  obj_mesh->draw();
-	  glPopAttrib();
 	}
   }
 }

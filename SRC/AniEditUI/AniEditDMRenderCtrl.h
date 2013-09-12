@@ -23,6 +23,7 @@ namespace LSW_ANI_EDIT_UI{
 	  model_render=pAniEditDMRender(new AniEditDMRender(dm,OUTPUT_OBJ|CON_NODES|CON_TRAJECTORY,title));
 	  if(viewer != NULL){
 		viewer->addSelfRenderEle(model_render);
+		viewer->addTextForRender(model_render);
 	  }
 	}
 	
@@ -40,11 +41,6 @@ namespace LSW_ANI_EDIT_UI{
 	void toggleShowOutputObj(){
 	  if (model_render != NULL)
 		model_render->toggleRenderType(OUTPUT_OBJ);
-	  if (viewer != NULL) viewer->update();
-	}
-	void toggleShowKeyframeObj(){
-	  if (model_render != NULL)
-		model_render->toggleRenderType(KEY_FRAME);
 	  if (viewer != NULL) viewer->update();
 	}
 	void toggleShowOutputVol(){
@@ -69,7 +65,6 @@ namespace LSW_ANI_EDIT_UI{
 
   protected:
 	void showType(bool show, ANIEDITDM_RENDER_TYPE type){
-
 	  if(show && model_render != NULL){
 		model_render->addRenderType(type);
 	  }else if (model_render != NULL){

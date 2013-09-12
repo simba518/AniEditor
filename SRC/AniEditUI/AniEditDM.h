@@ -33,6 +33,12 @@ namespace LSW_ANI_EDIT_UI{
 		return _animation->currentFrameNum();
 	  return 0;
 	}
+	double getMaxRadius()const{
+	  if (vol_obj){
+		return vol_obj->getMaxRadius();
+	  }
+	  return 0;
+	}
 
 	pObjRenderMesh_const getOutputObjMesh()const{
 	  return getOutputObjMesh(currentFrameNum());
@@ -55,6 +61,7 @@ namespace LSW_ANI_EDIT_UI{
 	pObjRenderMesh_const getVolSurface()const{
 	  return vol_obj->getVolSurface();
 	}
+
 	const VectorXd &getVolFullU()const{
 	  return getVolFullU(currentFrameNum());
 	}
@@ -65,18 +72,12 @@ namespace LSW_ANI_EDIT_UI{
 	  return getInputU(currentFrameNum());
 	}
 	const VectorXd &getInputU(const int frame)const;
-	double getMaxRadius()const{
-	  if (vol_obj){
-		return vol_obj->getMaxRadius();
-	  }
-	  return 0;
-	}
 
 	pBaseInterpolator_const getInterpolator()const{
 	  return interpolator;
 	}
 
-	// constraint nodes
+	// constraints
 	void addConNodes(const vector<int> &groups);
 	void rmConNodes(const vector<int> &groups);
 	void updateConPos(const VectorXd &uc);
@@ -84,7 +85,7 @@ namespace LSW_ANI_EDIT_UI{
 	const ConNodesOfFrameSet &getAllConNodes()const{return con_nodes_for_edit;}
 	void removeAllPosCon();
 
-	// toggle warping.
+	// warping.
 	void useWarp(const bool use_warp){
 	  if (interpolator)
 		interpolator->useWarp(use_warp);
@@ -94,9 +95,6 @@ namespace LSW_ANI_EDIT_UI{
 		return interpolator->isUseWarp();
 	  return false;
 	}
-
-	// update reference sequence
-	bool updateRefSeq();
 
 	// interpolate
 	bool interpolate();
@@ -160,8 +158,6 @@ namespace LSW_ANI_EDIT_UI{
 	DragTrajectoryRecord drag_record;
 	bool record_drag; // if true then record the drag operation.
 	vector<VectorXd> con_node_traj; // trajectory of contraint nodes.
-	static VectorXd tempt_u0; // when interpolator == NULL, retrun this vecotr
-							  // as displacement.
   };
   
   typedef boost::shared_ptr<AniEditDM> pAniEditDM;
