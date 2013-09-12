@@ -1,11 +1,13 @@
 #ifndef _SPACETIMEHESSIANINVERSE_H_
 #define _SPACETIMEHESSIANINVERSE_H_
 
+#include <vector>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Sparse>
 #include <SparseMatrixTools.h>
 #include <Timer.h>
 #include <assertext.h>
+using namespace std;
 using namespace Eigen;
 using namespace UTILITY;
 using namespace EIGEN3EXT;

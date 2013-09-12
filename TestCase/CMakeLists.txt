@@ -1,0 +1,2 @@
+ADD_SUBDIRECTORY(WarpingTest)
+ADD_SUBDIRECTORY(AniEditorTest)
