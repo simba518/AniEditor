@@ -147,7 +147,6 @@ FIND_INTERNAL_PACKAGE(${PROJECT_SOURCE_DIR}/Lib/${CMAKE_BUILD_TYPE_DIR}
   warping
   basesim
   externallib
-  basetestor
   )
 
 # projects
