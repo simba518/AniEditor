@@ -91,11 +91,13 @@ void RSCoordComp::constructWithoutWarp_OneTet(const double *m, double *y){
   if (fabs(theta) > 1e-8){
 
 	const double temp = sqrt(1.0 - qw*qw);
+	assert_gt(temp,1e-12);
 	const double _x = qx/temp;
 	const double _y = qy/temp;
 	const double _z = qz/temp;
 
 	const double _norm = sqrt(_x*_x + _y*_y + _z*_z);
+	assert_gt(_norm,1e-12);
 	y[0] = theta * _x /_norm;
 	y[1] = theta * _y /_norm;
 	y[2] = theta * _z /_norm;	
