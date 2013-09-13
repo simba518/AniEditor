@@ -1,4 +1,4 @@
-SET(APPNAME AnimationEditorTest)
+SET(APPNAME EditorTest)
 
 AUX_SOURCE_DIRECTORY(. test_src)
 
@@ -8,10 +8,10 @@ ADD_EXECUTABLE(${APPNAME}
 
 LINK_PROJECT(${APPNAME}
 
-  animationeditor
+  editor
+  warping
   basesim
-  ieds
-  barbiclib
+  externallib
   basetestor
   )
 

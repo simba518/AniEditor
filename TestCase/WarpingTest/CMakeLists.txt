@@ -11,8 +11,9 @@ ADD_EXECUTABLE(${APPNAME}
 
 LINK_PROJECT(${APPNAME}
 
-  ieds
-  barbiclib
+  warping
+  basesim
+  externallib
   basetestor
 )
 

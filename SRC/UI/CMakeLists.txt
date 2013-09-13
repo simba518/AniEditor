@@ -61,10 +61,10 @@ ADD_LIBRARY(${LIBRARY_NAME}
 
 LINK_PROJECT(${APPNAME}
 
-  animationeditor
-  ieds
+  editor
+  warping
   basesim
-  barbiclib
+  externallib
 )
 
 TARGET_LINK_LIBRARIES(${APPNAME}

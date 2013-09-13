@@ -132,12 +132,9 @@ INCLUDE_FOR_PROJECT(${PROJECT_NAME}
   SRC/BaseSim/ConAndDrag
   SRC/BaseSim/Shader
 
-  SRC/AnimationEditor
-  SRC/AnimationEditor/AD
-  SRC/AnimationEditor/Interpolators
+  SRC/Editor
 
-  SRC/IEDS
-  SRC/IEDS/Warping
+  SRC/Warping
 
   /usr/local/include/commonfile
   /usr/local/include/utility
@@ -146,11 +143,11 @@ INCLUDE_FOR_PROJECT(${PROJECT_NAME}
 
 FIND_INTERNAL_PACKAGE(${PROJECT_SOURCE_DIR}/Lib/${CMAKE_BUILD_TYPE_DIR}
 
-  anieditui
-  barbiclib
-  animationeditor
-  ieds
+  editor
+  warping
   basesim
+  externallib
+  basetestor
   )
 
 # projects
