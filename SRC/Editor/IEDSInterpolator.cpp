@@ -1,8 +1,7 @@
 #include <MatrixIO.h>
 #include <volumetricMeshLoader.h>
 #include <MatrixTools.h>
-#include <RedCenConM.h>
-#include <FullBaryCenConM.h>
+#include <ConMatrixTools.h>
 #include <JsonFilePaser.h>
 #include <RSWarperExt.h>
 #include <ModalWarpingExt.h>
@@ -91,8 +90,8 @@ void IEDSInterpolator::setConGroups(const int frame_id,const vector<set<int> >&g
 	return ;
   }
 
-  SparseMatrixXd C;
-  FullBaryCenConM::computeConM(group,W.rows()/3, C);
+  SparseMatrix<double> C;
+  computeBaryCenterConM(group,W.rows()/3, C);
 
   int i = 0;
   for (i = 0; i < (int)con_frame_id.size(); ++i){

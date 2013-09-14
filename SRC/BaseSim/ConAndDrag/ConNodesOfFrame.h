@@ -3,10 +3,9 @@
 
 #include <boost/shared_ptr.hpp>
 #include <eigen3/Eigen/Dense>
-using namespace Eigen;
-
 #include <SelectionGroup.h>
-using namespace LSW_SIM;
+using namespace Eigen;
+using namespace UTILITY;
 
 namespace LSW_SIM{
   

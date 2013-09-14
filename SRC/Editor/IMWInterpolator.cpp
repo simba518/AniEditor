@@ -1,6 +1,5 @@
 #include <volumetricMeshLoader.h>
-#include <RedCenConM.h>
-#include <FullBaryCenConM.h>
+#include <ConMatrixTools.h>
 #include <JsonFilePaser.h>
 #include <RotationMatrix.h>
 #include "IMWInterpolator.h"

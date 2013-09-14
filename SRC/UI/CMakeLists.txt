@@ -70,6 +70,7 @@ LINK_PROJECT(${APPNAME}
 TARGET_LINK_LIBRARIES(${APPNAME}
  
   /usr/local/lib/libutility_ui.a
+  /usr/local/lib/libutility_math.a
   ${QGLViewer_LIBRARIES}
   ${QT_LIBRARIES}
   ${GLM_LIBRARIES}

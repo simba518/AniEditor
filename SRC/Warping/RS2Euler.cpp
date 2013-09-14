@@ -1,10 +1,9 @@
 #include <eigen3/Eigen/Dense>
 #include <assertext.h>
 #include <MatrixIO.h>
-#include <FullBaryCenConM.h>
+#include <ConMatrixTools.h>
 #include "RS2Euler.h"
 #include "DefGradOperator.h"
-#include "FullConMat.h"
 #include "ComputeBj.h"
 using namespace Eigen;
 using namespace LSW_WARPING;
@@ -41,7 +40,7 @@ void RS2Euler::setFixedNodes(const vector<int> &fixed_nodes){
 
   assert (tetmesh != NULL);
   const int node_num = tetmesh->numVertices();
-  FullConMat::compute(fixed_nodes,F, node_num);
+  UTILITY::computeConM(fixed_nodes,F, node_num);
   assert_eq(F.cols(), node_num*3);
 }
 
@@ -53,7 +52,7 @@ void RS2Euler::setConNodes(const vector<set<int> > &c_nodes,const VectorXd &bcen
   this->barycenter_uc = bcen_uc;
   const int node_num = tetmesh->numVertices();
   if (c_nodes.size() > 0){
-	LSW_SIM::FullBaryCenConM::computeConM(c_nodes,node_num,C);
+	UTILITY::computeBaryCenterConM(c_nodes,node_num,C);
   }else{
 	C.resize(0,0);
   }

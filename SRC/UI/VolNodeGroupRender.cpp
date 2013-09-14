@@ -178,7 +178,7 @@ void VolNodeGroupRender::drawShpere(pVolumetricMesh_const vol_mesh,
   y /= (double)(group.size()); 
   z /= (double)(group.size());
 
-  LSW_RENDERMESH::PhongShader::getInstance()->bind();
+  UTILITY::PhongShader::getInstance()->bind();
 
   glPushAttrib(GL_COLOR_BUFFER_BIT | GL_LIGHTING_BIT);
 
@@ -190,8 +190,7 @@ void VolNodeGroupRender::drawShpere(pVolumetricMesh_const vol_mesh,
 
   glPopAttrib();
 
-  LSW_RENDERMESH::PhongShader::getInstance()->unbind();
-
+  UTILITY::PhongShader::getInstance()->unbind();
 }
 
 void VolNodeGroupRender::DrawSphere(float x, float y, float z, float fRadius, int M, int N)const{

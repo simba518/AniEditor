@@ -5,6 +5,7 @@
 #include <assertext.h>
 #include "ObjRenderMesh.h"
 using namespace std;
+using namespace UTILITY;
 using namespace LSW_RENDERMESH;
 
 ObjRenderMesh::ObjRenderMesh(){

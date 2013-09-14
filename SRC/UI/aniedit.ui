@@ -42,7 +42,7 @@
           <number>0</number>
          </property>
          <item>
-          <widget class="BaseViewer" name="left_view" native="true"/>
+          <widget class="QGLViewerExt" name="left_view" native="true"/>
          </item>
          <item>
           <widget class="AniSliderBar" name="ani_slider">
@@ -63,7 +63,7 @@
         </layout>
        </widget>
       </widget>
-      <widget class="BaseViewer" name="right_view" native="true"/>
+      <widget class="QGLViewerExt" name="right_view" native="true"/>
      </widget>
     </item>
    </layout>
@@ -1044,15 +1044,15 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>BaseViewer</class>
-   <extends>QWidget</extends>
-   <header>BaseViewer.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>AniSliderBar</class>
    <extends>QSlider</extends>
    <header>AniSliderBar.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QGLViewerExt</class>
+   <extends>QWidget</extends>
+   <header>QGLViewerExt.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

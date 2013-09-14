@@ -1,8 +1,7 @@
 #include <MatrixIO.h>
 #include <MatrixTools.h>
+#include <ConMatrixTools.h>
 #include <volumetricMeshLoader.h>
-#include <RedCenConM.h>
-#include <FullBaryCenConM.h>
 #include <JsonFilePaser.h>
 #include <Log.h>
 #include "RedRSInterpolator.h"
