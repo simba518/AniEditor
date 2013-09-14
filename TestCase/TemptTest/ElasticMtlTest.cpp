@@ -125,7 +125,20 @@ public:
 	// cout<< "H: " << H << endl;
 
 	JacobiSVD<MatrixXd> svd(H, ComputeThinU | ComputeThinV);
-	const VectorXd k = svd.solve(-b);
+	const VectorXd &sigv = svd.singularValues();
+	int reserved = 0;
+	for (;reserved<sigv.size()&&sigv[reserved]>1e-10; ++reserved);
+	assert_gt(reserved,0);
+	cout << "orignal: " << sigv.size() << endl;
+	cout << "reserved: " << reserved << endl;
+	MatrixXd U = svd.matrixU().leftCols(reserved);
+	const MatrixXd V = svd.matrixV().leftCols(reserved);
+	for (int i = 0; i < reserved; ++i){
+	  assert_gt(sigv[i],0);
+	  U.col(i) /= sigv[i];
+	}
+	const VectorXd k = V*U.transpose()*(-b);
+	// const VectorXd k = svd.solve(-b);
 	cout<< "Hx+b: " << (H*k + b).norm() << endl;
 	VectorXd diff;
 	evaluate(E_fun,k,diff);
@@ -246,7 +259,7 @@ BOOST_AUTO_TEST_CASE(computeTest){
   const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
   ASSERT(mtlOpt.loadVolMesh(data+"/sim-mesh.hinp"));
   ASSERT(mtlOpt.loadAniSeq(data+"mtlOptU.b"));
-  const MatrixXd U = mtlOpt._U.leftCols(40);
+  const MatrixXd U = mtlOpt._U.leftCols(50);
   mtlOpt._U = U;
   cout<< "mtlOptU: " << mtlOpt._U.norm () << endl;
   mtlOpt.compute();

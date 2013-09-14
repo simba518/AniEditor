@@ -1,0 +1,58 @@
+\documentclass[twocolumn,a4paper]{article}
+\usepackage{graphicx}
+\usepackage{amsfonts}
+\usepackage{color}
+\usepackage{lineno}
+\setlength{\columnsep}{10pt}
+\setlength{\oddsidemargin}{0pt}
+\setlength{\topmargin}{0pt}
+\setlength{\headheight}{0pt}
+\setlength{\headsep}{0pt}
+\setlength{\marginparsep}{0pt}
+\setlength{\marginparwidth}{0pt}
+\addtolength{\voffset}{-50pt}
+\setlength{\textheight}{26.8cm}
+\author{Siwang Li}
+
+\title{Implementation of Material Optimization}
+
+%% document begin here
+\begin{document}
+\maketitle
+
+\section{Details}
+The input are some displacements $P = (p_1,\cdots,p_T) \in R^{3n\times T}$ of a
+beam with respect to the rest shape $r$, which are produced by a reduced StVK
+simulator.
+
+Then we solve the SVD problem $P = U\Sigma V^T$, and use the first $m$ columns
+of $U$ to obtain $W' = (u_1,\cdots,u_m)$, and the corresponding reduced
+coordinates $z' = ((\Sigma V^T)_1,\cdots,(\Sigma
+V^T)_T)$. {\color{red}Experiments shows that, the residual $U-W'z'$ is very
+  small (less than $10^{-5}$) when $m=20$ for an animation with length $T=50$.}
+
+To compute $K$, we discrete $z(t)$ in time, and define a quadratic energy
+function based on implicit integration
+\begin{equation} \label{qua-en}
+  E(k) = \sum_{i=2}^{T-1} \|\frac{1}{h^2}(z_{i+1}-2z_{i}+z_{i-1}) + K(k)z_i\|_2^2
+\end{equation}
+where $K(k)$ is a symmetric matrix which is obtained by properly assemble $k_i$
+into $K$. This quadratic energy function can be minimized by solving
+\begin{equation} \label{sol}
+  Hk = -b
+\end{equation}
+where $H = \frac{\partial^2{E}}{\partial^2{k}}$ is a constant matrix, and $b =
+\frac{\partial{E}}{\partial{k}}|_{k=0}$ is a constant vector. As $H$ may be rank
+deficient, we make a compact SVD $H=U_1\Sigma_1 V^T_1$, and compute
+$k=V_1\Sigma_1^{*}U_1^T(-b)$, where $\Sigma_1^{*}$ is the pseudo inverse of
+$\Sigma_1$. {\color{red}Experiment shows that the residual $Hk+b$ is small (less than
+$10^{-7}$), however $E(k)$ is very large (larger than $10^5$).}
+
+
+%% references
+% \begin{thebibliography}{99}
+% \bibitem{sig2011} Fast simulation of skeleton-driven deformable body
+%   characters.
+% \end{thebibliography}
+
+\end{document}
