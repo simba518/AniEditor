@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include <volumetricMesh.h>
-#include <ObjMesh/ObjRenderMesh.h>
+#include <ObjRenderMesh.h>
 #include <boost/shared_array.hpp>
 
 using namespace LSW_RENDERMESH;

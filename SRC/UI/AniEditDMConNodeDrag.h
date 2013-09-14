@@ -7,7 +7,7 @@
 #include <SelectCtrl.h>
 #include <DragCtrl.h>
 #include <Selectable.h>
-#include <BarycenterDraggerVec.h>
+#include <BarycenterDragger.h>
 #include "VolNodeGroupRender.h"
 #include "AniEditDM.h"
 using namespace Eigen;

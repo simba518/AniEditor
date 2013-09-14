@@ -6,7 +6,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/shared_array.hpp>
 #include <volumetricMesh.h>
-#include <ObjMesh/ObjRenderMesh.h>
+#include <ObjRenderMesh.h>
 
 using namespace LSW_RENDERMESH;
 using namespace std;

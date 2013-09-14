@@ -1,7 +1,7 @@
 #ifndef _CONNODESETDRAWER_H_
 #define _CONNODESETDRAWER_H_
 
-#include <ConNodesOfFrameSet.h>
+#include <ConNodesOfFrame.h>
 
 namespace LSW_SIM{
   

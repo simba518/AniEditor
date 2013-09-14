@@ -5,7 +5,7 @@
 #include <vector>
 using namespace std;
 
-#include <ObjMesh/ObjRenderMesh.h>
+#include <ObjRenderMesh.h>
 using namespace LSW_RENDERMESH;
 
 namespace LSW_RENDERMESH{

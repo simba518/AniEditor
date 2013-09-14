@@ -3,7 +3,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <AniDataModel.h>
-#include <ConNodesOfFrameSet.h>
+#include <ConNodesOfFrame.h>
 #include <BaseInterpolator.h>
 #include <VolObjMesh.h>
 #include "DragTrajectoryRecord.h"

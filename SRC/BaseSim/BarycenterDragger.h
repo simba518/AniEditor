@@ -60,6 +60,28 @@ namespace LSW_SIM{
   };
   
   typedef boost::shared_ptr<BarycenterDragger> pBarycenterDragger;
+
+  /**
+   * @class BarycenterDraggerVec a class that warps the class BarycenterDragger.
+   * In particular, use VectorXd instead of "double *" in the setting up
+   * functions for safety.
+   */
+  class BarycenterDraggerVec: public BarycenterDragger{
+	
+  public:
+	void setConGroups(const vector<set<int> > &groups, const VectorXd &vol_u);
+	void stopDrag();
+	VectorXd getUcVec()const;
+
+  protected:
+	bool checkValidDation(const vector<set<int> > &g, const VectorXd &u)const;
+	
+  private:
+	
+  };
+  
+  typedef boost::shared_ptr<BarycenterDraggerVec> pBarycenterDraggerVec;
+
   
 }//end of namespace
 
