@@ -424,7 +424,6 @@ VolumetricMesh::VolumetricMesh(const char * filename, int numElementVertices, ch
 
 char * VolumetricMesh::getElementType(const char * filename, char ** elementType) 
 {
-  TRACE_FUN();
   // parse the abaqus file
   ABQParser abqParser;
   *elementType = NULL;

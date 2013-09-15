@@ -20,17 +20,41 @@
 \begin{document}
 \maketitle
 
-\section{Details}
+\section{Input Animation}
 The input are some displacements $P = (p_1,\cdots,p_T) \in R^{3n\times T}$ of a
-beam with respect to the rest shape $r$, which are produced by a reduced StVK
-simulator.
+beam with respect to the rest shape $r$. We use implicit integrator, zero
+damping ($\alpha_k=\alpha_m=0$), and same time step $h=0.1$ in all the
+experiments. Some of the animation are produced with some nodes are fixed, but
+no other external forces. We produce such results by setting a deformed shape as
+initial state, then record the simulated result. And for the reduced simulator,
+constraints are achieved by removing the corresponding rows from the basis
+matrix.
 
-Then we solve the SVD problem $P = U\Sigma V^T$, and use the first $m$ columns
-of $U$ to obtain $W' = (u_1,\cdots,u_m)$, and the corresponding reduced
-coordinates $z' = ((\Sigma V^T)_1,\cdots,(\Sigma
-V^T)_T)$. {\color{red}Experiments shows that, the residual $U-W'z'$ is very
-  small (less than $10^{-5}$) when $m=20$ for an animation with length $T=50$.}
+\section{PCA on RS coordinates}
+Firstly, we compute the RS coordinates $\hat{P} =
+(\hat{p}_1,\cdots,\hat{p}_T)$.  Then we solve the SVD problem $\hat{P} = U\Sigma
+V^T$, and use the first $m$ columns of $U$ to obtain $W' = (u_1,\cdots,u_m)$,
+and the corresponding reduced coordinates $z' = ((\Sigma V^T)_1,\cdots,(\Sigma
+V^T)_T)$.
 
+\subsection{Experiments}
+\begin{itemize}
+\item Check the residual $\hat{P}-W'z'$ to make sure the PCA is correct. It
+  should be very small.
+\item Use the 6-th mode $w_6$ to produce reduced coordinates $z_i=i\times w_6$,
+  and corresponding RS coordinates $\hat{p}_i=\hat{W}z_i$. Then use $\hat{P}$ to
+  compute $W'$ and $z'$. Then check the residual $\|z-z'\|_2^2$ and
+  $\|\hat{W}-W'\|_2^2$.
+\item Use both the 6-th and 7-th modes to make the above experiment. 
+\item Use the first 20 modes to simulate an animation using a RS simulator with
+  some nodes are constrained, and record $z$ and $\hat{P}$. Then check the
+  residual $\|z-z'\|_2^2$ and $\|\hat{W}-W'\|_2^2$.
+\item Generate an animation using a Reduced StVK simulator with some nodes are
+  constrained. Then use it to compute $W'$ and $z'$. Then check the residual
+  $\|z-z'\|_2^2$ and $\|\hat{W}-W'\|_2^2$.
+\end{itemize}
+
+\section{Approximate $K$ Without Constraints}
 To compute $K$, we discrete $z(t)$ in time, and define a quadratic energy
 function based on implicit integration
 \begin{equation} \label{qua-en}
@@ -42,11 +66,41 @@ into $K$. This quadratic energy function can be minimized by solving
   Hk = -b
 \end{equation}
 where $H = \frac{\partial^2{E}}{\partial^2{k}}$ is a constant matrix, and $b =
-\frac{\partial{E}}{\partial{k}}|_{k=0}$ is a constant vector. As $H$ may be rank
-deficient, we make a compact SVD $H=U_1\Sigma_1 V^T_1$, and compute
-$k=V_1\Sigma_1^{*}U_1^T(-b)$, where $\Sigma_1^{*}$ is the pseudo inverse of
-$\Sigma_1$. {\color{red}Experiment shows that the residual $Hk+b$ is small (less than
-$10^{-7}$), however $E(k)$ is very large (larger than $10^5$).}
+\frac{\partial{E}}{\partial{k}}|_{k=0}$ is a constant vector. 
+
+\subsection{Experiments}
+\begin{itemize}
+\item Use an random vector $x$ to check $E(x)-(\frac{1}{2}x^THx+b^Tx+E(0))$ to
+  make sure $H$ and $b$ are correct.
+\item Check $Hk = -b$ to make sure the equation solving is correct.
+\item We use the 6-th mode to produce the animation $z'$ with a RS simulator
+  without constraints, then use it to produce a $K\in R^{1\times1}$. Check the
+  residual $|K-\lambda_6|$, and $E(k)$.
+\item Use different time step $h$ to make the above experiment.
+\item We use 20 modes from $6$ to $26$ to produce the animation $z'$ with a RS
+  simulator without constraints, then use it to produce a $K$. Check the
+  residual $\|K-diag(\lambda_6,\cdots,\lambda_{26})\|_2^2$, and $E(k)$.
+\item Use different time step $h$ to make the above experiment.
+\item We use a full StVK simulator to produce an animation $P =
+  (p_1,\cdots,p_T)$ without constraints. Then compute $K$ and check the residual
+  $E(k)$.
+\item Use different time step $h$ to make the above experiment.
+\item Use the same $P$ as above, but compute $z' = \hat{W}^{-1}\hat{P}$. Check
+  the residual $E(\Lambda)$.
+\item Use same $z'$ as above, compute $K$, check the residual $E(k)$.
+\item Produce all the input and out animation, check the deformation results and
+  dynamics.
+\end{itemize}
+
+\section{Approximate $K$ with Constraints}
+
+
+% As $H$ may be rank
+% deficient, we make a compact SVD $H=U_1\Sigma_1 V^T_1$, and compute
+% $k=V_1\Sigma_1^{*}U_1^T(-b)$, where $\Sigma_1^{*}$ is the pseudo inverse of
+% $\Sigma_1$. {\color{red}Experiment shows that the residual $Hk+b$ is small (less than
+% $10^{-7}$), however $E(k)$ is very large (larger than $10^5$).}
+
 
 
 %% references

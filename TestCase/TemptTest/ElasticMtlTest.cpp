@@ -5,8 +5,10 @@
 #include <UnitTestAssert.h>
 #include <CASADITools.h>
 #include <MatrixIO.h>
+#include <MatrixTools.h>
 #include <DefGradOperator.h>
 #include <RSCoordComp.h>
+#include <MapMA2RS.h>
 #include <volumetricMesh.h>
 #include <volumetricMeshLoader.h>
 using namespace std;
@@ -73,10 +75,9 @@ public:
 	const VectorXd sigv = svd.singularValues().segment(0,reserved);
 	_Wrs = svd.matrixU().leftCols(reserved);
 	_zrs = svd.matrixV().leftCols(reserved).transpose();
-	cout << sigv << endl;
-	for (int i = 0; i < reserved; ++i){
+	// cout << sigv << endl;
+	for (int i = 0; i < reserved; ++i)
 	  _zrs.row(i) *= sigv[i];
-	}
 	INFO_LOG("Wz-U" << ((_Wrs*_zrs) - _Urs).norm());
   }
   void computeK(){
@@ -103,9 +104,8 @@ public:
 	for (int i = 1; i < T-1; ++i){
 	  const CasADi::SXMatrix za = (z[i+1]-z[i]*2.0f+z[i-1])/(_h*_h);
 	  const CasADi::SXMatrix d = za+K.mul(z[i]);
-	  for (int j = 0; j < r; ++j){
+	  for (int j = 0; j < r; ++j)
 		E += d.elem(j,0)*d.elem(j,0);
-	  }
 	}
 	CasADi::SXFunction E_fun(s,E);
 	E_fun.init();
@@ -125,31 +125,17 @@ public:
 	// cout<< "H: " << H << endl;
 
 	JacobiSVD<MatrixXd> svd(H, ComputeThinU | ComputeThinV);
-	const VectorXd &sigv = svd.singularValues();
-	int reserved = 0;
-	for (;reserved<sigv.size()&&sigv[reserved]>1e-10; ++reserved);
-	assert_gt(reserved,0);
-	cout << "orignal: " << sigv.size() << endl;
-	cout << "reserved: " << reserved << endl;
-	MatrixXd U = svd.matrixU().leftCols(reserved);
-	const MatrixXd V = svd.matrixV().leftCols(reserved);
-	for (int i = 0; i < reserved; ++i){
-	  assert_gt(sigv[i],0);
-	  U.col(i) /= sigv[i];
-	}
-	const VectorXd k = V*U.transpose()*(-b);
-	// const VectorXd k = svd.solve(-b);
+	const VectorXd k = svd.solve(-b);
 	cout<< "Hx+b: " << (H*k + b).norm() << endl;
+
 	VectorXd diff;
 	evaluate(E_fun,k,diff);
 	cout << "diff: " << diff << endl;
 
 	_K.resize(r,r);
-	for (int i = 0; i < r; ++i){
-	  for (int j = 0; j < r; ++j){
+	for (int i = 0; i < r; ++i)
+	  for (int j = 0; j < r; ++j)
 		_K(i,j) = k[symIndex(i,j)];
-	  }
-	}
 	assert_eq(_K,(_K.transpose()));
 	// cout<< "_K: " << _K << endl;
 
@@ -171,7 +157,7 @@ public:
 	assert_eq(eigensolver.info(),Success);
 	const MatrixXd &W = eigensolver.eigenvectors();
 	const VectorXd &La = eigensolver.eigenvalues();
-	cout<< "La: " << La << endl;
+	// cout<< "La: " << La << endl;
 
 	int start = 0;
 	for (;start<La.size() && La[start]<=0;++start);
@@ -250,7 +236,37 @@ BOOST_AUTO_TEST_CASE(produceSymetricMatTest){
   CasADi::SXMatrix K;
   int dim = 2;
   ElasticMtlOpt::produceSymetricMat("x",2,s,K);
-  cout << K << endl;
+  ASSERT_EQ(K.elem(0,0).toString(),std::string("x_0"));
+  ASSERT_EQ(K.elem(0,1).toString(),std::string("x_1"));
+  ASSERT_EQ(K.elem(1,0).toString(),std::string("x_1"));
+  ASSERT_EQ(K.elem(1,1).toString(),std::string("x_2"));
+}
+
+BOOST_AUTO_TEST_CASE(produceCorrectData){
+  
+  const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
+  const string volstr = data+"/sim-mesh.hinp";
+  pVolumetricMesh volMesh;
+  volMesh=pVolumetricMesh(VolumetricMeshLoader::load(volstr.c_str()));
+  ASSERT(volMesh != NULL);
+
+  const string wstr = data+"eigen_vectors80.b";
+  MatrixXd W_t;
+  ASSERT( load(wstr,W_t));
+  const int r = 20;
+  const MatrixXd W = W_t.leftCols(r);
+
+  SparseMatrix<double> G;
+  ASSERT( LSW_WARPING::DefGradOperator::compute(volMesh,G) );
+
+  MatrixXd PGW;
+  LSW_WARPING::MapMA2RS::computeMapMatPGW(G,W,PGW);
+  const string pgw = data+"/tempt/PGW.b";
+  ASSERT( write(pgw,PGW) );
+  
+  const MatrixXd invPGW = PseudoInverse(PGW);
+  const string invpgw = data+"/tempt/invPGW.b";
+  ASSERT( write(invpgw,invPGW));
 }
 
 BOOST_AUTO_TEST_CASE(computeTest){
@@ -261,10 +277,10 @@ BOOST_AUTO_TEST_CASE(computeTest){
   ASSERT(mtlOpt.loadAniSeq(data+"mtlOptU.b"));
   const MatrixXd U = mtlOpt._U.leftCols(50);
   mtlOpt._U = U;
-  cout<< "mtlOptU: " << mtlOpt._U.norm () << endl;
+  cout<< "mtlOptU.norm(): " << mtlOpt._U.norm () << endl;
   mtlOpt.compute();
-  cout<< mtlOpt._zrs.cols() << endl;
-  cout<< mtlOpt._zrs.rows() << endl;
+  // cout<< mtlOpt._zrs.cols() << endl;
+  // cout<< mtlOpt._zrs.rows() << endl;
 }
 
 BOOST_AUTO_TEST_SUITE_END()

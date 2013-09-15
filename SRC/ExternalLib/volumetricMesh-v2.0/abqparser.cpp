@@ -83,8 +83,6 @@ int ABQParser::open(const char * filename)
   // seek for last '/' in filename
   // if no '/', then directory name is "."
   // else, everything before '/' is directory name, and everything after is filename
-  TRACE_FUN();
-
   const char * iter = filename;
   const char * lastPos = NULL;
 
