@@ -26,7 +26,7 @@ struct SpaceTimeHessianInverseTestInit{
 	Hcmp->setStiffnessDamping(alpha_k);
 	Hcmp->setMassDamping(alpha_m);
 	Hcmp->setEigenValues(eigen_values);
-	ASSERT(Hcmp->compute_H(H));
+	TEST_ASSERT(Hcmp->compute_H(H));
 	ASSERT_EQ(H.rows(),H.cols());
 	ASSERT_EQ(H.rows(),r*T);
 	H = block(H,2*r,2*r,H.rows()-4*r,H.rows()-4*r);

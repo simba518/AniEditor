@@ -35,6 +35,17 @@ void RS2Euler::setTetMesh(pVolumetricMesh_const tetmesh){
   }
 }
 
+void RS2Euler::fixBaryCenter(){
+
+  assert (tetmesh != NULL);
+  const int node_num = tetmesh->numVertices();
+  set<int> all_nodes;
+  for (int i = 0; i < node_num; ++i){
+	all_nodes.insert(i);
+  }
+  UTILITY::computeBaryCenterConM(all_nodes,node_num,F);
+}
+
 // compute the constraint matrix for the fixed nodes
 void RS2Euler::setFixedNodes(const vector<int> &fixed_nodes){
 

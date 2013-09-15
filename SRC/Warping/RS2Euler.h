@@ -22,6 +22,7 @@ namespace LSW_WARPING{
 	
   public:
 	void setTetMesh(pVolumetricMesh_const tetmesh);
+	void fixBaryCenter();
 	void setFixedNodes(const vector<int> &fixed_nodes);
 	void setConNodes(const vector<set<int> > &c_nodes,const VectorXd &bcen_uc);
 	bool precompute();	

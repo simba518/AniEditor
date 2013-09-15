@@ -129,7 +129,7 @@ public:
 	const MatrixXd H = convert<double>(H_SX);
 	assert_eq(H.rows(),b.rows());
 	const VectorXd k = H.ldlt().solve(-b);
-	assert_lt( (H*k + b).norm(),1e-8 );
+	assert_lt( (H*k + b).norm(),1e-10*b.norm() );
 
 	VectorXd diff;
 	evaluate(E_fun,k,diff);
@@ -256,7 +256,7 @@ BOOST_AUTO_TEST_CASE(checkPCAuseOneMode){
   const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
   const string hatWstr = data+"/tempt/PGW.b";
   MatrixXd hatW;
-  ASSERT( load(hatWstr,hatW) );
+  TEST_ASSERT( load(hatWstr,hatW) );
 
   const int T = 100;
   const int mid = 6;
@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE(checkPCAuseTwoModes){
   const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
   const string hatWstr = data+"/tempt/PGW.b";
   MatrixXd hatW;
-  ASSERT( load(hatWstr,hatW) );
+  TEST_ASSERT( load(hatWstr,hatW) );
 
   const int T = 100;
   const int mid0 = 6;
@@ -310,25 +310,25 @@ BOOST_AUTO_TEST_CASE(produceCorrectData){
   const string volstr = data+"/sim-mesh.hinp";
   pVolumetricMesh volMesh;
   volMesh=pVolumetricMesh(VolumetricMeshLoader::load(volstr.c_str()));
-  ASSERT(volMesh != NULL);
+  TEST_ASSERT(volMesh != NULL);
 
   const string wstr = data+"eigen_vectors80.b";
   MatrixXd W_t;
-  ASSERT( load(wstr,W_t));
+  TEST_ASSERT( load(wstr,W_t));
   const int r = 20;
   const MatrixXd W = W_t.leftCols(r);
 
   SparseMatrix<double> G;
-  ASSERT( LSW_WARPING::DefGradOperator::compute(volMesh,G) );
+  TEST_ASSERT( LSW_WARPING::DefGradOperator::compute(volMesh,G) );
 
   MatrixXd PGW;
   LSW_WARPING::MapMA2RS::computeMapMatPGW(G,W,PGW);
   const string pgw = data+"/tempt/PGW.b";
-  ASSERT( write(pgw,PGW) );
+  TEST_ASSERT( write(pgw,PGW) );
   
   const MatrixXd invPGW = PseudoInverse(PGW);
   const string invpgw = data+"/tempt/invPGW.b";
-  ASSERT( write(invpgw,invPGW));
+  TEST_ASSERT( write(invpgw,invPGW));
 }
 
 BOOST_AUTO_TEST_CASE(computeKuseRSSimulation){
@@ -364,17 +364,20 @@ BOOST_AUTO_TEST_CASE(computeKuseRSSimulation){
 BOOST_AUTO_TEST_CASE(computeKuseRSSimulation2){
 
   const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
-  const string eval = data+"/eigen_values80.b";
-  const string evect = data+"/eigen_vectors80.b";
-  VectorXd lambda;
-  ASSERT( load(eval,lambda) );
-  const int r = lambda.size();
-  MatrixXd W;
-  ASSERT( load(evect,W) );
+  const string eval = data+"/eigen_values_nocon80.b";
+  const string evect = data+"/eigen_vectors_nocon80.b";
+  const int r = 20;
+  VectorXd tlambda;
+  TEST_ASSERT( load(eval,tlambda) );
+  const VectorXd lambda = tlambda.segment(0,r);
+  MatrixXd tW;
+  TEST_ASSERT( load(evect,tW) );
+  const MatrixXd W = tW.leftCols(r);
 
-  const string z0str = data+"/tempt/z135.b";
-  VectorXd z0;
-  ASSERT( load(z0str,z0) );
+  const string z0str = data+"/tempt/z84-nocon.b";
+  VectorXd tz0;
+  TEST_ASSERT( load(z0str,tz0) );
+  const VectorXd z0 = tz0.segment(0,r);
   
   LSW_ANI_EDITOR::MASimulatorAD simulator;
   const double h = 0.1f;
@@ -385,7 +388,7 @@ BOOST_AUTO_TEST_CASE(computeKuseRSSimulation2){
   const VectorXd v0 = VectorXd::Zero(r);
   simulator.setIntialStatus(v0,z0);
 
-  const int T = 10;
+  const int T = 50;
   ElasticMtlOpt mtlopt(h*10.0f,r);
   mtlopt._zrs.resize(r,T);
   for (int f = 0; f < T; ++f){
@@ -401,24 +404,21 @@ BOOST_AUTO_TEST_CASE(computeKuseRSSimulation2){
   volobj.loadVolMesh(data+"sim-mesh.hinp");
   volobj.loadInterpWeights(data+"interp-weights.txt");
   
-  vector<int> fixed_nodes;
-  ASSERT( loadVec(data+"con_nodes.bou",fixed_nodes) );
-    
   RS2Euler rs2euler;
   rs2euler.setTetMesh(volobj.getVolMesh());
-  rs2euler.setFixedNodes(fixed_nodes);
+  rs2euler.fixBaryCenter();
   rs2euler.precompute();
 
   SparseMatrix<double> G;
-  ASSERT( LSW_WARPING::DefGradOperator::compute(volobj.getVolMesh(),G) );
+  TEST_ASSERT( LSW_WARPING::DefGradOperator::compute(volobj.getVolMesh(),G) );
   VectorXd y,u;
   for (int i = 0; i < T; ++i){
-	const VectorXd p = W*mtlopt._zrs.col(i);
-	RSCoordComp::constructWithWarp(G,p,y);
-	ASSERT ( rs2euler.reconstruct(y,u) );
-	ASSERT ( volobj.interpolate(&u[0]) );
-	const string filename = data+"tempt/obj_"+MeshVtkIO::int2str(i)+".obj";
-	ASSERT(MeshVtkIO::write(volobj.getVolMesh(),filename));
+  	const VectorXd p = W*mtlopt._zrs.col(i);
+  	RSCoordComp::constructWithWarp(G,p,y);
+  	TEST_ASSERT ( rs2euler.reconstruct(y,u) );
+  	TEST_ASSERT ( volobj.interpolate(&u[0]) );
+  	const string filename = data+"tempt/obj_"+MeshVtkIO::int2str(i)+".vtk";
+  	TEST_ASSERT (MeshVtkIO::write(volobj.getObjMesh(),filename));
   }
 }
 
@@ -426,8 +426,8 @@ BOOST_AUTO_TEST_CASE(computeTest){
   
   ElasticMtlOpt mtlOpt(0.1f,20);
   const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
-  ASSERT(mtlOpt.loadVolMesh(data+"/sim-mesh.hinp"));
-  ASSERT(mtlOpt.loadAniSeq(data+"mtlOptU.b"));
+  TEST_ASSERT(mtlOpt.loadVolMesh(data+"/sim-mesh.hinp"));
+  TEST_ASSERT(mtlOpt.loadAniSeq(data+"mtlOptU.b"));
   const MatrixXd U = mtlOpt._U.leftCols(50);
   mtlOpt._U = U;
   cout<< "mtlOptU.norm(): " << mtlOpt._U.norm () << endl;
