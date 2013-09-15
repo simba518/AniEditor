@@ -1,6 +1,7 @@
 #include <string>
 #include <eigen3/Eigen/Dense>
 #include <Eigen/SVD>
+#include <MeshVtkIO.h>
 #include <boost/test/unit_test.hpp>
 #include <UnitTestAssert.h>
 #include <CASADITools.h>
@@ -9,12 +10,18 @@
 #include <DefGradOperator.h>
 #include <RSCoordComp.h>
 #include <MapMA2RS.h>
+#include <MASimulatorAD.h>
+#include <VolObjMesh.h>
+#include <RS2Euler.h>
 #include <volumetricMesh.h>
 #include <volumetricMeshLoader.h>
 using namespace std;
 using namespace Eigen;
 using namespace EIGEN3EXT;
 using namespace CASADI;  
+using namespace LSW_WARPING;  
+using namespace LSW_SIM;  
+using namespace UTILITY;  
 
 class ElasticMtlOpt{
   
@@ -75,10 +82,10 @@ public:
 	const VectorXd sigv = svd.singularValues().segment(0,reserved);
 	_Wrs = svd.matrixU().leftCols(reserved);
 	_zrs = svd.matrixV().leftCols(reserved).transpose();
-	// cout << sigv << endl;
 	for (int i = 0; i < reserved; ++i)
 	  _zrs.row(i) *= sigv[i];
-	INFO_LOG("Wz-U" << ((_Wrs*_zrs) - _Urs).norm());
+	assert_lt(((_Wrs*_zrs)-_Urs).norm(),1e-4);
+	INFO_LOG("(Wz-U).norm(): " << ((_Wrs*_zrs) - _Urs).norm());
   }
   void computeK(){
 	// given _zrs,h, compute _K
@@ -116,17 +123,13 @@ public:
 	const VectorXd x0 = VectorXd::Zero(s.size());
 	VectorXd b;
 	evaluate(G_fun,x0,b);
-	// cout<< "b: " << b << endl << endl;
 	assert_gt(b.norm(),0);
 
 	const CasADi::SXMatrix H_SX = E_fun.hess();
 	const MatrixXd H = convert<double>(H_SX);
 	assert_eq(H.rows(),b.rows());
-	// cout<< "H: " << H << endl;
-
-	JacobiSVD<MatrixXd> svd(H, ComputeThinU | ComputeThinV);
-	const VectorXd k = svd.solve(-b);
-	cout<< "Hx+b: " << (H*k + b).norm() << endl;
+	const VectorXd k = H.ldlt().solve(-b);
+	assert_lt( (H*k + b).norm(),1e-8 );
 
 	VectorXd diff;
 	evaluate(E_fun,k,diff);
@@ -137,7 +140,6 @@ public:
 	  for (int j = 0; j < r; ++j)
 		_K(i,j) = k[symIndex(i,j)];
 	assert_eq(_K,(_K.transpose()));
-	// cout<< "_K: " << _K << endl;
 
 	/////////////////// test
 	const VectorXd x = VectorXd::Random(s.size());
@@ -147,6 +149,7 @@ public:
 	ASSERT_EQ(out.size(),1);
 	ASSERT_EQ(zeroOut.size(),1);
 	const double val = (x.transpose()*H*x)(0,0)*0.5f+b.transpose()*x+zeroOut[0];
+	cout << "E(0) = " << zeroOut[0] << endl;
 	ASSERT_EQ_TOL( val,(out[0]),(1e-10*val));
 	//////////////////////
   }
@@ -234,12 +237,71 @@ BOOST_AUTO_TEST_CASE(produceSymetricMatTest){
 
   vector<CasADi::SX> s;
   CasADi::SXMatrix K;
-  int dim = 2;
-  ElasticMtlOpt::produceSymetricMat("x",2,s,K);
+  const int dim = 2;
+  ElasticMtlOpt::produceSymetricMat("x",dim,s,K);
   ASSERT_EQ(K.elem(0,0).toString(),std::string("x_0"));
   ASSERT_EQ(K.elem(0,1).toString(),std::string("x_1"));
   ASSERT_EQ(K.elem(1,0).toString(),std::string("x_1"));
   ASSERT_EQ(K.elem(1,1).toString(),std::string("x_2"));
+
+  const int dim1 = 1;
+  ElasticMtlOpt::produceSymetricMat("x",dim1,s,K);
+  ASSERT_EQ(K.size1(),1);
+  ASSERT_EQ(K.size2(),1);
+  ASSERT_EQ(K.elem(0,0).toString(),std::string("x_0"));
+}
+
+BOOST_AUTO_TEST_CASE(checkPCAuseOneMode){
+
+  const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
+  const string hatWstr = data+"/tempt/PGW.b";
+  MatrixXd hatW;
+  ASSERT( load(hatWstr,hatW) );
+
+  const int T = 100;
+  const int mid = 6;
+  
+  ElasticMtlOpt mtlotp(0.1,1);
+  mtlotp._Urs.resize(hatW.rows(),T);
+  VectorXd z(T);
+  for (int i = 0; i < T; ++i){
+	z[i] = 0.02f*i;
+	mtlotp._Urs.col(i) = hatW.col(mid)*z[i];
+  }
+  mtlotp.PCAonRS();
+  cout << (mtlotp._zrs.row(0).transpose()-z*hatW.col(mid).norm()).norm() << endl;
+  cout << (hatW.col(mid)/hatW.col(mid).norm()-mtlotp._Wrs.col(0)).norm() << endl;
+}
+
+BOOST_AUTO_TEST_CASE(checkPCAuseTwoModes){
+
+  const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
+  const string hatWstr = data+"/tempt/PGW.b";
+  MatrixXd hatW;
+  ASSERT( load(hatWstr,hatW) );
+
+  const int T = 100;
+  const int mid0 = 6;
+  const int mid1 = 7;
+  
+  ElasticMtlOpt mtlotp(0.1,2);
+  mtlotp._Urs.resize(hatW.rows(),T);
+  MatrixXd z(2,T);
+  for (int i = 0; i < T; ++i){
+	z(0,i) = 0.02f*i;
+	z(1,i) = 0.005f*i;
+	mtlotp._Urs.col(i) = hatW.col(mid0)*z(0,i)+hatW.col(mid1)*z(1,i);
+  }
+  mtlotp.PCAonRS();
+
+  cout<<mtlotp._Wrs.col(0).transpose()*mtlotp._Wrs.col(1)<<endl;
+  cout<<hatW.col(mid0).normalized().transpose()*hatW.col(mid1).normalized()<<endl;
+
+  cout<<(mtlotp._zrs.row(0)-z.row(0)*hatW.col(mid0).norm()).norm() << endl;
+  cout<<(mtlotp._zrs.row(1)-z.row(1)*hatW.col(mid1).norm()).norm() << endl;
+
+  cout<<(hatW.col(mid0).normalized()-mtlotp._Wrs.col(0)).norm()<<endl;
+  cout<<(hatW.col(mid1).normalized()-mtlotp._Wrs.col(1)).norm()<<endl;
 }
 
 BOOST_AUTO_TEST_CASE(produceCorrectData){
@@ -269,9 +331,100 @@ BOOST_AUTO_TEST_CASE(produceCorrectData){
   ASSERT( write(invpgw,invPGW));
 }
 
+BOOST_AUTO_TEST_CASE(computeKuseRSSimulation){
+
+  LSW_ANI_EDITOR::MASimulatorAD simulator;
+  const double h = 0.1f;
+  const int r = 10;
+  VectorXd lambda(r);
+  for (int i = 0; i < r; ++i){
+	lambda[i] = 0.5f*(i+1.0f);
+  }
+  simulator.setTimeStep(h);
+  simulator.setEigenValues(lambda);
+  simulator.setStiffnessDamping(0.0f);
+  simulator.setMassDamping(0.0f);
+  const VectorXd v0 = VectorXd::Zero(r);
+  VectorXd z0(r);
+  for (int i = 0; i < r; ++i){
+	z0[i] = 10.0f/(i+1.0f);
+  }
+  simulator.setIntialStatus(v0,z0);
+
+  const int T = 100;
+  ElasticMtlOpt mtlopt(h*10.0f,r);
+  mtlopt._zrs.resize(r,T);
+  for (int f = 0; f < T; ++f){
+	mtlopt._zrs.col(f) = simulator.getEigenZ();
+    simulator.forward(VectorXd::Zero(r));
+  }
+  mtlopt.computeK();
+}
+
+BOOST_AUTO_TEST_CASE(computeKuseRSSimulation2){
+
+  const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
+  const string eval = data+"/eigen_values80.b";
+  const string evect = data+"/eigen_vectors80.b";
+  VectorXd lambda;
+  ASSERT( load(eval,lambda) );
+  const int r = lambda.size();
+  MatrixXd W;
+  ASSERT( load(evect,W) );
+
+  const string z0str = data+"/tempt/z135.b";
+  VectorXd z0;
+  ASSERT( load(z0str,z0) );
+  
+  LSW_ANI_EDITOR::MASimulatorAD simulator;
+  const double h = 0.1f;
+  simulator.setTimeStep(h);
+  simulator.setEigenValues(lambda);
+  simulator.setStiffnessDamping(0.0f);
+  simulator.setMassDamping(0.0f);
+  const VectorXd v0 = VectorXd::Zero(r);
+  simulator.setIntialStatus(v0,z0);
+
+  const int T = 10;
+  ElasticMtlOpt mtlopt(h*10.0f,r);
+  mtlopt._zrs.resize(r,T);
+  for (int f = 0; f < T; ++f){
+	mtlopt._zrs.col(f) = simulator.getEigenZ();
+    simulator.forward(VectorXd::Zero(r));
+  }
+
+  mtlopt.computeK();
+
+  // save animation.
+  VolObjMesh volobj;
+  volobj.loadObjMesh(data+"beam.obj");
+  volobj.loadVolMesh(data+"sim-mesh.hinp");
+  volobj.loadInterpWeights(data+"interp-weights.txt");
+  
+  vector<int> fixed_nodes;
+  ASSERT( loadVec(data+"con_nodes.bou",fixed_nodes) );
+    
+  RS2Euler rs2euler;
+  rs2euler.setTetMesh(volobj.getVolMesh());
+  rs2euler.setFixedNodes(fixed_nodes);
+  rs2euler.precompute();
+
+  SparseMatrix<double> G;
+  ASSERT( LSW_WARPING::DefGradOperator::compute(volobj.getVolMesh(),G) );
+  VectorXd y,u;
+  for (int i = 0; i < T; ++i){
+	const VectorXd p = W*mtlopt._zrs.col(i);
+	RSCoordComp::constructWithWarp(G,p,y);
+	ASSERT ( rs2euler.reconstruct(y,u) );
+	ASSERT ( volobj.interpolate(&u[0]) );
+	const string filename = data+"tempt/obj_"+MeshVtkIO::int2str(i)+".obj";
+	ASSERT(MeshVtkIO::write(volobj.getVolMesh(),filename));
+  }
+}
+
 BOOST_AUTO_TEST_CASE(computeTest){
   
-  ElasticMtlOpt mtlOpt(0.01f,20);
+  ElasticMtlOpt mtlOpt(0.1f,20);
   const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
   ASSERT(mtlOpt.loadVolMesh(data+"/sim-mesh.hinp"));
   ASSERT(mtlOpt.loadAniSeq(data+"mtlOptU.b"));

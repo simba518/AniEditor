@@ -16,7 +16,9 @@ LINK_PROJECT(${APPNAME}
   )
 
 TARGET_LINK_LIBRARIES( ${APPNAME} 
-
+  
+  /usr/local/lib/libutility_ui.a
+  /usr/local/lib/libutility_math.a
   ${Boost_LIBRARIES}
   ${GLM_LIBRARIES}
   ${GLEW_LIBRARY}

@@ -40,19 +40,28 @@ V^T)_T)$.
 \subsection{Experiments}
 \begin{itemize}
 \item Check the residual $\hat{P}-W'z'$ to make sure the PCA is correct. It
-  should be very small.
+  should be very small.({\color{red}$<10^{-4}$})
 \item Use the 6-th mode $w_6$ to produce reduced coordinates $z_i=i\times w_6$,
   and corresponding RS coordinates $\hat{p}_i=\hat{W}z_i$. Then use $\hat{P}$ to
-  compute $W'$ and $z'$. Then check the residual $\|z-z'\|_2^2$ and
-  $\|\hat{W}-W'\|_2^2$.
-\item Use both the 6-th and 7-th modes to make the above experiment. 
+  compute $W'$ and $z'$. Then check the residual $\|(|w_6|z)-z'\|_2^2$ and
+  $\|\frac{\hat{W}}{|w_6|}-W'\|_2^2$({\color{red}$W'$ is normalized and
+    $\hat{W}$ not. The residuals are small than $10^{-16}$}).
+\item Use both the 6-th and 7-th modes to make the above
+  experiment.({\color{red}Residual is large ($>0.2$), as columns in $W'$ are
+    orthogonal, while $\hat{W}$ not.})
 \item Use the first 20 modes to simulate an animation using a RS simulator with
   some nodes are constrained, and record $z$ and $\hat{P}$. Then check the
-  residual $\|z-z'\|_2^2$ and $\|\hat{W}-W'\|_2^2$.
+  residual $\|z-z'\|_2^2$ and $\|\hat{W}-W'\|_2^2$.({\color{red} have not made.})
 \item Generate an animation using a Reduced StVK simulator with some nodes are
   constrained. Then use it to compute $W'$ and $z'$. Then check the residual
-  $\|z-z'\|_2^2$ and $\|\hat{W}-W'\|_2^2$.
+  $\|z-z'\|_2^2$ and $\|\hat{W}-W'\|_2^2$.({\color{red} have not made.})
 \end{itemize}
+
+\subsection{Conclusion}
+With PCA, the $W'z'$ can well approximate the input RS coordinates. However, the
+residual $\|\hat{W}-W'\|_2^2$ and $\|z-z'\|$ can be very large. This is because
+the PCA result $W'$ are orthogonal, while the original modal matrix $\hat{W}$ is
+usually not.
 
 \section{Approximate $K$ Without Constraints}
 To compute $K$, we discrete $z(t)$ in time, and define a quadratic energy

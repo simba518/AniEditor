@@ -24,12 +24,6 @@ namespace LSW_ANI_EDITOR{
 	void setTimeStep(const SX &h){
 	  _h = h;
 	}
-	void setStiffnessDamping(const vector<SX> &s){
-	  _alphaK = s;
-	}
- 	void setMassDamping(const vector<SX> &s){
-	  _alphaM = s;
-	}
 	void setEigenValues(const vector<SX> &eval){
 	  _lambda = eval;
 	}
@@ -37,6 +31,31 @@ namespace LSW_ANI_EDITOR{
 	  _lambda.resize(eval.size());
 	  for (int i = 0; i < eval.size(); ++i){
 		_lambda[i] = eval[i];
+	  }
+	}
+	void setEigenValue(const SX eval){
+	  // only one mode.
+	  _lambda.resize(1);
+	  _lambda[0] = eval;
+	}
+	void setStiffnessDamping(const vector<SX> &s){
+	  _alphaK = s;
+	}
+ 	void setMassDamping(const vector<SX> &s){
+	  _alphaM = s;
+	}
+	void setStiffnessDamping(const SX s){
+	  assert_gt(_lambda.size(),0);
+	  _alphaK.resize(_lambda.size());
+	  for (size_t i = 0; i < _lambda.size(); ++i){
+		_alphaK[i] = s;
+	  }
+	}
+ 	void setMassDamping(const SX s){
+	  assert_gt(_lambda.size(),0);
+	  _alphaM.resize(_lambda.size());
+	  for (size_t i = 0; i < _lambda.size(); ++i){
+		_alphaM[i] = s;
 	  }
 	}
 	void setIntialStatus(const VectorXd &v0,const VectorXd &z0){
@@ -88,6 +107,13 @@ namespace LSW_ANI_EDITOR{
 		_z[i] = G[1][0]*v0[i] + G[1][1]*z0[i] + S[1]*w[i];
 	  }
 	}
+	void forward(const VectorXd &w){
+	  vector<SX> ws(w.size());
+	  for (int i = 0; i < w.size(); ++i){
+		ws[i] = w[i];
+	  }
+	  forward(ws);
+	}
 
 	// get data
 	int reducedDim()const{
@@ -98,6 +124,20 @@ namespace LSW_ANI_EDITOR{
 	}
 	const vector<SX> &getZ()const{
 	  return _z;
+	}
+	const VectorXd getEigenV()const{
+	  VectorXd v(_v.size());
+	  for (int i = 0; i < v.size(); ++i){
+		v[i] = _v[i].getValue();
+	  }
+	  return v;
+	}
+	const VectorXd getEigenZ()const{
+	  VectorXd z(_z.size());
+	  for (int i = 0; i < z.size(); ++i){
+		z[i] = _z[i].getValue();
+	  }
+	  return z;
 	}
 
   protected:

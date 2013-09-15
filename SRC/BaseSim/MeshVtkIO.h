@@ -5,7 +5,7 @@
 #include <assertext.h>
 #include <eigen3/Eigen/Dense>
 #include <VolObjMesh.h>
-#include <ObjMesh/ObjRenderMesh.h>
+#include <ObjRenderMesh.h>
 #include <IO.h>
 using namespace Eigen;
 using boost::lexical_cast;
