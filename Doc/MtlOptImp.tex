@@ -70,10 +70,11 @@ usually not.
 To compute $K$, we discrete $z(t)$ in time, and define a quadratic energy
 function
 \begin{equation} \label{qua-en}
-  E(k) = \sum_{i=2}^{T-1} \|\frac{1}{h^2}(z_{i+1}-2z_{i}+z_{i-1}) + K(k)z_i\|_2^2
+  E(k) = \sum_{i=2}^{T-1} \|\frac{1}{h^2}\hat{z}_i+\frac{1}{h}\hat{D}(z_{i+1}-z_{i})+ K(k)z_i\|_2^2
 \end{equation}
-where $K(k)$ is a symmetric matrix which is obtained by properly assemble $k_i$
-into $K$. This quadratic energy function can be minimized by solving
+where $\hat{z}_i=z_{i+1}-2z_{i}+z_{i-1}$,$\hat{D}=\alpha_kK(k)+\alpha_m$, and
+$K(k)$ is a symmetric matrix which is obtained by properly assemble $k_i$ into
+$K$. This quadratic energy function can be minimized by solving
 \begin{equation} \label{sol}
   Hk = -b
 \end{equation}
@@ -101,6 +102,19 @@ where $H = \frac{\partial^2{E}}{\partial^2{k}}$ is a constant matrix, and $b =
   with a RS simulator without constraints, then use it to compute $K$. We check
   the residual $E(k)$. ({\color{red}We choose different $T=10,20,50,100$, and
     the corresponding residuals are $E(k)=1.63,23.08,281.5,400$})
+\item Make a similar experiment as above, but with some nodes are
+  constrained. There is no need to introduce additional constraint forces into
+  to (\ref{qua-en}), as we constrained the nodes during the modal analysis
+  process by removing the corresponding columns and rows from the stiffness and
+  mass matrix. ({\color{red}We choose different $T=10,20,50,100$, and
+    the corresponding residuals are $E(k)=0.8,10.47,187.4,285.9$})
+\item Produce $z'$ of only one mode ($\lambda = 0.5$) without damping using
+  analysis simulator $z(\lambda,t)$. Print the two curves $z(\lambda,t)$ and
+  $z(k,t)$, check $E(\lambda)$ and $E(k)$.
+\item Make the same experiment as above, but introduce damping to produce $z(t)$
+  and use the same damping in $E(k)$ to compute $k$.
+\item Make the same experiment as above, but the damping in $E(k)$ is set as
+  unknowns.
 %% \item Use different time step $h$ to make the above experiment.
 %% \item We use a full StVK simulator to produce an animation $P =
 %%   (p_1,\cdots,p_T)$ without constraints. Then compute $K$ and check the residual
@@ -114,20 +128,31 @@ where $H = \frac{\partial^2{E}}{\partial^2{k}}$ is a constant matrix, and $b =
 \end{itemize}
 
 \subsection{Conclusion}
-Firstly, because the descrete scheme in equation (\ref{qua-en}) is not equal to
-an implicit integration. Thus if the animation is produced by using an implict
+Firstly, because the discrete scheme in equation (\ref{qua-en}) is not equal to
+an implicit integration. Thus if the animation is produced by using an implicit
 simulator, the real elastic material can not satisfy $E(k)=0$. Secondly, large
 time step will result in small residual $E(k)$. Thirdly, larger $T$ will result
 in larger residual $E(k)$. This is because we use the quadratic objective
 (\ref{qua-en}) to minimize the residual of $r\times T$ linear equations, with
-unknows of $r\times r$.
+unknowns of $r\times r$.
 
-%% \section{Approximate $K$ with Constraints}
-%% \begin{equation} \label{quacon}
-%%   E(k,F) = \sum_{i=2}^{T-1} \|\frac{1}{h^2}(z_{i+1}-2z_{i}+z_{i-1})+K(k)z_i+Wf_i\|_2^2
-%% \end{equation}
-
-
+\section{Analysis Results}
+If we consider one mode, then the analysis function $z(t)\in R^1$ for the
+following motion equation
+\begin{equation} \label{deeq}
+  \ddot{z} + (\alpha_m+\alpha_k\lambda^2)\dot{z} + \lambda^2z = 0
+\end{equation}
+would be
+\begin{equation} \label{oss}
+  z(t) = (Pcos(wt) + Qsin(wt))e^{-\alpha t}
+\end{equation}
+where the angular velocity is defined as $w = \sqrt{\lambda^2-\alpha^2}$, the
+decay rate $\alpha = (\alpha_k\lambda^2+\alpha_m)/2$, and $P$ and $Q$ are
+arbitrary scalar values depicting the initial amplitude and phase of this mode,
+\begin{eqnarray}\label{PQ}
+  P &=& z(0) \\
+  Q &=& \frac{1}{w}(\dot{z}(0) + \alpha P)
+\end{eqnarray}
 
 %% references
 % \begin{thebibliography}{99}

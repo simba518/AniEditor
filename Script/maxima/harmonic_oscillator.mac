@@ -1,0 +1,52 @@
+kill(all);
+
+alpha: (ak*lambda+am)/2;
+w : sqrt(lambda-alpha^2);
+P : z0;
+Q : (v0+alpha*P)/w;
+fz(lambda,ak,am,z0,v0,t) := ''((P*cos(w*t) + Q*sin(w*t)) * exp(-alpha*t));
+
+lambda : 0.5;
+ak : 0.5;
+am : 0.5;
+z0 : 0.5;
+v0 : 0.8;
+z(t) := ''(fz(lambda,ak,am,z0,v0,t));
+
+load("draw");
+/* draw2d( explicit( z(t),t,0,50 ) );*/
+
+h : 0.1;
+E : 0;
+for i from 1 thru 50 do (
+  zi0 :z((i-1)*h),
+  zi1 :z((i)*h),
+  zi2 :z((i+1)*h),
+  /*E : E+(1/h^2*(zi2-2*zi1+zi0)+k*zi1)^2*/
+  /*E : E+(1/h^2*(zi2-2*zi1+zi0)+(zi2-zi1)/h*(ak*k+am)+k*zi1)^2*/
+  E : E+(1/h^2*(zi2-2*zi1+zi0)+(zi2-zi1)/h*d+k*zi1)^2
+);
+
+/*
+Fe(k) := ''E;
+Fb(k) := ''(diff(Fe(k),k));
+b : Fb(0);
+H : diff(Fe(k),k,2);
+optk: -b/H;
+*/
+
+Fe(k,d) := ''E;
+Fb(k,d) := matrix([''(diff(Fe(k,d),k))],[''(diff(Fe(k,d),k))]);
+b : Fb(0,0);
+
+/*
+H : matrix();
+optk: -b/H;
+*/
+
+/*
+draw2d(color = green,
+       explicit( z(t),t,0,50 ),
+	   color = red,
+	   explicit( fz(optk,ak,am,z0,v0,t),t,0,50),
+	   terminal  = png );*/
