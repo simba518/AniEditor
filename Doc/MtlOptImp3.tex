@@ -1,0 +1,51 @@
+\documentclass[twocolumn,a4paper]{article}
+\usepackage{graphicx}
+\usepackage{amsfonts}
+\usepackage{color}
+\usepackage{lineno}
+\setlength{\columnsep}{10pt}
+\setlength{\oddsidemargin}{0pt}
+\setlength{\topmargin}{0pt}
+\setlength{\headheight}{0pt}
+\setlength{\headsep}{0pt}
+\setlength{\marginparsep}{0pt}
+\setlength{\marginparwidth}{0pt}
+\addtolength{\voffset}{-50pt}
+\setlength{\textheight}{26.8cm}
+\author{Siwang Li}
+
+\title{Elastic Material Optimization}
+
+%% document begin here
+\begin{document}
+\maketitle
+
+\section{Summary}
+
+
+\section{Input} 
+In the following experiment, we use an implicit integrator instead of an
+analysis function to produce the input animations.
+
+\section{Experiments}
+In the first experiment, we check the numerical damping of the implicit
+integration method. We use one mode to produce the input animation using an
+implicit integrator, then optimize with and without damping $d$ respectively. We
+record the residuals, and draw the input sequence $z_i$, $z(k,d)$ for each case.
+
+In the second experiment, we use $r>1$ modes to produce the input animation, and
+optimize for $D(d)=diag(d_1,\cdots,d_r)$, and $K(k)$(dense, symmetric). Then we
+diagonalize $K$ to obtain $\hat{K}$ and $\hat{D}$, and compute the residuals.
+
+In the third experiment, we check the whole approximation residuals with an
+animation sequence in full space as input. We produce this sequence using a RS
+simulator, without constraints or external forces.
+
+The fourth experiment is similar to the above one, except that we produce the
+input animation using a full StVK simulator.
+
+After making the above experiments, we can begin to check the impact of the
+external forces and constraints. And firstly, we check impact of the external
+forces, and we also start from a single mode.
+
+\end{document}
