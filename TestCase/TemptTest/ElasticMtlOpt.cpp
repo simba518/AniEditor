@@ -1,3 +1,4 @@
+#include<iomanip>
 #include "ElasticMtlOpt.h"
 using namespace ANI_EDIT;
 
@@ -44,23 +45,30 @@ void ElasticMtlOpt::PCAonRS(){
   _zrs = svd.matrixV().leftCols(reserved).transpose();
   for (int i = 0; i < reserved; ++i)
 	_zrs.row(i) *= sigv[i];
-  assert_lt(((_Wrs*_zrs)-_Urs).norm(),1e-4);
+  // assert_lt(((_Wrs*_zrs)-_Urs).norm(),1e-4);///@todo
   INFO_LOG("(Wz-U).norm(): " << ((_Wrs*_zrs) - _Urs).norm());
 }
 
 void ElasticMtlOpt::computeK(){
+
   // given _zrs,h, compute _K
   TRACE_FUN();
   assert_gt(_h,0.0f);
   assert_ge(_zrs.cols(),3);
   const int T = _zrs.cols();
   const int r = _zrs.rows();
+
+  cout << _Urs.norm() << endl;
+  cout << _zrs.norm() << endl;
+
   CasADi::SXMatrix K;
-  vector<CasADi::SX> s;
-  produceSymetricMat("k",r,s,K);
-  assert_eq(K.size1(),r);
-  assert_eq(K.size2(),r);
-	
+  vector<CasADi::SX> k;
+  produceSymetricMat("k",r,k,K);
+
+  CasADi::SXMatrix D;
+  vector<CasADi::SX> d;
+  produceSymetricMat("d",r,d,D);
+
   vector<CasADi::SXMatrix> z(T);
   for (int i = 0; i < T; ++i){
 	convert((VectorXd)_zrs.col(i),z[i]);
@@ -71,42 +79,52 @@ void ElasticMtlOpt::computeK(){
   CasADi::SXMatrix E = 0;
   for (int i = 1; i < T-1; ++i){
 	const CasADi::SXMatrix za = (z[i+1]-z[i]*2.0f+z[i-1])/(_h*_h);
-	const CasADi::SXMatrix d = za+K.mul(z[i]);
+	const CasADi::SXMatrix zv = D.mul(z[i+1]-z[i])/(_h);
+	const CasADi::SXMatrix diff = za+zv+K.mul(z[i]);
 	for (int j = 0; j < r; ++j)
-	  E += d.elem(j,0)*d.elem(j,0);
+	  E += diff.elem(j,0)*diff.elem(j,0);
   }
-  CasADi::SXFunction E_fun(s,E);
-  E_fun.init();
 
-  const CasADi::SXMatrix G_SX = E_fun.grad();
-  CasADi::SXFunction G_fun(s,G_SX);
+  const vector<CasADi::SX> kds = connect( k, d );
+  _Efun = CasADi::SXFunction(kds,E);
+  _Efun.init();
+
+  const CasADi::SXMatrix G_SX = _Efun.grad();
+  CasADi::SXFunction G_fun(kds,G_SX);
   G_fun.init();
-  const VectorXd x0 = VectorXd::Zero(s.size());
+  const VectorXd x0 = VectorXd::Zero(kds.size());
   VectorXd b;
   evaluate(G_fun,x0,b);
-  assert_gt(b.norm(),0);
 
-  const CasADi::SXMatrix H_SX = E_fun.hess();
+  const CasADi::SXMatrix H_SX = _Efun.hess();
   const MatrixXd H = convert<double>(H_SX);
-  assert_eq(H.rows(),b.rows());
-  const VectorXd k = H.ldlt().solve(-b);
-  assert_lt( (H*k + b).norm(),1e-10*b.norm() );
 
-  VectorXd diff;
-  evaluate(E_fun,k,diff);
-  cout << "diff: " << diff << endl;
+  assert_eq(H.rows(),b.rows());
+  // const VectorXd kd = H.ldlt().solve(-b);
+  JacobiSVD<MatrixXd> svd(H, ComputeThinU | ComputeThinV);
+  const VectorXd kd = svd.solve(-b);
+  assert_lt( (H*kd + b).norm(),1e-8*b.norm() );
 
   _K.resize(r,r);
   for (int i = 0; i < r; ++i)
-	for (int j = 0; j < r; ++j)
-	  _K(i,j) = k[symIndex(i,j)];
-  assert_eq(_K,(_K.transpose()));
+	for (int j = 0; j < r; ++j){
+	  _K(i,j) = kd[symIndex(i,j)];
+	}
+  // assert_eq(_K,(_K.transpose()));
+  // _D = kd.segment(s.size(),r);
+
+  // cout << _K << endl << endl;
+  // cout << _D << endl;
 
   // /////////////////// test
+  VectorXd diff;
+  evaluate(_Efun,kd,diff);
+  cout<< setprecision(10) << "diff: " << diff << endl;
+  cout<< setprecision(10) << kd << endl;
   // const VectorXd x = VectorXd::Random(s.size());
   // VectorXd out,zeroOut;
-  // evaluate(E_fun,x,out);
-  // evaluate(E_fun,x0,zeroOut);
+  // evaluate(_Efun,x,out);
+  // evaluate(_Efun,x0,zeroOut);
   // ASSERT_EQ(out.size(),1);
   // ASSERT_EQ(zeroOut.size(),1);
   // const double val = (x.transpose()*H*x)(0,0)*0.5f+b.transpose()*x+zeroOut[0];
@@ -122,7 +140,8 @@ void ElasticMtlOpt::decomposeK(){
   assert_eq(eigensolver.info(),Success);
   const MatrixXd &W = eigensolver.eigenvectors();
   const VectorXd &La = eigensolver.eigenvalues();
-  // cout<< "La: " << La << endl;
+
+  cout<< "La: \n" << La << endl;
 
   int start = 0;
   for (;start<La.size() && La[start]<=0;++start);

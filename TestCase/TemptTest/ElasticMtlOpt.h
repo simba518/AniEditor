@@ -46,6 +46,10 @@ namespace ANI_EDIT{
 	void decomposeK();
 	static void produceSymetricMat(const string name,const int dim,vector<CasADi::SX> &s,CasADi::SXMatrix &SM);
 	static int symIndex(int r,int c);
+
+	int getT()const{
+	  return _U.cols();
+	}
   
   public:
 	double _h;
@@ -59,9 +63,12 @@ namespace ANI_EDIT{
 	MatrixXd _Wrs;
 	MatrixXd _zrs;
 	MatrixXd _K;
+	VectorXd _D;
 	MatrixXd _B;
 	VectorXd _Lambda;
 	MatrixXd _W;
+
+	CasADi::SXFunction _Efun;
   };
 }
 
