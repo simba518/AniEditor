@@ -58,8 +58,7 @@ void ElasticMtlOpt::computeK(){
   const int T = _zrs.cols();
   const int r = _zrs.rows();
 
-  cout << _Urs.norm() << endl;
-  cout << _zrs.norm() << endl;
+  cout<< "zrs.norm(): " << _zrs.norm() << endl;
 
   CasADi::SXMatrix K;
   vector<CasADi::SX> k;
@@ -120,7 +119,7 @@ void ElasticMtlOpt::computeK(){
   VectorXd diff;
   evaluate(_Efun,kd,diff);
   cout<< setprecision(10) << "diff: " << diff << endl;
-  cout<< setprecision(10) << kd << endl;
+  // cout<< setprecision(10) << kd << endl;
   // const VectorXd x = VectorXd::Random(s.size());
   // VectorXd out,zeroOut;
   // evaluate(_Efun,x,out);
