@@ -47,16 +47,16 @@ BOOST_AUTO_TEST_CASE(testSin){
 
   VectorXd inreal(100),outreal,outimag;
 
-  const double h = 1.0f/(double)inreal.size();
+  const double h = 1.0f/(double)inreal.size()*2.0f*M_PI;
   for (int i = 0; i < inreal.size(); ++i){
-    inreal[i] = sin(i*h*2.0f*M_PI);
+    inreal[i] = sin(i*h) + 10.0f + 2.5f*cos(i*3.0*h);
   }
 
   computeDFT(inreal,outreal,outimag); 
 
   UTILITY::PythonScriptDraw2DCurves<VectorXd>::write("dftin.py",inreal,h,0.0f);
   UTILITY::PythonScriptDraw2DCurves<VectorXd> out;
-  out.add("real",outreal,1.0,0.0f);
+  out.add("real",outreal,1.0,0.0f,"o");
   out.add("imag",outimag,1.0,0.0f,"*");
   out.write("dftout.py");
 }

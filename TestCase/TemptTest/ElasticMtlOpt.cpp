@@ -105,11 +105,15 @@ void ElasticMtlOpt::computeK(){
   assert_lt( (H*kd + b).norm(),1e-8*b.norm() );
 
   _K.resize(r,r);
-  for (int i = 0; i < r; ++i)
+  _D.resize(r,r);
+  for (int i = 0; i < r; ++i){
 	for (int j = 0; j < r; ++j){
 	  _K(i,j) = kd[symIndex(i,j)];
+	  _D(i,j) = kd[r*(1+r)/2+symIndex(i,j)];
 	}
-  // assert_eq(_K,(_K.transpose()));
+  }
+  assert_eq(_K,(_K.transpose()));
+  assert_eq(_D,(_D.transpose()));
   // _D = kd.segment(s.size(),r);
 
   // cout << _K << endl << endl;

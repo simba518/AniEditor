@@ -8,6 +8,7 @@
 #include <MASimulatorAD.h>
 #include "ElasticMtlOpt.h"
 #include "HarmonicOscillator.h"
+#include "DFT.h"
 using namespace LSW_SIM;
 using namespace ANI_EDIT;
 using namespace UTILITY;
@@ -107,8 +108,8 @@ BOOST_AUTO_TEST_CASE(checkPCAuseTwoModes){
 BOOST_AUTO_TEST_CASE(computeKuseRSSimulation){
 
   LSW_ANI_EDITOR::MASimulatorAD simulator;
-  const double h = 0.1f;
-  const int r = 5;
+  const double h = 0.5f;
+  const int r = 1;
   VectorXd lambda(r);
   for (int i = 0; i < r; ++i){
 	lambda[i] = 0.5f*(i+1.0f);
@@ -133,12 +134,23 @@ BOOST_AUTO_TEST_CASE(computeKuseRSSimulation){
   }
   mtlopt.computeK();
 
-  // const VectorXd z = mtlopt._zrs.row(0).transpose();
-  // TEST_ASSERT( PythonScriptDraw2DCurves::write("t.py",z,h) );  
+  PythonScriptDraw2DCurves<VectorXd> curves;
+  const VectorXd z = mtlopt._zrs.row(0).transpose();
+  curves.add("z_old",z,h,0.0f,"--");
 
-  // HarmonicOscillator<double> fz(mtlopt._K(0,0),mtlopt._D[0],z0[0],v0[0]);
-  // const VectorXd z2 = fz.generateSequence<VectorXd>(0.0f,h,z.size());
-  // TEST_ASSERT( PythonScriptDraw2DCurves::write("t2.py",z2,h) );
+  HarmonicOscillator<double> fz(mtlopt._K(0,0),mtlopt._D[0],z0[0],v0[0]);
+  const VectorXd z2 = fz.generateSequence<VectorXd>(0.0f,h,z.size());
+  curves.add("z_new",z2,h,0.0f,"*");
+  TEST_ASSERT( curves.write("a.py") );
+  
+  cout << mtlopt._K(0,0) << endl << endl;
+  VectorXd outreal,outimag;
+  computeDFT(z,outreal,outimag);
+  curves.clear();
+  curves.add("real",outreal,h,0,"o");
+  curves.add("imag",outimag,h,0,"*");
+  TEST_ASSERT( curves.write("b.py") );
+
 }
 
 BOOST_AUTO_TEST_CASE(computeTestUrs){
