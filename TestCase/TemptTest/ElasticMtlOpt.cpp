@@ -58,8 +58,6 @@ void ElasticMtlOpt::computeK(){
   const int T = _zrs.cols();
   const int r = _zrs.rows();
 
-  cout<< "zrs.norm(): " << _zrs.norm() << endl;
-
   CasADi::SXMatrix K;
   vector<CasADi::SX> k;
   produceSymetricMat("k",r,k,K);
@@ -107,33 +105,20 @@ void ElasticMtlOpt::computeK(){
   _K.resize(r,r);
   _D.resize(r,r);
   for (int i = 0; i < r; ++i){
-	for (int j = 0; j < r; ++j){
-	  _K(i,j) = kd[symIndex(i,j)];
-	  _D(i,j) = kd[r*(1+r)/2+symIndex(i,j)];
-	}
+  	for (int j = 0; j < r; ++j){
+  	  assert_lt( (r*(1+r)/2+symIndex(i,j)),kd.size() );
+  	  _K(i,j) = kd[symIndex(i,j)];
+  	  _D(i,j) = kd[r*(1+r)/2+symIndex(i,j)];
+  	}
   }
+
   assert_eq(_K,(_K.transpose()));
   assert_eq(_D,(_D.transpose()));
-  // _D = kd.segment(s.size(),r);
 
-  // cout << _K << endl << endl;
-  // cout << _D << endl;
-
-  // /////////////////// test
+  /////////////////// test
   VectorXd diff;
   evaluate(_Efun,kd,diff);
   cout<< setprecision(10) << "diff: " << diff << endl;
-  // cout<< setprecision(10) << kd << endl;
-  // const VectorXd x = VectorXd::Random(s.size());
-  // VectorXd out,zeroOut;
-  // evaluate(_Efun,x,out);
-  // evaluate(_Efun,x0,zeroOut);
-  // ASSERT_EQ(out.size(),1);
-  // ASSERT_EQ(zeroOut.size(),1);
-  // const double val = (x.transpose()*H*x)(0,0)*0.5f+b.transpose()*x+zeroOut[0];
-  // cout << "E(0) = " << zeroOut[0] << endl;
-  // ASSERT_EQ_TOL( val,(out[0]),(1e-10*val));
-  //////////////////////
 }
 
 void ElasticMtlOpt::decomposeK(){

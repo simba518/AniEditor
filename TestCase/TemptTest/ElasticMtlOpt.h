@@ -3,7 +3,7 @@
 
 #include <string>
 #include <eigen3/Eigen/Dense>
-#include <Eigen/SVD>
+#include <eigen3/Eigen/SVD>
 #include <CASADITools.h>
 #include <MatrixIO.h>
 #include <MatrixTools.h>
@@ -63,7 +63,7 @@ namespace ANI_EDIT{
 	MatrixXd _Wrs;
 	MatrixXd _zrs;
 	MatrixXd _K;
-	VectorXd _D;
+	MatrixXd _D;
 	MatrixXd _B;
 	VectorXd _Lambda;
 	MatrixXd _W;

@@ -1,20 +1,12 @@
 ;; see ~/.emacs.d/emacs-rc-cedet.el
-;; this file should be included to ~/.emacs.d/emacs-rc-cedet.el
+;; this file should be included to ~/.emacs using
+;; (load-file "/home/simba/Workspace/AnimationEditor/project.el")
 
-(setq AnimationEditor
-      (ede-cpp-root-project "AnimationEditor" 
-							:file "~/Workspace/AnimationEditor/CMakeLists.txt"
-                            :include-path'(
-										   "SRC/ExternalLib"
-										   "SRC/ExternalLib/volumetricMesh-v2.0"
-										   "SRC/BaseSim"
-										   "SRC/BaseSim/ConAndDrag"
-										   "SRC/BaseSim/RedSimulator"
-										   "SRC/AnimationEditor"
-										   "SRC/AniEditUI"
-										   "SRC/IEDS"
-										   )
-
-                            :local-variables '( (compile-command . "cd ~/Workspace/AnimationEditor/Build/Release; make -j8 -k") )
-                            )
-	  )
+(defconst cedet-user-include-dirs(list
+								  "~/Workspace/AnimationEditor/SRC/Warping/"
+								  "~/Workspace/AnimationEditor/SRC/Editor"
+								  "~/Workspace/AnimationEditor/SRC/BaseSim"
+								  "~/Workspace/AnimationEditor/SRC/UI"
+								  "~/Workspace/AnimationEditor/SRC/ExternalLib"
+								  "~/Workspace/AnimationEditor/SRC/ExternalLib/volumetricMesh-v2.0"
+								  ))

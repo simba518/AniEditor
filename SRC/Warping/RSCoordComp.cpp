@@ -1,9 +1,11 @@
 #include <vector>
 #include <MatrixTools.h>
 #include <assertext.h>
+#include <AuxTools.h>
 #include <polarDecomposition.h>
 #include "RSCoordComp.h"
 using namespace std;
+using namespace UTILITY;
 using namespace LSW_WARPING;
 using namespace EIGEN3EXT;
 
@@ -65,8 +67,6 @@ void RSCoordComp::constructWithWarp_OneTet(const double *m, double *y){
 
 void RSCoordComp::constructWithoutWarp_OneTet(const double *m, double *y){
 
-  // PolarDecomposition::Compute(m, Q, S); //@todo
-
   Matrix3d Fm,Qm,Sm;
   createFromRowMajor(Fm,m);
   ModifiedPD3x3 (Fm,Qm,Sm);
@@ -80,7 +80,6 @@ void RSCoordComp::constructWithoutWarp_OneTet(const double *m, double *y){
   assert_lt ((Sm.transpose()-Sm).norm(), 1e-3);
   assert_lt ( (Fm-Qm*Sm).norm(), 1e-2 );
 
-
   // antisymmetric part
   const double qw = sqrt(1 + Q[0] + Q[4] + Q[8]) / 2.0;
   const double qx = (Q[7] - Q[5])/( 4 *qw);
@@ -88,26 +87,25 @@ void RSCoordComp::constructWithoutWarp_OneTet(const double *m, double *y){
   const double qz = (Q[3] - Q[1])/( 4 *qw);
   
   const double theta = 2*acos(qw);
-  if (fabs(theta) > 1e-8){
+  if (fabs(theta) > 1e-13){
 
 	const double temp = sqrt(1.0 - qw*qw);
-	assert_gt(temp,1e-12);
+	assert_gt(temp,1e-13);
 	const double _x = qx/temp;
 	const double _y = qy/temp;
 	const double _z = qz/temp;
 
 	const double _norm = sqrt(_x*_x + _y*_y + _z*_z);
-	assert_gt(_norm,1e-12);
+	assert_gt(_norm,1e-13);
 	y[0] = theta * _x /_norm;
 	y[1] = theta * _y /_norm;
-	y[2] = theta * _z /_norm;	
+	y[2] = theta * _z /_norm;
   }else{
-
 	y[0] = 0.0;
 	y[1] = 0.0;
 	y[2] = 0.0;	
   }
-
+  
   // symmetric part
   y [3+0] = S[0] - 1.0f;
   y [3+1] = S[1];

@@ -2,6 +2,7 @@
 #include <boost/lexical_cast.hpp>
 #include <UnitTestAssert.h>
 #include <DrawCurves.h>
+#include <AuxTools.h>
 #include <MapMA2RS.h>
 #include <MeshVtkIO.h>
 #include <VolObjMesh.h>
@@ -9,10 +10,12 @@
 #include "ElasticMtlOpt.h"
 #include "HarmonicOscillator.h"
 #include "DFT.h"
+#include <eigen3/Eigen/Dense>
+using namespace Eigen;
 using namespace LSW_SIM;
 using namespace ANI_EDIT;
 using namespace UTILITY;
-
+using namespace Eigen;
 
 BOOST_AUTO_TEST_SUITE(ElasticMtlTest)
 
@@ -138,7 +141,7 @@ BOOST_AUTO_TEST_CASE(computeKuseRSSimulation){
   const VectorXd z = mtlopt._zrs.row(0).transpose();
   curves.add("z_old",z,h,0.0f,"--");
 
-  HarmonicOscillator<double> fz(mtlopt._K(0,0),mtlopt._D[0],z0[0],v0[0]);
+  HarmonicOscillator<double> fz(mtlopt._K(0,0),mtlopt._D(0,0),z0[0],v0[0]);
   const VectorXd z2 = fz.generateSequence<VectorXd>(0.0f,h,z.size());
   curves.add("z_new",z2,h,0.0f,"*");
   TEST_ASSERT( curves.write("a.py") );
@@ -212,10 +215,10 @@ BOOST_AUTO_TEST_CASE(computeTestUStvk){
 BOOST_AUTO_TEST_CASE(produceUrs){
 
   const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
-  // const string eval = data+"/eigen_values80.b";
-  // const string evect = data+"/eigen_vectors80.b";
-  const string eval = data+"/eigen_values_nocon80.b";
-  const string evect = data+"/eigen_vectors_nocon80.b";
+  const string eval = data+"/eigen_values80.b";
+  const string evect = data+"/eigen_vectors80.b";
+  // const string eval = data+"/eigen_values_nocon80.b";
+  // const string evect = data+"/eigen_vectors_nocon80.b";
   const int r = 10;
   VectorXd tlambda;
   TEST_ASSERT( load(eval,tlambda) );
@@ -224,8 +227,8 @@ BOOST_AUTO_TEST_CASE(produceUrs){
   TEST_ASSERT( load(evect,tW) );
   const MatrixXd W = tW.leftCols(r);
 
-  // const string z0str = data+"/tempt/z135.b";
-  const string z0str = data+"/tempt/z84-nocon.b";
+  const string z0str = data+"/tempt/z135.b";
+  // const string z0str = data+"/tempt/z84-nocon.b";
   VectorXd tz0;
   TEST_ASSERT( load(z0str,tz0) );
   const VectorXd z0 = tz0.segment(0,r);
@@ -249,17 +252,17 @@ BOOST_AUTO_TEST_CASE(produceUrs){
   
   // save animation.
   VolObjMesh volobj;
-  volobj.loadObjMesh(data+"beam.obj");
-  volobj.loadVolMesh(data+"sim-mesh.hinp");
-  volobj.loadInterpWeights(data+"interp-weights.txt");
+  TEST_ASSERT( volobj.loadObjMesh(data+"beam.obj"));
+  TEST_ASSERT( volobj.loadVolMesh(data+"sim-mesh.hinp"));
+  TEST_ASSERT( volobj.loadInterpWeights(data+"interp-weights.txt"));
 
   vector<int> fixed_nodes;
   TEST_ASSERT( loadVec(data+"/con_nodes.bou",fixed_nodes,UTILITY::TEXT) );
   
   RS2Euler rs2euler;
   rs2euler.setTetMesh(volobj.getVolMesh());
-  // rs2euler.setFixedNodes(fixed_nodes);
-  rs2euler.fixBaryCenter();
+  rs2euler.setFixedNodes(fixed_nodes);
+  // rs2euler.fixBaryCenter();
   rs2euler.precompute();
 
   SparseMatrix<double> G;
@@ -279,33 +282,37 @@ BOOST_AUTO_TEST_CASE(produceUrs){
 	Y.push_back(y);
 
 	const VectorXd z = invPGW*y;
-	cout<< "d: " << (z-mtlopt._zrs.col(i)).norm()/mtlopt._zrs.col(i).norm() << endl;
+	cout<<"d: "<<(z-mtlopt._zrs.col(i)).norm()/mtlopt._zrs.col(i).norm()<<endl;
 	Z.push_back(z);
 
   	TEST_ASSERT ( rs2euler.reconstruct(y,u) );
   	TEST_ASSERT ( volobj.interpolate(&u[0]) );
-  	const string filename = data+"tempt/obj_"+MeshVtkIO::int2str(i)+".vtk";
+  	const string filename = data+"tempt/meshes/obj_"+MeshVtkIO::int2str(i)+".vtk";
   	TEST_ASSERT (MeshVtkIO::write(volobj.getObjMesh(),filename));
 	U.push_back(u);
   }
   
-  const string Ustr = data+"/tempt/Urs"+MeshVtkIO::int2str(r)+".b";
+  const string Ustr = data+"/tempt/UrsCon"+MeshVtkIO::int2str(r)+".b";
   TEST_ASSERT( write(Ustr,U));
 
-  const string Zstr = data+"/tempt/Zrs"+MeshVtkIO::int2str(r)+".b";
+  const string Zstr = data+"/tempt/ZrsCon"+MeshVtkIO::int2str(r)+".b";
   TEST_ASSERT( write(Zstr,Z));
 
-  const string Ystr = data+"/tempt/Yrs"+MeshVtkIO::int2str(r)+".b";
+  const string Ystr = data+"/tempt/YrsCon"+MeshVtkIO::int2str(r)+".b";
   TEST_ASSERT( write(Ystr,Y));
   
   TEST_ASSERT( write(data+"/tempt/u0.b",U[0] ));
 }
 
 BOOST_AUTO_TEST_CASE(checkRS){
-  
+
+  // load data
   const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
   VolObjMesh volobj;
+  volobj.loadObjMesh(data+"beam.obj");
   volobj.loadVolMesh(data+"sim-mesh.hinp");
+  volobj.loadInterpWeights(data+"interp-weights.txt");
+
   vector<int> fixed_nodes;
   TEST_ASSERT( loadVec(data+"/con_nodes.bou",fixed_nodes,UTILITY::TEXT) );
   
@@ -328,70 +335,86 @@ BOOST_AUTO_TEST_CASE(checkRS){
   vector<VectorXd> Y1,Y2;
   TEST_ASSERT( load(data+"/tempt/YrsCon10.b",Y1) );
 
-  const int T = Y1.size();
-  MatrixXd Z1(r,T),Z2(r,T);
-  for (size_t i = 0; i < Y1.size(); ++i){
-
-	const VectorXd &y1 = Y1[i];
-	TEST_ASSERT ( rs2euler.reconstruct(y1,u1) );
-	VectorXd y2;
-	LSW_WARPING::RSCoordComp::constructWithoutWarp(G,u1,y2);
-	TEST_ASSERT ( rs2euler.reconstruct(y2,u2) );
-	Y2.push_back(y2);
-	Z1.col(i) = invPGW*y1;
-	Z2.col(i) = invPGW*y2;
-
-	cout<< "i = " << i;
-	cout<< "\t yd :"<<(Y2[i]-Y1[i]).norm()/Y1[i].norm();
-	cout<< "\t zd :"<<(Z2.col(i)-Z1.col(i)).norm()/Z1.col(i).norm()<<endl;
-  }
-
-  const int start = 20;
-  const double h = 0.1f;
-  ElasticMtlOpt mtlOpt(h,r);
-  mtlOpt._zrs.resize(r,T-start);
-  for (int i = 0; i < mtlOpt._zrs.cols(); ++i){
-
-    mtlOpt._zrs.col(i) = Z2.col(i+start);
-	cout<< "i = " << i;
-	cout<< "\t yd :"<<(Y2[i+start]-Y1[i+start]).norm()/Y1[i+start].norm();
-	cout<< "\t zd :"<<(Z2.col(i+start)-Z1.col(i+start)).norm()/Z1.col(i+start).norm()<<endl;
-  }
-
-  // mtlOpt._zrs = Z2.block(2,20,8,70);
-  mtlOpt.computeK();
-
   VectorXd eigenval;
   TEST_ASSERT ( load(data+"eigen_values80.b",eigenval) );
-  cout<< "correct eigen values:\n" << eigenval.segment(0,r) << endl;;
+  cout<< "correct eigen values:\n" << eigenval.segment(0,r) << endl;
 
-  mtlOpt._Wrs = PGW;
-  mtlOpt.decomposeK();
- 
+  // compute Y
+  INFO_LOG("compute Y");
+  const int T = Y1.size();
+  MatrixXd Z1(r,T),Z2(r,T);
+  REP (i,Y1.size()){
+  	const VectorXd &y1 = Y1[i];
+  	TEST_ASSERT ( rs2euler.reconstruct(y1,u1) );
+  	VectorXd y2;
+  	LSW_WARPING::RSCoordComp::constructWithoutWarp(G,u1,y2);
+  	TEST_ASSERT ( rs2euler.reconstruct(y2,u2) );
+  	Y2.push_back(y2);
+  	Z1.col(i) = invPGW*y1;
+  	Z2.col(i) = invPGW*y2;
+  }
 
+  const double h = 0.1f;
+  const int start = 20;
+
+  // approximate
+  INFO_LOG("approximate");
+  ElasticMtlOpt mtlOpt(h,r);
+  const MatrixXd subZ1 = Z1.rightCols(T-start);
+  const MatrixXd subZ2 = Z2.rightCols(T-start);
+  mtlOpt._zrs = subZ2.row(6);
+  mtlOpt.computeK();
+  // mtlOpt._Wrs = PGW;
+  // mtlOpt.decomposeK();
+
+  // save curves
+  INFO_LOG("save curves");
   PythonScriptDraw2DCurves<VectorXd> curves;
-  for (int i = 0; i < 3; ++i){
-	const string index = boost::lexical_cast<string>(i);
-	TEST_ASSERT( curves.add(string("old")+index,(VectorXd)(Z1.row(i)),h,0,"o") );
-	TEST_ASSERT( curves.add(string("new")+index,(VectorXd)(Z2.row(i)),h,0) );
+  REP (i,subZ1.rows()){
+  	TEST_ASSERT(curves.add(string("o")+TOSTR(i+1),(VectorXd)(subZ1.row(i)),h,0,"o"));
+  	TEST_ASSERT(curves.add(string("n")+TOSTR(i+1),(VectorXd)(subZ2.row(i)),h,0));
+  	if((i+1)%3 == 0){
+  	  TEST_ASSERT ( curves.write(string("t")+TOSTR((i+1)/3)+".py") );
+  	  curves.clear();
+  	}
   }
-  TEST_ASSERT ( curves.write("t1.py") );
-  
   curves.clear();
-  for (int i = 3; i < 6; ++i){
-	const string index = boost::lexical_cast<string>(i);
-	TEST_ASSERT( curves.add(string("old")+index,(VectorXd)(Z1.row(i)),h,0,"o") );
-	TEST_ASSERT( curves.add(string("new")+index,(VectorXd)(Z2.row(i)),h,0) );
-  }
-  TEST_ASSERT ( curves.write("t2.py") );
+  TEST_ASSERT(curves.add(string("o")+TOSTR(8),(VectorXd)(subZ1.row(7)),h,0,"o"));
+  TEST_ASSERT(curves.add(string("n")+TOSTR(8),(VectorXd)(subZ2.row(7)),h,0));
+  TEST_ASSERT(curves.write("t.py"));
 
-  curves.clear();
-  for (int i = 6; i < 10; ++i){
-	const string index = boost::lexical_cast<string>(i);
-	TEST_ASSERT( curves.add(string("old")+index,(VectorXd)(Z1.row(i)),h,0,"o") );
-	TEST_ASSERT( curves.add(string("new")+index,(VectorXd)(Z2.row(i)),h,0) );
+  // save animations
+  INFO_LOG("save animations");
+  REP(mode,subZ2.rows()){
+
+	const MatrixXd mZ = subZ2.row(mode);
+	const MatrixXd mW = W.col(mode);
+	const MatrixXd minvW = invPGW.col(mode);
+	for (int i = 0; i < mZ.cols(); ++i){
+
+	  VectorXd y,u;
+	  const VectorXd p = mW*i*10.0f;
+	  RSCoordComp::constructWithWarp(G,p,y);
+	  TEST_ASSERT ( rs2euler.reconstruct(y,u) );
+	  TEST_ASSERT ( volobj.interpolate(&u[0]) );
+	  const string fname=data+"tempt/meshes/"+TOSTR(mode)+"obj_"+TOSTR(i)+".vtk";
+	  TEST_ASSERT (MeshVtkIO::write(volobj.getObjMesh(),fname));
+	}
   }
-  TEST_ASSERT ( curves.write("t3.py") );
+
+  // DFT
+  INFO_LOG("DFT");
+  const double df = 2.0f*M_PI/(subZ2.cols()*h);
+  REP (i,subZ2.rows()){
+	const VectorXd ci = subZ2.row(i);
+	VectorXd outreal,outimag,amplitude;
+	computeDFT(ci,outreal,outimag);
+	amplitude.resize(outimag.size());
+	REP(j,outimag.size())amplitude[j]=outreal[j]*outreal[j]+outimag[j]*outimag[j];
+	TEST_ASSERT(PythonScriptDraw2DCurves<VectorXd>::write(TOSTR(i)+"a.py",amplitude,df,0,"o"));
+	IOFormat OctaveFmt(10, 0, ", ", ";\n", "", "", "[", "]");
+	cout << ci.transpose().format(OctaveFmt) << endl;
+  }
 }
 
 BOOST_AUTO_TEST_CASE(checkRS2){
