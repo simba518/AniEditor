@@ -362,36 +362,31 @@ BOOST_AUTO_TEST_CASE(checkRS){
   ElasticMtlOpt mtlOpt(h,r);
   const MatrixXd subZ1 = Z1.rightCols(T-start);
   const MatrixXd subZ2 = Z2.rightCols(T-start);
-  mtlOpt._zrs = subZ2.row(6);
+  mtlOpt._zrs = subZ2;
   mtlOpt.computeK();
-  // mtlOpt._Wrs = PGW;
-  // mtlOpt.decomposeK();
+  mtlOpt._Wrs = PGW;
+  mtlOpt.decomposeK();
 
   // save curves
   INFO_LOG("save curves");
   PythonScriptDraw2DCurves<VectorXd> curves;
-  REP (i,subZ1.rows()){
-  	TEST_ASSERT(curves.add(string("o")+TOSTR(i+1),(VectorXd)(subZ1.row(i)),h,0,"o"));
-  	TEST_ASSERT(curves.add(string("n")+TOSTR(i+1),(VectorXd)(subZ2.row(i)),h,0));
+  REP (i,Z1.rows()){
+  	TEST_ASSERT(curves.add(string("o")+TOSTR(i+1),(VectorXd)(Z1.row(i)),h,0,"o"));
+  	TEST_ASSERT(curves.add(string("n")+TOSTR(i+1),(VectorXd)(Z2.row(i)),h,0));
   	if((i+1)%3 == 0){
   	  TEST_ASSERT ( curves.write(string("t")+TOSTR((i+1)/3)+".py") );
   	  curves.clear();
   	}
   }
   curves.clear();
-  TEST_ASSERT(curves.add(string("o")+TOSTR(8),(VectorXd)(subZ1.row(7)),h,0,"o"));
-  TEST_ASSERT(curves.add(string("n")+TOSTR(8),(VectorXd)(subZ2.row(7)),h,0));
-  TEST_ASSERT(curves.write("t.py"));
 
   // save animations
   INFO_LOG("save animations");
-  REP(mode,subZ2.rows()){
-
-	const MatrixXd mZ = subZ2.row(mode);
+  REP(mode,Z2.rows()-1){
+	const MatrixXd mZ = Z2.row(mode);
 	const MatrixXd mW = W.col(mode);
 	const MatrixXd minvW = invPGW.col(mode);
 	for (int i = 0; i < mZ.cols(); ++i){
-
 	  VectorXd y,u;
 	  const VectorXd p = mW*i*10.0f;
 	  RSCoordComp::constructWithWarp(G,p,y);
@@ -404,16 +399,11 @@ BOOST_AUTO_TEST_CASE(checkRS){
 
   // DFT
   INFO_LOG("DFT");
-  const double df = 2.0f*M_PI/(subZ2.cols()*h);
-  REP (i,subZ2.rows()){
-	const VectorXd ci = subZ2.row(i);
-	VectorXd outreal,outimag,amplitude;
-	computeDFT(ci,outreal,outimag);
-	amplitude.resize(outimag.size());
-	REP(j,outimag.size())amplitude[j]=outreal[j]*outreal[j]+outimag[j]*outimag[j];
-	TEST_ASSERT(PythonScriptDraw2DCurves<VectorXd>::write(TOSTR(i)+"a.py",amplitude,df,0,"o"));
+  cout << endl << endl << endl;
+  REP (i,Z1.rows()){
+	const VectorXd ci = Z1.row(i);
 	IOFormat OctaveFmt(10, 0, ", ", ";\n", "", "", "[", "]");
-	cout << ci.transpose().format(OctaveFmt) << endl;
+	cout<<string("sig")+TOSTR(i)+"="<<ci.transpose().format(OctaveFmt)<<endl<<endl;
   }
 }
 
