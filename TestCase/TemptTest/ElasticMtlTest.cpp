@@ -304,6 +304,21 @@ BOOST_AUTO_TEST_CASE(produceUrs){
   TEST_ASSERT( write(data+"/tempt/u0.b",U[0] ));
 }
 
+void updateRSCoords(vector<VectorXd> &Y){
+  
+  assert_gt(Y.size(),0);
+  REP (e,Y[0].size()/9){
+	for (int f = Y.size()-2; f >= 0; --f){
+	  const Vector3d &w2 = Y[f+1].segment(e*9,3);
+	  const Vector3d &w1 = Y[f].segment(e*9,3);
+	  if(((w1.normalized().transpose())*w2.normalized())(0,0) < -0.9f ){
+	  	const double theta = w1.norm();
+	  	Y[f].segment(e*9,3) = (w1.normalized())*(theta-2.0f*M_PI);
+	  }
+	}
+  }
+}
+
 BOOST_AUTO_TEST_CASE(checkRS){
 
   // load data
@@ -325,6 +340,7 @@ BOOST_AUTO_TEST_CASE(checkRS){
   TEST_ASSERT( LSW_WARPING::DefGradOperator::compute(volobj.getVolMesh(),G) );
 
   const int r = 10;
+  const double h = 0.1f;
   MatrixXd tW,PGW;
   TEST_ASSERT ( load(data+"eigen_vectors80.b",tW) );
   const MatrixXd W = tW.leftCols(r);
@@ -350,61 +366,92 @@ BOOST_AUTO_TEST_CASE(checkRS){
   	LSW_WARPING::RSCoordComp::constructWithoutWarp(G,u1,y2);
   	TEST_ASSERT ( rs2euler.reconstruct(y2,u2) );
   	Y2.push_back(y2);
-  	Z1.col(i) = invPGW*y1;
-  	Z2.col(i) = invPGW*y2;
   }
 
-  const double h = 0.1f;
-  const int start = 20;
-
-  // approximate
-  INFO_LOG("approximate");
-  ElasticMtlOpt mtlOpt(h,r);
-  const MatrixXd subZ1 = Z1.rightCols(T-start);
-  const MatrixXd subZ2 = Z2.rightCols(T-start);
-  mtlOpt._zrs = subZ2;
-  mtlOpt.computeK();
-  mtlOpt._Wrs = PGW;
-  mtlOpt.decomposeK();
-
-  // save curves
-  INFO_LOG("save curves");
-  PythonScriptDraw2DCurves<VectorXd> curves;
-  REP (i,Z1.rows()){
-  	TEST_ASSERT(curves.add(string("o")+TOSTR(i+1),(VectorXd)(Z1.row(i)),h,0,"o"));
-  	TEST_ASSERT(curves.add(string("n")+TOSTR(i+1),(VectorXd)(Z2.row(i)),h,0));
-  	if((i+1)%3 == 0){
-  	  TEST_ASSERT ( curves.write(string("t")+TOSTR((i+1)/3)+".py") );
-  	  curves.clear();
-  	}
+  updateRSCoords(Y2);
+  REP(i,Y2.size()){
+	Z1.col(i) = invPGW*Y1[i];
+  	Z2.col(i) = invPGW*Y2[i];
+	cout<<"i= "<<i<<",\t" << (Y1[i]-Y2[i]).norm() << endl;
   }
-  curves.clear();
 
-  // save animations
-  INFO_LOG("save animations");
-  REP(mode,Z2.rows()-1){
-	const MatrixXd mZ = Z2.row(mode);
-	const MatrixXd mW = W.col(mode);
-	const MatrixXd minvW = invPGW.col(mode);
-	for (int i = 0; i < mZ.cols(); ++i){
-	  VectorXd y,u;
-	  const VectorXd p = mW*i*10.0f;
-	  RSCoordComp::constructWithWarp(G,p,y);
-	  TEST_ASSERT ( rs2euler.reconstruct(y,u) );
-	  TEST_ASSERT ( volobj.interpolate(&u[0]) );
-	  const string fname=data+"tempt/meshes/"+TOSTR(mode)+"obj_"+TOSTR(i)+".vtk";
-	  TEST_ASSERT (MeshVtkIO::write(volobj.getObjMesh(),fname));
+  // analysis Y
+  INFO_LOG("analysis Y");
+  MatrixXd Ym(Y2[0].size(),Y2.size());
+  REP(f,Y2.size()) Ym.col(f) = Y2[f];
+  PythonFFT pfft;
+  PythonScriptDraw2DCurves<VectorXd> tetcurves;
+  // const int step = (Ym.rows()/9)/100;
+  const int step = 1;
+  REP(e,Ym.rows()/9){
+	if(e%step == 0){
+	  REP(i,9){
+		const int c = e*9+i;
+		const VectorXd curve = (VectorXd)Ym.row(c);
+		pfft.add(string("sig_")+TOSTR(e)+"_"+TOSTR(i),curve,h);
+		tetcurves.add(string("t_")+TOSTR(e)+"_"+TOSTR(i),curve,h);
+	  }
+	  // const string pname = string("./tempt2/fft")+TOSTR(e);
+	  // pfft.write(pname,string("./tempt2/figures/fft")+TOSTR(e));
+	  // const string cname = string("./tempt2/tetcurves")+TOSTR(e);
+	  // tetcurves.write(cname,string("./tempt2/figures/tetcurves")+TOSTR(e));
+	  // pfft.clear();
+	  // tetcurves.clear();
 	}
   }
+  const string pname = string("./tempt2/fft");
+  pfft.write(pname,string("./tempt2/figures/fft")); 
 
-  // DFT
-  INFO_LOG("DFT");
-  cout << endl << endl << endl;
-  REP (i,Z1.rows()){
-	const VectorXd ci = Z1.row(i);
-	IOFormat OctaveFmt(10, 0, ", ", ";\n", "", "", "[", "]");
-	cout<<string("sig")+TOSTR(i)+"="<<ci.transpose().format(OctaveFmt)<<endl<<endl;
-  }
+  // const int start = 20;
+
+  // // approximate
+  // INFO_LOG("approximate");
+  // ElasticMtlOpt mtlOpt(h,r);
+  // const MatrixXd subZ1 = Z1.rightCols(T-start);
+  // const MatrixXd subZ2 = Z2.rightCols(T-start);
+  // mtlOpt._zrs = subZ2;
+  // mtlOpt.computeK();
+  // mtlOpt._Wrs = PGW;
+  // mtlOpt.decomposeK();
+
+  // // save curves
+  // INFO_LOG("save curves");
+  // PythonScriptDraw2DCurves<VectorXd> curves;
+  // REP (i,Z1.rows()){
+  // 	TEST_ASSERT(curves.add(string("o")+TOSTR(i+1),(VectorXd)(Z1.row(i)),h,0,"o"));
+  // 	TEST_ASSERT(curves.add(string("n")+TOSTR(i+1),(VectorXd)(Z2.row(i)),h,0));
+  // 	if((i+1)%3 == 0){
+  // 	  TEST_ASSERT ( curves.write(string("t")+TOSTR((i+1)/3)+".py") );
+  // 	  curves.clear();
+  // 	}
+  // }
+  // curves.clear();
+
+  // // save animations
+  // INFO_LOG("save animations");
+  // REP(mode,Z2.rows()-1){
+  // 	const MatrixXd mZ = Z2.row(mode);
+  // 	const MatrixXd mW = W.col(mode);
+  // 	const MatrixXd minvW = invPGW.col(mode);
+  // 	for (int i = 0; i < mZ.cols(); ++i){
+  // 	  VectorXd y,u;
+  // 	  const VectorXd p = mW*i*10.0f;
+  // 	  RSCoordComp::constructWithWarp(G,p,y);
+  // 	  TEST_ASSERT ( rs2euler.reconstruct(y,u) );
+  // 	  TEST_ASSERT ( volobj.interpolate(&u[0]) );
+  // 	  const string fname=data+"tempt/meshes/"+TOSTR(mode)+"obj_"+TOSTR(i)+".vtk";
+  // 	  TEST_ASSERT (MeshVtkIO::write(volobj.getObjMesh(),fname));
+  // 	}
+  // }
+
+  // // DFT
+  // INFO_LOG("DFT");
+  // cout << endl << endl << endl;
+  // REP (i,Z1.rows()){
+  // 	const VectorXd ci = Z1.row(i);
+  // 	IOFormat OctaveFmt(10, 0, ", ", ";\n", "", "", "[", "]");
+  // 	cout<<string("sig")+TOSTR(i)+"="<<ci.transpose().format(OctaveFmt)<<endl<<endl;
+  // }
 }
 
 BOOST_AUTO_TEST_CASE(checkRS2){

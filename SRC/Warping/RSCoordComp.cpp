@@ -67,52 +67,42 @@ void RSCoordComp::constructWithWarp_OneTet(const double *m, double *y){
 
 void RSCoordComp::constructWithoutWarp_OneTet(const double *m, double *y){
 
-  Matrix3d Fm,Qm,Sm;
-  createFromRowMajor(Fm,m);
-  ModifiedPD3x3 (Fm,Qm,Sm);
+  Matrix3d F,Q,S;
+  createFromRowMajor(F,m);
+  ModifiedPD3x3 (F,Q,S);
 
-  double Q[9], S[9]; // row major 3x3
-  createRowMajor(Qm,Q);
-  createRowMajor(Sm,S);
-
-  assert_in (Qm.determinant(),1.0f-1e-3,1.0f + 1e-3);
-  assert_lt ((Qm.transpose()*Qm - Matrix3d::Identity()).norm(), 1e-3);
-  assert_lt ((Sm.transpose()-Sm).norm(), 1e-3);
-  assert_lt ( (Fm-Qm*Sm).norm(), 1e-2 );
+  // symmetric part
+  y[3+0] = S(0,0)-1.0f;
+  y[3+1] = S(0,1);
+  y[3+2] = S(0,2);
+  y[3+3] = S(1,1)-1.0f;
+  y[3+4] = S(1,2);
+  y[3+5] = S(2,2)-1.0f;
 
   // antisymmetric part
-  const double qw = sqrt(1 + Q[0] + Q[4] + Q[8]) / 2.0;
-  const double qx = (Q[7] - Q[5])/( 4 *qw);
-  const double qy = (Q[2] - Q[6])/( 4 *qw);
-  const double qz = (Q[3] - Q[1])/( 4 *qw);
-  
-  const double theta = 2*acos(qw);
-  if (fabs(theta) > 1e-13){
+  // http://en.wikipedia.org/wiki/Rotation_matrix#Quaternion
+#define COPYSIGN(x,y) (y>0?1:-1)*fabs(x)
 
-	const double temp = sqrt(1.0 - qw*qw);
-	assert_gt(temp,1e-13);
-	const double _x = qx/temp;
-	const double _y = qy/temp;
-	const double _z = qz/temp;
+  const double t = Q(0,0)+Q(1,1)+Q(2,2); assert_ge(1.0f+t,0.0f);
+  const double r = sqrt(1.0f+t);
+  const double qw= 0.5*r;
+  const double qx= COPYSIGN(0.5*sqrt(fabs(1+Q(0,0)-Q(1,1)-Q(2,2))),Q(2,1)-Q(1,2));
+  const double qy= COPYSIGN(0.5*sqrt(fabs(1-Q(0,0)+Q(1,1)-Q(2,2))),Q(0,2)-Q(2,0));
+  const double qz= COPYSIGN(0.5*sqrt(fabs(1-Q(0,0)-Q(1,1)+Q(2,2))),Q(1,0)-Q(0,1));
+  assert_in((qw*qw+qx*qx+qy*qy+qz*qz),1.0f-1e-13,1.0f+1e-13);
 
-	const double _norm = sqrt(_x*_x + _y*_y + _z*_z);
-	assert_gt(_norm,1e-13);
-	y[0] = theta * _x /_norm;
-	y[1] = theta * _y /_norm;
-	y[2] = theta * _z /_norm;
+// http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToAngle/
+  const double temp = sqrt(1.0-qw*qw);
+  const double theta = 2.0f*acos(qw);
+  if (temp > 1e-13){
+  	y[0] = theta*qx/temp;
+  	y[1] = theta*qy/temp;
+  	y[2] = theta*qz/temp;
   }else{
-	y[0] = 0.0;
-	y[1] = 0.0;
-	y[2] = 0.0;	
+	y[0] = theta*qx;
+  	y[1] = theta*qy;
+  	y[2] = theta*qz;
   }
-  
-  // symmetric part
-  y [3+0] = S[0] - 1.0f;
-  y [3+1] = S[1];
-  y [3+2] = S[2];
-  y [3+3] = S[4] - 1.0f;
-  y [3+4] = S[5];
-  y [3+5] = S[8] - 1.0f;
 }
 
 void RSCoordComp::RS2NodeRotVec(pVolumetricMesh_const tetmesh,const VectorXd &y, VectorV3 &w){
