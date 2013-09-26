@@ -62,9 +62,11 @@ void ElasticMtlOpt::computeK(){
   vector<CasADi::SX> k;
   produceSymetricMat("k",r,k,K);
 
-  CasADi::SXMatrix D;
-  vector<CasADi::SX> d;
-  produceSymetricMat("d",r,d,D);
+  // CasADi::SXMatrix D;
+  // vector<CasADi::SX> d;
+  // produceSymetricMat("d",r,d,D);
+  const vector<CasADi::SX> d = makeSymbolic(r,"d");
+  const CasADi::SXMatrix D = makeEyeMatrix(d);
 
   vector<CasADi::SXMatrix> z(T);
   for (int i = 0; i < T; ++i){
@@ -95,6 +97,7 @@ void ElasticMtlOpt::computeK(){
 
   const CasADi::SXMatrix H_SX = _Efun.hess();
   const MatrixXd H = convert<double>(H_SX);
+  cout << "cond(H) = " << H.norm()*H.inverse().norm() << endl;
 
   assert_eq(H.rows(),b.rows());
   // const VectorXd kd = H.ldlt().solve(-b);
@@ -104,12 +107,14 @@ void ElasticMtlOpt::computeK(){
 
   _K.resize(r,r);
   _D.resize(r,r);
+  _D.setZero();
   for (int i = 0; i < r; ++i){
   	for (int j = 0; j < r; ++j){
-  	  assert_lt( (r*(1+r)/2+symIndex(i,j)),kd.size() );
   	  _K(i,j) = kd[symIndex(i,j)];
-  	  _D(i,j) = kd[r*(1+r)/2+symIndex(i,j)];
+  	  // assert_lt( (r*(1+r)/2+symIndex(i,j)),kd.size() );
+  	  // _D(i,j) = kd[r*(1+r)/2+symIndex(i,j)];
   	}
+	_D(i,i) = kd[r*(1+r)/2+i];
   }
 
   assert_eq(_K,(_K.transpose()));
@@ -129,7 +134,7 @@ void ElasticMtlOpt::decomposeK(){
   const MatrixXd &W = eigensolver.eigenvectors();
   const VectorXd &La = eigensolver.eigenvalues();
 
-  cout<< "La: \n" << La << endl;
+  cout<< "La: \n" << La.transpose() << endl;
 
   int start = 0;
   for (;start<La.size() && La[start]<=0;++start);

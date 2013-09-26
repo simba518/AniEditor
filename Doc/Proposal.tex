@@ -96,9 +96,94 @@ where $M$ and $K$ are ``reasonable'' mass and stiffness matrix.
 
 There are many variables here: $m\times T$ for $z$, $m$ for $\Lambda$,
 $n$ for $r$ and $n\times m$ for $W$, thus it should be very difficult
-to optimize.  
+to optimize.  Thus we propose the following method to update the
+variables $z^k, \Lambda^k,r^k, W^k$ to $z^{k+1}, \Lambda^{k+1},
+k^{k+1}, W^{k+1}$ in $k_{th}$ iteration, and update the sequence $x^k$
+to $x^{k+1}$:
+\begin{enumerate}
+\item Sequence Editing (\Cref{sec:reduc-rs-coord}): Using
+  $\Lambda^k, r^k, W^k$ to solve the sequence $z^k$, and then get
+  $x^k$ under the constraints.  If the control force is nearly same to
+  the previous one, the iteration stops.
+\item Material Estimation (\Cref{sec:mat-est}):
+  \begin{enumerate}
+  \item Estimate the $r^{k+1}, W^{k+1}$ from the input sequence $x^k$
+    (by PCA or other method).
+  \item Estimate $z^{k+1}$ from $x^k$ with $r^{k+1}, W^{k+1}$.
+  \item Estimate $\Lambda^{k+1}$ from $z^{k+1}$, and possibly, the
+    damping.
+  \end{enumerate}
+\item Continue to the next iteration.
+\end{enumerate}
 
-\section{Material Editing}
+\section{Reduced RS Method}
+\subsection{Background}\label{sec:warping-methods}
+Suppose the displacement $u(z)=x(z)-r$, then there are many methods to compute
+$u(z)$, such as linear mapping (e.g $u = \bar{u}+Wz$), modal warping, or RS
+coordinates. Experiments show that, when the deformation is extremely large,
+only the RS coordinates method can produce plausible results. Here, we briefly
+review the old RS coordinates, and we refer is as full-RS here. Using full-RS,
+we compute $u(z)$ by solving
+\begin{equation}
+  \min_{u} \frac{1}{2}\sum_{Tets}\|(Gu)_i + I - e^{y_i^w}(I+y_i^s)\||V_i|
+\end{equation}
+where $y = Wz$ is the RS coordinate, $G$ is the discrete gradient operator with
+respect to the rest shape $r$. This is equal to solve a linear system
+\begin{equation} \label{rs}
+  Au = b(y) = b(Wz).
+\end{equation}
+where $A$ is a constant sparse matrix. Thus, using this formulation, we need to
+compute $y$ for all the elements, and then solve a large linear system to even
+only displacement $u_i\in R^{3}$ of one node $i$. And if we want to compute
+$\frac{\partial{u_i}}{\partial{z}}$, which is necessary for solving the
+optimization problem (\ref{opt_ctrl}), the performance would be much worse.
+
+\subsection{Reduced RS}\label{sec:reduc-rs-coord}
+To improve the performance, we proposed a reduced RS method for
+computing $u(z)=x(z)-r$.  The basic idea is to apply cubature to write
+$x(z)$ into the form of $x(z) = r+B\sum_{e\in{S}}w_eP_e{b_e(y(z))}$,
+where $S$ the set of sampled tets.
+
+Let \TODO{$B$ be some linear basis matrix}, and $q$ is the
+corresponding reduced coordinates. By replacing $u = Bq$ into
+(\ref{rs}), and multiply $B^T$in both sides, we obtain
+\begin{equation} \label{reduced_rs1}
+  B^T(ABq) = B^Tb(y)
+\end{equation}
+Then we can compute $q$ using
+\begin{equation} \label{reduced_rs2}
+  q = Pb(y)
+\end{equation}
+where $P = (B^TAB)^{-1}B^T$. By using the Cubature scheme, we can further
+approximate $q$ with
+\begin{equation} \label{reduced_rs3}
+  q \approx \sum_{e\in{S}}w_eP_e{b_e(y(z))}
+\end{equation}
+In a conclusion, given $z$, we firstly compute $q$ using (\ref{reduced_rs3}),
+then compute $u$ using $u=Bq$.
+
+\subsection{Analysis}
+We compared this reduced RS approach with Modal Analysis, Modal Warping, and
+previous full-RS method, and the results demonstrate that, the deformation
+results of the reduced RS method is similar to the full-RS method, and much
+better than the MA and MW method.
+
+This approach will be helpful in solving the optimal control problem
+efficiently, as it is much cheaper to compute $u_i(z)\in R^3$ and
+$\frac{\partial{u_i}}{\partial{z}}\in R^{3\times r_z}$ for each constrained node
+$i$ than full-RS method. By using reduced RS method, the computational
+complexity of calculating $u_i(z)$ is $O(Sr_q+Sr_z)$, and
+$\frac{\partial{u_i}}{\partial{z}}$ is $O(Sr_qr_z)$, where $S$ is the number of
+samples, $r_z$ is the dimension of $z$, and $r_q$ is the dimension of $q$. While
+by using full-RS method, the corresponding computational complexity would be
+$N_{tet}r_z$ (or $nr_z$, with $n$ is the number of nodes) and $N^2_{tet}r_z$,
+where $N_{tet}$ is the number of total tetrahedrons.
+
+One limitation of this method is similar to the full-RS method. That is, we can
+not project the external forces in full space into this RS space. Thus it can
+not be used in forward simulation.
+
+\section{Material Estimation}\label{sec:mat-est}
 \subsection{Material Estimation from a Sequence}
 Given a sequence as $x(t)$, we can have the sequence of RS coordinates
 $\hat{x}(t)$ respect to a rest shape $r$.
@@ -153,93 +238,34 @@ updating by the above method.
 Based on some experiment results obtained these days, we give some simple
 analysis of this method here.
 
-By using PCA method, $W'z'$ can approximate $\hat{x}$ very well with even small
-columns in $W'$. However, it should be noted that the columns in $W'$ are
-orthogonal, and it is not true for the truth RS-Modal-Waring basis
-$\hat{W}$. Thus $W'$ will significantly differs from $\hat{W}$, and the
-resulting $z'$ will differs greatly from the truth $z$(obtained by using
-$\hat{W}$).
-
 Given the input sequence $z_0,\cdots,z_T$, and time step $h$, we minimize a
 quadratic energy function for $d$ and $k$,
 \begin{equation} \label{qua-en}
   E(k,d) = \sum_{i=2}^{T-1} \|\frac{1}{h^2}\hat{z}_i+\frac{1}{h}{D}(d)(z_{i+1}-z_{i})+ K(k)z_i\|_2^2
 \end{equation}
-where $\hat{z}_i=z_{i+1}-2z_{i}+z_{i-1}$, ${D}(d)$ and $K(k)$ are symmetric
-matrix. We consider the damping $D$ here, as it can improve the material
-approximation according to our experiments.
+where $\hat{z}_i=z_{i+1}-2z_{i}+z_{i-1}$, ${D}(d)$ and $K(k)$ are
+symmetric matrix, and $d, k$ are the DOFs of these matrices
+respectively. We consider the damping $D$ here, as it can improve the
+material approximation according to our experiments.
 
-When $z_i$ is generated using a simulator(without external forces), we can
-approximate $K$ and $D$ almost exactly. However, in the general case where $z_i$
-are approximated, it is hard to approximate these material. When $\hat{W}$ is
-used, and the input sequence $x(t)$ is generate using a RS method, we can
-approximate the material of the first few modes(6 modes in one experiment), and
-the approximation of the remaining modes are very bad.
+When $z_i$ is generated using a simulator (without external forces),
+we can approximate $K$ and $D$ almost exactly.
 
-We haven't considered the problem of constrained nodes and external forces in
-these experiments.
+When $z_i$ is recovered from a sequence $x(t)$ generated by RS method
+with the basis $\hat{W}$, we can approximate the material of the first
+few modes (6 modes in one experiment), and the approximation of the
+remaining modes are very bad.
 
-\section{Reduced RS Method}
-\subsection{Background}\label{sec:warping-methods}
-Suppose the displacement $u(z)=x(z)-r$, then there are many methods to compute
-$u(z)$, such as linear mapping(e.g $u = \bar{u}+Wz$), modal warping, or RS
-coordinates. Experiments show that, when the deformation is extremely large,
-only the RS coordinates method can produce plausible results. Here, we briefly
-review the old RS coordinates, and we refer is as full-RS here. Using full-RS,
-we compute $u(z)$ by solving
-\begin{equation}
-  \min_{u} \frac{1}{2}\sum_{Tets}\|(Gu)_i + I - e^{y_i^w}(I+y_i^s)\||V_i|
-\end{equation}
-where $y = Wz$ is the RS coordinate, $G$ is the discrete gradient operator with
-respect to the rest shape $r$. This is equal to solve a linear system
-\begin{equation} \label{rs}
-  Au = b(y).
-\end{equation}
-where $A$ is a constant sparse matrix. Thus, using this formulation, we need to
-compute $y$ for all the elements, and then solve a large linear system to even
-only displacement $u_i\in R^{3}$ of one node $i$. And if we want to compute
-$\frac{\partial{u_i}}{\partial{z}}$, which is necessary for solving the
-optimization problem (\ref{opt_ctrl}), the performance would be much worse.
+When we have no information about the material, we cannot get extract
+basis $\hat{W}$ used to generate $x(t)$.  Thus, we have tried use PCA
+to get the basis $W'$, and then recover $z_i$.  We found that $W'z_i$
+can approximate $\hat{x}$ very well with even small columns in $W'$,
+and the resulting $z'$ will differs greatly from the truth $z$
+(obtained by using $\hat{W}$).  In such a cases, it is hard to
+approximate these material. When $\hat{W}$ is used, and the input
+sequence $x(t)$ is generate using a RS method.
 
-\subsection{Reduced RS}\label{sec:reduc-rs-coord}
-To improve the performance, we proposed a reduced RS method for computing
-$u(z)$. Let $B$ be some linear basis matrix, and $q$ is the corresponding
-reduced coordinates. By replacing $u = Bq$ into (\ref{rs}), and multiply $B^T$in
-both sides, we obtain
-\begin{equation} \label{reduced_rs1}
-  B^T(ABq) = B^Tb(y)
-\end{equation}
-Then we can compute $q$ using
-\begin{equation} \label{reduced_rs2}
-  q = Pb(y)
-\end{equation}
-where $P = (B^TAB)^{-1}B^T$. By using the Cubature scheme, we can further
-approximate $q$ with
-\begin{equation} \label{reduced_rs3}
-  q \approx \sum_{e\in{S}}w_eP_e{b_e(y(z))}
-\end{equation}
-In a conclusion, given $z$, we firstly compute $q$ using (\ref{reduced_rs3}),
-then compute $u$ using $u=Bq$.
-
-\subsection{Analysis}
-We compared this reduced RS approach with Modal Analysis, Modal Warping, and
-previous full-RS method, and the results demonstrate that, the deformation
-results of the reduced RS method is similar to the full-RS method, and much
-better than the MA and MW method.
-
-This approach will be helpful in solving the optimal control problem
-efficiently, as it is much cheaper to compute $u_i(z)\in R^3$ and
-$\frac{\partial{u_i}}{\partial{z}}\in R^{3\times r_z}$ for each constrained node
-$i$ than full-RS method. By using reduced RS method, the computational
-complexity of calculating $u_i(z)$ is $O(Sr_q+Sr_z)$, and
-$\frac{\partial{u_i}}{\partial{z}}$ is $O(Sr_qr_z)$, where $S$ is the number of
-samples, $r_z$ is the dimension of $z$, and $r_q$ is the dimension of $q$. While
-by using full-RS method, the corresponding computational complexity would be
-$N_{tet}r_z$(or $nr_z$, with $n$ is the number of nodes) and $N^2_{tet}r_z$,
-where $N_{tet}$ is the number of total tetrahedrons.
-
-One limitation of this method is similar to the full-RS method. That is, we can
-not project the external forces in full space into this RS space. Thus it can
-not be used in forward simulation.
+Currently, we haven't considered the problem of constrained nodes and
+external forces in these experiments.
 
 \end{document}
