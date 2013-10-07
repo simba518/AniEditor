@@ -62,7 +62,6 @@ namespace LSW_ANI_EDIT_UI{
 	}
 
 	void saveParitalCon()const{ANIEDITDM_SAVE(saveParitalCon);}
-	void loadConPath(){ANIEDITDM_LOAD(loadConPath);}
 	void saveOutputMeshes()const{ANIEDITDM_SAVE(saveOutputMeshes);}
 	void saveInputMeshes()const{ANIEDITDM_SAVE(saveInputMeshes);}
 	void saveCurrentOutputMesh()const{ANIEDITDM_SAVE(saveCurrentOutputMesh);}
@@ -74,6 +73,8 @@ namespace LSW_ANI_EDIT_UI{
 	void saveCurrentVolFullU()const{ANIEDITDM_SAVE(saveCurrentVolFullU);}
 	void saveDragRecord()const{ANIEDITDM_SAVE(saveDragRecord);}
 
+	void loadParitalCon(){ANIEDITDM_LOAD(loadParitalCon);}
+	void loadConPath(){ANIEDITDM_LOAD(loadConPath);}
 	void loadCurrentReducedEdits(){ANIEDITDM_LOAD(loadCurrentReducedEdits);}
 	void loadAllReducedEdits(){ANIEDITDM_LOAD(loadAllReducedEdits);}
 	void loadDragRecord(){ANIEDITDM_LOAD(loadDragRecord);}

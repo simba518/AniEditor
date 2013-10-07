@@ -66,7 +66,7 @@ void AniEditMainWin::createConnections(){
   connect(p_VolObjMeshCtrl.get(), SIGNAL(resetSceneMsg(double ,double ,double ,double ,double ,double )),
   		  preview_viewer, SLOT(resetSceneBoundBox(double ,double ,double ,double ,double ,double )));
   connect(m_mainwindow.actionResetViewer, SIGNAL(triggered()), p_VolObjMeshCtrl.get(), SLOT(sendMsgResetScene()));
-  connect(m_mainwindow.actionPhoneShading, SIGNAL(triggered()), p_VolObjMeshCtrl.get(), SLOT(togglePhoneShading()));
+  // connect(m_mainwindow.actionPhoneShading, SIGNAL(triggered()), p_VolObjMeshCtrl.get(), SLOT(togglePhoneShading()));
   
   connect(p_VolObjMeshCtrl.get(), SIGNAL(update()), viewer, SLOT(update()));
   connect(p_VolObjMeshCtrl.get(), SIGNAL(update()), preview_viewer, SLOT(update()));
@@ -110,7 +110,7 @@ void AniEditMainWin::createConnections(){
   connect(m_mainwindow.actionLoadAllReducedEdit, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(loadAllReducedEdits()));
   connect(m_mainwindow.actionSaveCurrentVolFullU, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveCurrentVolFullU()));
   connect(m_mainwindow.actionLoadCuReducedEdit, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(loadCurrentReducedEdits()));
-  connect(m_mainwindow.actionSaveRotModalMat, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveRotModalMatrix()));
+  // connect(m_mainwindow.actionSaveRotModalMat, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveRotModalMatrix()));
   connect(m_mainwindow.actionPrintEigenvalues, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(printEigenValues()));
   connect(m_mainwindow.actionUpdateConTrajectory, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(computeConNodeTrajectory()));
   
@@ -126,7 +126,7 @@ void AniEditMainWin::createConnections(){
   connect(m_mainwindow.actionShowInputVol, SIGNAL(triggered()), p_AniEditDMRenderCtrl.get(), SLOT(toggleShowInputVol()));
   connect(m_mainwindow.actionShowOutputObj, SIGNAL(triggered()), p_AniEditDMRenderCtrl.get(), SLOT(toggleShowOutputObj()));
   connect(m_mainwindow.actionShowOutputVol, SIGNAL(triggered()), p_AniEditDMRenderCtrl.get(), SLOT(toggleShowOutputVol()));
-  connect(m_mainwindow.actionShowKeyframe, SIGNAL(triggered()), p_AniEditDMRenderCtrl.get(), SLOT(toggleShowKeyframeObj()));
+  //connect(m_mainwindow.actionShowKeyframe, SIGNAL(triggered()), p_AniEditDMRenderCtrl.get(), SLOT(toggleShowKeyframeObj()));
   connect(m_mainwindow.actionShowConNodes, SIGNAL(triggered()), p_AniEditDMRenderCtrl.get(), SLOT(toggleShowConNodes()));
   connect(m_mainwindow.actionShowConPath, SIGNAL(triggered()), p_AniEditDMRenderCtrl.get(), SLOT(toggleShowConPath()));
 
@@ -174,15 +174,12 @@ bool AniEditMainWin::loadInitFile(const string init_filename){
   if (p_VolObjMeshCtrl != NULL){
 	succ = p_VolObjMeshCtrl->initialize(init_filename);
   }
-
   if (succ && p_AniEditDM != NULL){
 	succ = p_AniEditDM->initialize(init_filename);
   }
-
   if (succ){
 	succ = paserInitFile(init_filename);
   }
-
   if (succ){
 	p_animation->reset();
   }
