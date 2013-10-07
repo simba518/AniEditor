@@ -1,4 +1,3 @@
-#include <volumetricMeshLoader.h>
 #include <ConMatrixTools.h>
 #include <JsonFilePaser.h>
 #include <RotationMatrix.h>
@@ -230,17 +229,15 @@ bool IMWInterpolator::initWarper(const string init_filename){
   TRACE_FUN();
   JsonFilePaser inf;
   bool succ = inf.open(init_filename);
-  pVolumetricMesh_const tet_mesh;
+  pTetMesh tet_mesh = pTetMesh(new TetMesh());
   if (succ){
 	
   	// load and set volumetric mesh
   	string vol_filename;
   	succ &= inf.readFilePath("vol_filename",vol_filename);
 
-	tet_mesh = pVolumetricMesh(VolumetricMeshLoader::load(vol_filename.c_str()));
-  	succ &= (tet_mesh!=NULL);
-
-	if (tet_mesh != NULL){
+	succ = tet_mesh->load(vol_filename);
+	if (succ){
 	  warper->setTetMesh(tet_mesh);
 	}
 

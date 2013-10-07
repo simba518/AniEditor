@@ -2,20 +2,12 @@
 #include <boost/lexical_cast.hpp>
 #include <UnitTestAssert.h>
 #include <DrawCurves.h>
-#include <AuxTools.h>
-#include <MapMA2RS.h>
-#include <MeshVtkIO.h>
-#include <VolObjMesh.h>
 #include <MASimulatorAD.h>
+#include "DFT.h"
 #include "ElasticMtlOpt.h"
 #include "HarmonicOscillator.h"
-#include "DFT.h"
-#include <eigen3/Eigen/Dense>
-using namespace Eigen;
-using namespace LSW_SIM;
 using namespace ANI_EDIT;
 using namespace UTILITY;
-using namespace Eigen;
 
 BOOST_AUTO_TEST_SUITE(ElasticMtlTest)
 

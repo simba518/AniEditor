@@ -1,7 +1,6 @@
 #ifndef _DEFGRADOPERATOR_H_
 #define _DEFGRADOPERATOR_H_
 
-#include <volumetricMesh.h>
 #include <eigen3/Eigen/Sparse>
 #include "ComputeGeAutoDiff.h"
 #include <TetMesh.h>

@@ -10,8 +10,7 @@
 #include <DefGradOperator.h>
 #include <RSCoordComp.h>
 #include <RS2Euler.h>
-#include <volumetricMesh.h>
-#include <volumetricMeshLoader.h>
+#include <TetMesh.h>
 using namespace std;
 using namespace Eigen;
 using namespace EIGEN3EXT;
@@ -25,10 +24,11 @@ namespace ANI_EDIT{
   
   public:
 	ElasticMtlOpt(double h=0.1f,int PCADim=80, double ak=0.0f,double am=0.0f):
-	  _h(h),_alphaK(ak),_alphaM(am),_PCADim(PCADim){}
+	  _h(h),_alphaK(ak),_alphaM(am),_PCADim(PCADim){
+	  _volMesh = pTetMesh(new TetMesh() );
+	}
 	bool loadVolMesh(const string filename){
-	  _volMesh = pVolumetricMesh(VolumetricMeshLoader::load(filename.c_str()));
-	  return (_volMesh != NULL);
+	  return _volMesh->load(filename);
 	}
 	bool loadAniSeq(const string filename){
 	  return EIGEN3EXT::load(filename,_U);
@@ -56,7 +56,7 @@ namespace ANI_EDIT{
 	double _alphaK;
 	double _alphaM;
 	int _PCADim;
-	pVolumetricMesh _volMesh;
+	pTetMesh _volMesh;
 	MatrixXd _U;
 
 	MatrixXd _Urs;

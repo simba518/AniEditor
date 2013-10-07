@@ -5,17 +5,15 @@
 #include <AuxTools.h>
 #include <MapMA2RS.h>
 #include <MeshVtkIO.h>
-#include <VolObjMesh.h>
+#include <TetMeshEmbeding.h>
 #include <MASimulatorAD.h>
 #include "ElasticMtlOpt.h"
 #include "HarmonicOscillator.h"
 #include "DFT.h"
-#include <eigen3/Eigen/Dense>
 using namespace Eigen;
 using namespace LSW_SIM;
 using namespace ANI_EDIT;
 using namespace UTILITY;
-using namespace Eigen;
 
 BOOST_AUTO_TEST_SUITE(ElasticMtlTest)
 
@@ -67,22 +65,22 @@ BOOST_AUTO_TEST_CASE(produceUrs){
   }
   
   // save animation.
-  VolObjMesh volobj;
+  TetMeshEmbeding volobj;
   TEST_ASSERT( volobj.loadObjMesh(data+"beam.obj"));
-  TEST_ASSERT( volobj.loadVolMesh(data+"sim-mesh.hinp"));
-  TEST_ASSERT( volobj.loadInterpWeights(data+"interp-weights.txt"));
+  TEST_ASSERT( volobj.loadTetMesh(data+"sim-mesh.hinp"));
+  TEST_ASSERT( volobj.loadWeights(data+"interp-weights.txt"));
 
   vector<int> fixed_nodes;
   TEST_ASSERT( loadVec(data+"/con_nodes.bou",fixed_nodes,UTILITY::TEXT) );
   
   RS2Euler rs2euler;
-  rs2euler.setTetMesh(volobj.getVolMesh());
+  rs2euler.setTetMesh(volobj.getTetMesh());
   // rs2euler.setFixedNodes(fixed_nodes);
   rs2euler.fixBaryCenter();
   rs2euler.precompute();
 
   SparseMatrix<double> G;
-  TEST_ASSERT( LSW_WARPING::DefGradOperator::compute(volobj.getVolMesh(),G) );
+  TEST_ASSERT( LSW_WARPING::DefGradOperator::compute(volobj.getTetMesh(),G) );
   MatrixXd PGW;
   MapMA2RS::computeMapMatPGW(G,W,PGW);
   const MatrixXd invPGW = PseudoInverse(PGW);
@@ -102,19 +100,19 @@ BOOST_AUTO_TEST_CASE(produceUrs){
 	Z.push_back(z);
 
   	TEST_ASSERT ( rs2euler.reconstruct(y,u) );
-  	TEST_ASSERT ( volobj.interpolate(&u[0]) );
-  	const string fname=data+"tempt/meshes/objnocon_"+MeshVtkIO::int2str(i)+".vtk";
+  	volobj.interpolate(u);
+  	const string fname=data+"tempt/meshes/objnocon_"+TOSTR(i)+".vtk";
   	TEST_ASSERT (MeshVtkIO::write(volobj.getObjMesh(),fname));
 	U.push_back(u);
   }
   
-  const string Ustr = data+"/tempt/Urs"+MeshVtkIO::int2str(r)+".b";
+  const string Ustr = data+"/tempt/Urs"+TOSTR(r)+".b";
   TEST_ASSERT( write(Ustr,U));
 
-  const string Zstr = data+"/tempt/Zrs"+MeshVtkIO::int2str(r)+".b";
+  const string Zstr = data+"/tempt/Zrs"+TOSTR(r)+".b";
   TEST_ASSERT( write(Zstr,Z));
 
-  const string Ystr = data+"/tempt/Yrs"+MeshVtkIO::int2str(r)+".b";
+  const string Ystr = data+"/tempt/Yrs"+TOSTR(r)+".b";
   TEST_ASSERT( write(Ystr,Y));
   
   TEST_ASSERT( write(data+"/tempt/u0.b",U[0] ));
@@ -139,21 +137,21 @@ BOOST_AUTO_TEST_CASE(checkRSCon){
 
   // load data
   const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
-  VolObjMesh volobj;
-  volobj.loadObjMesh(data+"beam.obj");
-  volobj.loadVolMesh(data+"sim-mesh.hinp");
-  volobj.loadInterpWeights(data+"interp-weights.txt");
+  TetMeshEmbeding volobj;
+  TEST_ASSERT( volobj.loadObjMesh(data+"beam.obj"));
+  TEST_ASSERT( volobj.loadTetMesh(data+"sim-mesh.hinp"));
+  TEST_ASSERT( volobj.loadWeights(data+"interp-weights.txt"));
 
   vector<int> fixed_nodes;
   TEST_ASSERT( loadVec(data+"/con_nodes.bou",fixed_nodes,UTILITY::TEXT) );
   
   RS2Euler rs2euler;
-  rs2euler.setTetMesh(volobj.getVolMesh());
+  rs2euler.setTetMesh(volobj.getTetMesh());
   rs2euler.setFixedNodes(fixed_nodes);
   rs2euler.precompute();
 
   SparseMatrix<double> G;
-  TEST_ASSERT( LSW_WARPING::DefGradOperator::compute(volobj.getVolMesh(),G) );
+  TEST_ASSERT( LSW_WARPING::DefGradOperator::compute(volobj.getTetMesh(),G) );
 
   const int r = 5;
   const double h = 0.1f;
@@ -274,18 +272,18 @@ BOOST_AUTO_TEST_CASE(checkRSNoCon){
 
   // load data
   const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
-  VolObjMesh volobj;
-  volobj.loadObjMesh(data+"beam.obj");
-  volobj.loadVolMesh(data+"sim-mesh.hinp");
-  volobj.loadInterpWeights(data+"interp-weights.txt");
+  TetMeshEmbeding volobj;
+  TEST_ASSERT( volobj.loadObjMesh(data+"beam.obj"));
+  TEST_ASSERT( volobj.loadTetMesh(data+"sim-mesh.hinp"));
+  TEST_ASSERT( volobj.loadWeights(data+"interp-weights.txt"));
 
   RS2Euler rs2euler;
-  rs2euler.setTetMesh(volobj.getVolMesh());
+  rs2euler.setTetMesh(volobj.getTetMesh());
   rs2euler.fixBaryCenter();
   rs2euler.precompute();
 
   SparseMatrix<double> G;
-  TEST_ASSERT( LSW_WARPING::DefGradOperator::compute(volobj.getVolMesh(),G) );
+  TEST_ASSERT( LSW_WARPING::DefGradOperator::compute(volobj.getTetMesh(),G) );
 
   const int r = 10;
   const double h = 0.1f;

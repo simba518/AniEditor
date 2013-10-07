@@ -1,7 +1,6 @@
 #include <MatrixIO.h>
 #include <MatrixTools.h>
 #include <ConMatrixTools.h>
-#include <volumetricMeshLoader.h>
 #include <JsonFilePaser.h>
 #include <Log.h>
 #include "RedRSInterpolator.h"
@@ -227,10 +226,9 @@ bool RedRSInterpolator::initWarper(const string init_filename){
   	string vol_filename;
   	succ &= inf.readFilePath("vol_filename",vol_filename);
 
-	tet_mesh = pVolumetricMesh(VolumetricMeshLoader::load(vol_filename.c_str()));
-  	succ &= (tet_mesh!=NULL);
-
-	if (tet_mesh != NULL){
+	pTetMesh tet_mesh = pTetMesh(new TetMesh());
+	succ = tet_mesh->load(vol_filename);
+	if (succ){
 	  warper->setTetMesh(tet_mesh);
 	}
 

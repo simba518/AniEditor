@@ -2,7 +2,6 @@
 #include <MatrixTools.h>
 #include <assertext.h>
 #include <AuxTools.h>
-#include <polarDecomposition.h>
 #include "RSCoordComp.h"
 using namespace std;
 using namespace UTILITY;

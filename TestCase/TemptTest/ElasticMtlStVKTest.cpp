@@ -5,7 +5,6 @@
 #include <AuxTools.h>
 #include <MapMA2RS.h>
 #include <MeshVtkIO.h>
-#include <VolObjMesh.h>
 #include <MASimulatorAD.h>
 #include "ElasticMtlOpt.h"
 #include "HarmonicOscillator.h"

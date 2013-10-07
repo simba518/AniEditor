@@ -131,7 +131,6 @@ namespace LSW_ANI_EDITOR{
 	vector<int> con_frame_id;   // frames that has position constraints
 	vector<vector<int> > con_nodes;   // con nodes of each con frames
 	vector<VectorXd> uc; // target displacements with respect to the rest.
-	pVolumetricMesh_const tet_mesh;
 	ModalModeDisplayer modalDisplayer;
   };
   

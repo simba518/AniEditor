@@ -1,5 +1,4 @@
 #include <MatrixIO.h>
-#include <volumetricMeshLoader.h>
 #include <MatrixTools.h>
 #include <ConMatrixTools.h>
 #include <JsonFilePaser.h>
@@ -208,11 +207,9 @@ bool IEDSInterpolator::initWarper(const string init_filename){
   	string vol_filename;
   	succ &= inf.readFilePath("vol_filename",vol_filename);
 
-  	pVolumetricMesh_const tet_mesh;
-	tet_mesh = pVolumetricMesh(VolumetricMeshLoader::load(vol_filename.c_str()));
-  	succ &= (tet_mesh!=NULL);
-
-	if (tet_mesh != NULL){
+  	pTetMesh tet_mesh = pTetMesh(new TetMesh());
+	succ = tet_mesh->load(vol_filename);
+	if (succ){
 	  warper->setTetMesh(tet_mesh);
 	}
 
