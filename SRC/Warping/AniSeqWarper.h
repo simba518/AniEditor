@@ -6,10 +6,11 @@
 #include <boost/shared_ptr.hpp>
 #include <eigen3/Eigen/Dense>
 #include <ConNodesOfFrame.h>
-#include <volumetricMesh.h>
+#include <TetMesh.h>
 
 using namespace std;
 using namespace Eigen;
+using namespace UTILITY;
 
 namespace LSW_WARPING{
   
@@ -22,7 +23,7 @@ namespace LSW_WARPING{
   class AniSeqWarper{
 	
   public:
-	virtual void setTetMesh(pVolumetricMesh_const mesh){
+	virtual void setTetMesh(pTetMesh_const mesh){
 	  this->tetmesh = mesh;
 	}
 
@@ -49,12 +50,12 @@ namespace LSW_WARPING{
 	 */
 	virtual void warp(const VectorXd&p,int f_id,VectorXd&u)=0;
 
-	pVolumetricMesh_const getTetMesh()const{
+	pTetMesh_const getTetMesh()const{
 	  return tetmesh;
 	}
 
   protected:
-	pVolumetricMesh_const tetmesh;
+	pTetMesh_const tetmesh;
 
   };
   

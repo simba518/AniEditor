@@ -4,8 +4,9 @@
 #include <boost/shared_ptr.hpp>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Sparse>
-#include <volumetricMesh.h>
+#include <TetMesh.h>
 using namespace Eigen;
+using namespace UTILITY;
 
 typedef std::vector<Eigen::Vector3d,Eigen::aligned_allocator<Eigen::Vector3d> > VectorV3;
 typedef std::vector<Eigen::Matrix<double,6,1>,Eigen::aligned_allocator<Eigen::Matrix<double,6,1> > > VectorV6;
@@ -46,11 +47,11 @@ namespace LSW_WARPING{
 
 	// given the RS coordinates y, compute the rotation vector w as the average
 	// of the tetrahedron this nodes connected to.
-	static void RS2NodeRotVec(pVolumetricMesh_const tetmesh,const VectorXd &y, VectorV3 &w);
+	static void RS2NodeRotVec(pTetMesh_const tetmesh,const VectorXd &y, VectorV3 &w);
 
 	// given the RS coordinates y, compute the sysmetric part of the RS
 	// coordinates as the average of the tetrahedron this nodes connected to.
-	static void RS2NodeRSVec(pVolumetricMesh_const tetmesh,const VectorXd &y, VectorV6 &s);
+	static void RS2NodeRSVec(pTetMesh_const tetmesh,const VectorXd &y, VectorV6 &s);
 
   protected:
 	/**

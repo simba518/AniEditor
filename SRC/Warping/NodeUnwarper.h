@@ -19,7 +19,7 @@ namespace LSW_WARPING{
   class NodeUnwarper{
 	
   public:
-	static void compute(pVolumetricMesh_const tetmesh, const SparseMatrix<double> &G, 
+	static void compute(pTetMesh_const tetmesh, const SparseMatrix<double> &G, 
 						const VectorXd &u, VectorV3 &w, VectorXd &p){
 	  // compute w
 	  VectorXd y;

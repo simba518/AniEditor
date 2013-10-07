@@ -17,7 +17,7 @@ namespace LSW_WARPING{
   class RotationMatrix{
 	
   public:
-	RotationMatrix(pRSWarperExt warper, pVolumetricMesh_const tet_mesh):
+	RotationMatrix(pRSWarperExt warper, pTetMesh_const tet_mesh):
 	  _warper(warper),_tet_mesh(tet_mesh){}
 
 	void compute(const VectorXd &u, SparseMatrix<double> &R)const;
@@ -26,7 +26,7 @@ namespace LSW_WARPING{
 
   private:
 	pRSWarperExt _warper;
-	pVolumetricMesh_const _tet_mesh;
+	pTetMesh_const _tet_mesh;
   };
   
   typedef boost::shared_ptr<RotationMatrix> pRotationMatrix;

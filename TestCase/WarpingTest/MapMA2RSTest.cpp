@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(testCalculateP){
 
   // compare the results.
   ASSERT_EQ(y1.size(), y2.size());
-  ASSERT_EQ_SMALL_VEC(y1,y2,y1.size());
+  ASSERT_EQ_SMALL_VEC_TOL(y1,y2,y1.size(),1e-12);
 }
 
 BOOST_AUTO_TEST_CASE(testCalculateP9x1){
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(testCalculateP9x1){
   correct_y[7] = 0.5*(m[7]+m[5]);
   correct_y[8] = m[8];
 
-  ASSERT_EQ_SMALL_VEC(y, correct_y, 9);
+  ASSERT_EQ_SMALL_VEC_TOL(y, correct_y, 9,1e-12);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

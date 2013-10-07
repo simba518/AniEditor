@@ -14,7 +14,7 @@ namespace IEDS{
   class RSWarperExt: public LSW_WARPING::AniSeqWarper{
 	
   public: 
-	void setTetMesh(pVolumetricMesh_const tet_mesh){
+	void setTetMesh(pTetMesh_const tet_mesh){
 	  AniSeqWarper::setTetMesh(tet_mesh);
 	  rs2euler.setTetMesh(tetmesh);
 	}

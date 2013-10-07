@@ -30,10 +30,10 @@ namespace LSW_WARPING{
 	  // compute G
 	  bool succ = true;
 	  assert (tetmesh != NULL);
-	  assert_gt (tetmesh->numVertices(),3);
+	  assert_gt (tetmesh->nodes().size(),3);
 	  DefGradOperator::compute(tetmesh,G);
-	  assert_eq(G.rows(),tetmesh->numElements()*9);
-	  assert_eq(G.cols(),tetmesh->numVertices()*3);
+	  assert_eq(G.rows(),tetmesh->tets().size()*9);
+	  assert_eq(G.cols(),tetmesh->nodes().size()*3);
 
 	  // initialize UnwarperAD
 	  // Timer timer;
@@ -119,7 +119,7 @@ namespace LSW_WARPING{
 	void computeWP(int f_id){
 
 	  // init energy function
-	  assert_eq(ref_p[f_id].size(), tetmesh->numVertices()*3);
+	  assert_eq(ref_p[f_id].size(), tetmesh->nodes().size()*3);
 	  energy->genEnergyFun(ref_p[f_id]);
 	  
 	  // init solver

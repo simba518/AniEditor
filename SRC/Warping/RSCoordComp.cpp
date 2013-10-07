@@ -105,21 +105,21 @@ void RSCoordComp::constructWithoutWarp_OneTet(const double *m, double *y){
   }
 }
 
-void RSCoordComp::RS2NodeRotVec(pVolumetricMesh_const tetmesh,const VectorXd &y, VectorV3 &w){
+void RSCoordComp::RS2NodeRotVec(pTetMesh_const tetmesh,const VectorXd &y, VectorV3 &w){
   
   assert(tetmesh != NULL);
-  assert_eq(tetmesh->numElements(),(int)y.size()/9);
+  assert_eq(tetmesh->tets().size(),(int)y.size()/9);
 
-  w.resize(tetmesh->numVertices());
-  vector<int> eleCount(tetmesh->numVertices());
+  w.resize(tetmesh->nodes().size());
+  vector<int> eleCount(tetmesh->nodes().size());
   for (size_t i = 0; i < w.size(); ++i){
 	w[i].setZero();
 	eleCount[i] = 0;
   }
 	  
-  for (int e = 0; e < tetmesh->numElements(); ++e){
+  for (int e = 0; e < tetmesh->tets().size(); ++e){
 	for (int v = 0; v < 4; ++v){
-	  const int i = tetmesh->vertexIndex(e,v);
+	  const int i = tetmesh->tets()[e][v];
 	  assert_in(i,0,(int)w.size()-1);
 	  w[i] += y.segment(e*9,3);
 	  eleCount[i] ++;
@@ -132,21 +132,21 @@ void RSCoordComp::RS2NodeRotVec(pVolumetricMesh_const tetmesh,const VectorXd &y,
   }
 }
 
-void RSCoordComp::RS2NodeRSVec(pVolumetricMesh_const tetmesh,const VectorXd &y, VectorV6 &s){
+void RSCoordComp::RS2NodeRSVec(pTetMesh_const tetmesh,const VectorXd &y, VectorV6 &s){
   
   assert(tetmesh != NULL);
-  assert_eq(tetmesh->numElements(),(int)y.size()/9);
+  assert_eq(tetmesh->tets().size(),(int)y.size()/9);
 
-  s.resize(tetmesh->numVertices());
-  vector<int> eleCount(tetmesh->numVertices());
+  s.resize(tetmesh->nodes().size());
+  vector<int> eleCount(tetmesh->nodes().size());
   for (size_t i = 0; i < s.size(); ++i){
 	s[i].setZero();
 	eleCount[i] = 0;
   }
 	  
-  for (int e = 0; e < tetmesh->numElements(); ++e){
+  for (int e = 0; e < tetmesh->tets().size(); ++e){
 	for (int v = 0; v < 4; ++v){
-	  const int i = tetmesh->vertexIndex(e,v);
+	  const int i = tetmesh->tets()[e][v];
 	  assert_in(i,0,(int)s.size()-1);
 	  s[i] += y.segment(e*9+3,6);
 	  eleCount[i] ++;

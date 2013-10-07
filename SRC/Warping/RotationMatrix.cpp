@@ -17,10 +17,10 @@ void RotationMatrix::compute(const VectorXd &u, SparseMatrix<double>& R)const{
     w[i].setZero();
 	neighbor_ele_of_node[i] = 0;
   }
-  for (int ei = 0; ei < _tet_mesh->numElements(); ++ei){
-	const MeshElement *ele = _tet_mesh->element(ei);
-    for (int j = 0; j < _tet_mesh->numElementVertices(); ++j){
-	  const int vi = ele->vertex(j);
+  for (int ei = 0; ei < _tet_mesh->tets().size(); ++ei){
+	const Vector4i ele = _tet_mesh->tets()[ei];
+    for (int j = 0; j < 4; ++j){
+	  const int vi = ele[j];
 	  w[vi][0] += RS_u[ei*9+0];
 	  w[vi][1] += RS_u[ei*9+1];
 	  w[vi][2] += RS_u[ei*9+2];

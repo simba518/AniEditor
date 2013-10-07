@@ -5,13 +5,14 @@
 #include <CASADITools.h>
 #include <Timer.h>
 #include <DefGradOperator.h>
-#include <volumetricMesh.h>
+#include <TetMesh.h>
 
 using namespace CASADI;
 using UTILITY::Timer;
 using CasADi::SXMatrix;
 using CasADi::SX;
 using CasADi::SXFunction;
+using namespace UTILITY;
 
 namespace LSW_WARPING{
   
@@ -22,7 +23,7 @@ namespace LSW_WARPING{
   class WarperAD{
 	
   public:
-	static void computeWarpFun(pVolumetricMesh_const rest, 
+	static void computeWarpFun(pTetMesh_const rest, 
 							   const SXMatrix &p,
 							   SXMatrix &u){
 	  vector<SXMatrix> w;
@@ -48,20 +49,20 @@ namespace LSW_WARPING{
 	  }
 	}
 
-	static void computeRotMat(pVolumetricMesh_const rest, const MatrixXd &W, MatrixXd &rotW){
+	static void computeRotMat(pTetMesh_const rest, const MatrixXd &W, MatrixXd &rotW){
 	  
 	  assert(rest);
-	  assert_eq(rest->numVertices()*3,W.rows());
+	  assert_eq(rest->nodes().size()*3,W.rows());
 	  SparseMatrix<double> rotM;
 	  computeRotMat(rest,rotM);
-	  assert_eq(rest->numVertices()*3,rotM.cols());
-	  assert_eq(rest->numVertices()*3,rotM.rows());
+	  assert_eq(rest->nodes().size()*3,rotM.cols());
+	  assert_eq(rest->nodes().size()*3,rotM.rows());
 	  rotW = rotM*W;
 	}
 
-	static void computeRotMat(pVolumetricMesh_const rest, SparseMatrix<double> &rotM){
+	static void computeRotMat(pTetMesh_const rest, SparseMatrix<double> &rotM){
 	  
-	  const vector<SX> p = CASADI::makeSymbolic(rest->numVertices()*3,"p");
+	  const vector<SX> p = CASADI::makeSymbolic(rest->nodes().size()*3,"p");
 	  const SXMatrix ps = CASADI::convert(p);
 	  vector<SXMatrix> nodeW;
 	  computeRotVector(rest,ps,nodeW);
@@ -77,11 +78,11 @@ namespace LSW_WARPING{
 	  CASADI::convert(rotMs,rotM);
 	}
 
-	static void computeRotVector(pVolumetricMesh_const rest, 
+	static void computeRotVector(pTetMesh_const rest, 
 								 const SXMatrix &p,
 								 vector<SXMatrix> &nodeW){
 	  assert(rest);
-	  assert_eq(rest->numVertices(),p.size1()/3);
+	  assert_eq(rest->nodes().size(),p.size1()/3);
 	  assert_eq(p.size1()%3,0);
 	  assert_eq(p.size2(),1);
 
@@ -92,7 +93,7 @@ namespace LSW_WARPING{
 	  CASADI::convert(G,sG);
 	  const SXMatrix m = mul(sG,p);
 	  const int elem_num = m.size()/9;
-	  assert_eq(rest->numElements(),elem_num);
+	  assert_eq(rest->tets().size(),elem_num);
 
 	  // compute w for each element
 	  vector<SXMatrix> elemW(elem_num);
@@ -115,7 +116,7 @@ namespace LSW_WARPING{
 	  }
 	  for (int j = 0; j < elem_num; ++j){
 		for (int v = 0; v < 4; ++v){
-		  const int i = rest->vertexIndex(j,v);
+		  const int i = rest->tets()[j][v];
 		  assert_in(i,0,(int)nodeW.size()-1);
 		  nodeW[i] += elemW[j];
 		  eleCount[i] ++;
@@ -167,7 +168,7 @@ namespace LSW_WARPING{
   class WarperExtAD{
 	
   public:
-	void precompute(pVolumetricMesh_const rest, const MatrixXd &W){
+	void precompute(pTetMesh_const rest, const MatrixXd &W){
 
 	  const vector<SX> inputP = CASADI::makeSymbolic(W.rows(),"p");
 	  const vector<SX> z = CASADI::makeSymbolic(W.cols(),"z");
@@ -190,14 +191,14 @@ namespace LSW_WARPING{
 	}
 
   protected:
-	void computeWarpFun(pVolumetricMesh_const rest, const MatrixXd &W, 
+	void computeWarpFun(pTetMesh_const rest, const MatrixXd &W, 
 						const vector<SX> &z,
 						const vector<SX> &inputP,
 						SXMatrix &u){
 	  
 	  assert(rest);
 	  assert_gt(W.size(),0);
-	  assert_eq(rest->numVertices()*3,W.rows());
+	  assert_eq(rest->nodes().size()*3,W.rows());
 
 	  SXMatrix zs(z.size(),1), ps(inputP.size(),1);
 	  for (size_t i = 0; i < z.size(); ++i)
@@ -224,7 +225,7 @@ namespace LSW_WARPING{
   class WarperPerNodeAD{
 	
   public:
-	void precompute(pVolumetricMesh_const rest, const MatrixXd &W){
+	void precompute(pTetMesh_const rest, const MatrixXd &W){
 
 	  // prepare symbols
 	  const vector<SX> inputW = CASADI::makeSymbolic(W.rows(),"w");
@@ -298,11 +299,11 @@ namespace LSW_WARPING{
   class WarperPerNodeAD_WP{
 	
   public:
-	void precompute(pVolumetricMesh_const rest){
+	void precompute(pTetMesh_const rest){
   
 	  // prepare symbols
-	  const vector<SX> w = CASADI::makeSymbolic(rest->numVertices()*3,"w");
-	  const vector<SX> p = CASADI::makeSymbolic(rest->numVertices()*3,"p");
+	  const vector<SX> w = CASADI::makeSymbolic(rest->nodes().size()*3,"w");
+	  const vector<SX> p = CASADI::makeSymbolic(rest->nodes().size()*3,"p");
 	  const SXMatrix ps = CASADI::convert(p);
 	  const vector<SXMatrix> nodeW = CASADI::Sx2Mat(w,w.size()/3);
 

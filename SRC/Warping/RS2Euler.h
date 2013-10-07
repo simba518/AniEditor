@@ -2,12 +2,14 @@
 #define _RS2EULER_H_
 
 #include <vector>
+#include <set>
 #include <boost/shared_ptr.hpp>
-#include <volumetricMesh.h>
+#include <TetMesh.h>
 #include <Eigen/UmfPackSupport>
 #include <eigen3/Eigen/Sparse>
-using namespace Eigen;
 using namespace std;
+using namespace Eigen;
+using namespace UTILITY;
 
 namespace LSW_WARPING{
 
@@ -21,7 +23,7 @@ namespace LSW_WARPING{
   class RS2Euler{
 	
   public:
-	void setTetMesh(pVolumetricMesh_const tetmesh);
+	void setTetMesh(pTetMesh_const tetmesh);
 	void fixBaryCenter();
 	void setFixedNodes(const vector<int> &fixed_nodes);
 	void setConNodes(const vector<set<int> > &c_nodes,const VectorXd &bcen_uc);
@@ -43,21 +45,21 @@ namespace LSW_WARPING{
 	const vector<double> &get_Sqrt_V()const{
 	  return Sqrt_V;
 	}
-	pVolumetricMesh_const getTetMesh()const{
+	pTetMesh_const getTetMesh()const{
 	  return tetmesh;
 	}
 	void assemble_b(const VectorXd &y,VectorXd &b)const;
 
 
   protected:
-	inline void constructVolumeMatrix(pVolumetricMesh_const tetmesh, SparseMatrix<double> &V,vector<double> &Sqrt_V)const;
+	inline void constructVolumeMatrix(pTetMesh_const tetmesh, SparseMatrix<double> &V,vector<double> &Sqrt_V)const;
 	inline void assembleA();
 	inline int numFixedDofs()const{
 	  return F.rows()+C.rows();
 	}
 	
   private:
-	pVolumetricMesh_const tetmesh; // tetrahedron mesh.
+	pTetMesh_const tetmesh; // tetrahedron mesh.
 
 	/*
 	 * A = | L C^t F^t|

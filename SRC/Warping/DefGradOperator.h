@@ -4,7 +4,9 @@
 #include <volumetricMesh.h>
 #include <eigen3/Eigen/Sparse>
 #include "ComputeGeAutoDiff.h"
+#include <TetMesh.h>
 using namespace Eigen;
+using namespace UTILITY;
 
 namespace LSW_WARPING{
   
@@ -31,7 +33,7 @@ namespace LSW_WARPING{
 	typedef Eigen::Triplet<double> T;
 	
   public:
-	static bool compute(pVolumetricMesh_const tet_mesh,SparseMatrix<double> &G);
+	static bool compute(pTetMesh_const tet_mesh,SparseMatrix<double> &G);
 
 	// assemble the gradient operator Ge of one tetrahedron to the tripletlist
 	// of the full operator G.
@@ -52,6 +54,18 @@ namespace LSW_WARPING{
 		  if (Ge[i][j*3+2] != 0)
 			G_T.push_back(  T(r0+i, v*3+2 ,Ge[i][j*3+2])  );
 		}
+	  }
+	}
+
+  protected:
+	static inline void vertexOfTetEle(pTetMesh_const tet_mesh,int e,double V[4][3]){
+	  const Vector4i &tet = tet_mesh->tets()[e];
+	  const VVec3d &nodes = tet_mesh->nodes();
+	  for (int i = 0; i < 4; ++i){
+		const Vector3d &v = nodes[tet[i]];
+		V[i][0] = v[0];
+		V[i][1] = v[1];
+		V[i][2] = v[2];
 	  }
 	}
 	

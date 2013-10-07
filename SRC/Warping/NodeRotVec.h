@@ -4,8 +4,8 @@
 #include <vector>
 #include <eigen3/Eigen/Dense>
 #include <RSCoordComp.h>
-#include <volumetricMesh.h>
-typedef std::vector<Eigen::Vector3d,Eigen::aligned_allocator<Eigen::Vector3d> > VectorV3;
+#include <TetMesh.h>
+using namespace UTILITY;
 
 namespace LSW_WARPING{
   
@@ -16,7 +16,7 @@ namespace LSW_WARPING{
   class NodeRotVec{
 	
   public:
-	static void compute(pVolumetricMesh_const tetmesh, const SparseMatrix<double> &G, const VectorXd &p, VectorV3 &w){
+	static void compute(pTetMesh_const tetmesh, const SparseMatrix<double> &G, const VectorXd &p, VVec3d &w){
 
 	  VectorXd y;
 	  RSCoordComp::constructWithWarp(G,p,y);

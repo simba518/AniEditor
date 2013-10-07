@@ -27,7 +27,7 @@ namespace LSW_WARPING{
   class GradWarpEnergyAD{
 	
   public:
-	static SXMatrix compute(pVolumetricMesh_const rest, const vector<SXMatrix> &u,
+	static SXMatrix compute(pTetMesh_const rest, const vector<SXMatrix> &u,
 							const vector<SXMatrix> &w, const vector<SXMatrix> &p){
 
 	  SparseMatrix<double> G;
@@ -67,7 +67,7 @@ namespace LSW_WARPING{
   class RotWarpEnergyAD{
 	
   public:
-	static SXMatrix compute(pVolumetricMesh_const rest, 
+	static SXMatrix compute(pTetMesh_const rest, 
 							const vector<SXMatrix> &w, 
 							const vector<SXMatrix> &p){
 
@@ -95,7 +95,7 @@ namespace LSW_WARPING{
   class UnwarpEnergyAD{
 	
   public:
-	UnwarpEnergyAD(pVolumetricMesh_const rest, double a, double b, double g):
+	UnwarpEnergyAD(pTetMesh_const rest, double a, double b, double g):
 	  _restMesh(rest),_alpha(a),_beta(b),_gamma(g){
 
 	  assert(rest != NULL);
@@ -125,7 +125,7 @@ namespace LSW_WARPING{
 	}
 	int getDim()const{
 	  if (_restMesh)
-		return _restMesh->numVertices()*6;
+		return _restMesh->nodes().size()*6;
 	  return 0;
 	}
 
@@ -149,7 +149,7 @@ namespace LSW_WARPING{
   private:
 	SXFunction _energyFun_uwp; // f(u,w,p)
 	SXFunction _energyFun_wp;  // f(w,p)
-	pVolumetricMesh_const _restMesh;
+	pTetMesh_const _restMesh;
 	double _alpha;
 	double _beta;
 	double _gamma;

@@ -12,12 +12,12 @@ using namespace LSW_WARPING;
  * 1. compute the deformation gradient operator G
  * 2. compute the volumes V and Sqrt_V of all the tetrahedron.
  */
-void RS2Euler::setTetMesh(pVolumetricMesh_const tetmesh){
+void RS2Euler::setTetMesh(pTetMesh_const tetmesh){
   
   assert (tetmesh != NULL);
   this->tetmesh = tetmesh;
-  const int elem_num = tetmesh->numElements();
-  const int node_num = tetmesh->numVertices();
+  const int elem_num = tetmesh->tets().size();
+  const int node_num = tetmesh->nodes().size();
   SparseMatrix<double> V;
 
   if (DefGradOperator::compute(tetmesh,G)){
@@ -38,7 +38,7 @@ void RS2Euler::setTetMesh(pVolumetricMesh_const tetmesh){
 void RS2Euler::fixBaryCenter(){
 
   assert (tetmesh != NULL);
-  const int node_num = tetmesh->numVertices();
+  const int node_num = tetmesh->nodes().size();
   set<int> all_nodes;
   for (int i = 0; i < node_num; ++i){
 	all_nodes.insert(i);
@@ -50,7 +50,7 @@ void RS2Euler::fixBaryCenter(){
 void RS2Euler::setFixedNodes(const vector<int> &fixed_nodes){
 
   assert (tetmesh != NULL);
-  const int node_num = tetmesh->numVertices();
+  const int node_num = tetmesh->nodes().size();
   UTILITY::computeConM(fixed_nodes,F, node_num);
   assert_eq(F.cols(), node_num*3);
 }
@@ -61,7 +61,7 @@ void RS2Euler::setConNodes(const vector<set<int> > &c_nodes,const VectorXd &bcen
   assert (tetmesh != NULL);
   assert_eq ((int)c_nodes.size()*3, bcen_uc.size());
   this->barycenter_uc = bcen_uc;
-  const int node_num = tetmesh->numVertices();
+  const int node_num = tetmesh->nodes().size();
   if (c_nodes.size() > 0){
 	UTILITY::computeBaryCenterConM(c_nodes,node_num,C);
   }else{
@@ -97,7 +97,7 @@ bool RS2Euler::precompute(){
 bool RS2Euler::reconstruct(const VectorXd &y, VectorXd &u){
 
   assert (tetmesh != NULL);
-  const int node_numx3 = tetmesh->numVertices()*3;
+  const int node_numx3 = tetmesh->nodes().size()*3;
   bool succ = true;
 
   // assemble the right_side
@@ -130,9 +130,9 @@ bool RS2Euler::reconstruct(const VectorXd &y, VectorXd &u){
   return succ;
 }
 
-void RS2Euler::constructVolumeMatrix(pVolumetricMesh_const tetmesh, SparseMatrix<double> &V,vector<double> &Sqrt_V)const{
+void RS2Euler::constructVolumeMatrix(pTetMesh_const tetmesh, SparseMatrix<double> &V,vector<double> &Sqrt_V)const{
   
-  const int elem_num = tetmesh->numElements();
+  const int elem_num = tetmesh->tets().size();
 
   Sqrt_V.resize(elem_num);
   V.resize(elem_num*9,elem_num*9);
@@ -140,7 +140,7 @@ void RS2Euler::constructVolumeMatrix(pVolumetricMesh_const tetmesh, SparseMatrix
 
   for (int e = 0; e < elem_num; e++){
 
-	const double sqrt_v = sqrt(tetmesh->getElementVolume(e));
+	const double sqrt_v = sqrt(tetmesh->volume(e));
 	Sqrt_V[e] = sqrt_v;
 	for (int i = 0; i < 9; ++i){
 	  V.insert(e*9+i,e*9+i) = sqrt_v;
@@ -196,7 +196,7 @@ void RS2Euler::assembleA(){
 
 void RS2Euler::assemble_b(const VectorXd &y,VectorXd & b)const{
 
-  const int elem_num = tetmesh->numElements();
+  const int elem_num = tetmesh->tets().size();
   assert_eq(y.size(), elem_num*9);
   b.resize(elem_num*9);
 

@@ -3,6 +3,7 @@
 #include <SparseMatrixTools.h>
 #include <MapMA2RS.h>
 #include "WarpedPosConAD.h"
+#include "RedRSWarperExt.h"
 using namespace LSW_ANI_EDITOR;
 
 void WarpedPosConAD::prepare(const MatrixXd &W){

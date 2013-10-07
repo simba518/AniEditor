@@ -24,7 +24,7 @@ BOOST_AUTO_TEST_CASE(computeTest){
 
   ASSERT_EQ(b2.size(),9);
   ASSERT_EQ(ebj.size(),9);
-  ASSERT_EQ_SMALL_VEC(ebj,b2,9);
+  ASSERT_EQ_SMALL_VEC_TOL(ebj,b2,9,1e-12);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
