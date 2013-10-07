@@ -3,10 +3,11 @@
 
 #include <assertext.h>
 #include <boost/foreach.hpp>
-#include <volumetricMesh.h>
+#include <TetMesh.h>
 #include <vector>
 #include <set>
 using namespace std;
+using namespace UTILITY;
 
 namespace LSW_SIM_UI{
 
@@ -18,21 +19,21 @@ namespace LSW_SIM_UI{
   class DragGroupSelDraw{
 	
   public:
-	static void drawAllGroupsWithPoints(pVolumetricMesh_const vol_mesh,
+	static void drawAllGroupsWithPoints(pTetMesh_const vol_mesh,
 										const vector<set<int> >&drag_groups, 
 										const double*vol_u);
 
-	static void drawAllGroupsWithShpere(pVolumetricMesh_const vol_mesh,
+	static void drawAllGroupsWithShpere(pTetMesh_const vol_mesh,
 										const vector<set<int> >&drag_groups, 
 										const double *vol_u, 
 										const double radius);
 
   protected:
-	static void drawPoints(pVolumetricMesh_const vol_mesh,
+	static void drawPoints(pTetMesh_const vol_mesh,
 						   const set<int> &group,
 						   const double *vol_u);
 
-	static void drawSphere(pVolumetricMesh_const vol_mesh,
+	static void drawSphere(pTetMesh_const vol_mesh,
 						   const set<int> &group,
 						   const double *vol_u, const double radius);
 

@@ -5,6 +5,7 @@
 #include <SelfRenderEle.h>
 #include <TextForRender.h>
 #include "PreviewAniDM.h"
+#include <MeshRender.h>
 using namespace QGLVEXT;
 
 namespace LSW_ANI_EDIT_UI{
@@ -55,18 +56,18 @@ namespace LSW_ANI_EDIT_UI{
 	}
 	void drawInputObj()const{
 	  if (data_model != NULL){
-		pObjRenderMesh_const obj_mesh= data_model->getInputObjMesh();
+		pObjmesh_const obj_mesh= data_model->getInputObjMesh();
 		if (obj_mesh != NULL){
-		  obj_mesh->draw(0.5,0.5,0.5);
+		  UTILITY::draw(*obj_mesh);
 		}
 	  }
 	}
 	void drawOutputObj()const{
 
 	  if (data_model != NULL){
-		pObjRenderMesh_const obj_mesh= data_model->getOutputObjMesh();
+		pObjmesh_const obj_mesh= data_model->getOutputObjMesh();
 		if (obj_mesh != NULL){
-		  obj_mesh->draw();
+		  UTILITY::draw(*obj_mesh);
 		}
 	  }
 	}

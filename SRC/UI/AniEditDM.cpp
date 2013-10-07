@@ -2,6 +2,7 @@
 #include <Timer.h>
 #include <boost/foreach.hpp>
 #include <MatrixIO.h>
+#include <ObjFileIO.h>
 #include <JsonFilePaser.h>
 #include <InterpolatorFactory.h>
 #include "AniEditDM.h"
@@ -9,13 +10,13 @@ using namespace std;
 using namespace UTILITY;
 using namespace LSW_ANI_EDIT_UI;
 
-AniEditDM::AniEditDM(pVolObjMesh vol_obj, pAniDataModel animation):
+AniEditDM::AniEditDM(pTetMeshEmbeding vol_obj, pAniDataModel animation):
   _animation(animation), vol_obj(vol_obj){
 
   record_drag = false;
 }
 
-AniEditDM::AniEditDM(pVolObjMesh vol_obj, pAniDataModel animation, pBaseInterpolator interpolator):
+AniEditDM::AniEditDM(pTetMeshEmbeding vol_obj, pAniDataModel animation, pBaseInterpolator interpolator):
   _animation(animation),interpolator(interpolator), vol_obj(vol_obj){
 
   record_drag = false;
@@ -61,32 +62,32 @@ int AniEditDM::totalFrameNum()const{
   return 0;
 }
 
-pObjRenderMesh_const AniEditDM::getOutputObjMesh(const int frame)const{
+pObjmesh_const AniEditDM::getOutputObjMesh(const int frame)const{
 
   if (frame >= 0 && interpolator != NULL && totalFrameNum() > 0){
 	const VectorXd &vol_u = getVolFullU(frame);
-	vol_obj->interpolate(&vol_u[0]);
+	vol_obj->interpolate(vol_u);
   }
   return vol_obj->getObjMesh();
 }
 
-pObjRenderMesh_const AniEditDM::getInputObjMesh(const int frame)const{
+pObjmesh_const AniEditDM::getInputObjMesh(const int frame)const{
   
   if (frame >= 0 && interpolator != NULL && totalFrameNum() > 0){
 	const VectorXd &vol_u = getInputU(frame);
-	vol_obj->interpolate(&vol_u[0]);
+	vol_obj->interpolate(vol_u);
   }
   return vol_obj->getObjMesh();
 }
 
-pObjRenderMesh_const AniEditDM::getKeyframeObjMesh()const{
+pObjmesh_const AniEditDM::getKeyframeObjMesh()const{
   
-  pObjRenderMesh_const pobj;
+  pObjmesh_const pobj;
   const int f = currentFrameNum();
   if (interpolator && interpolator->isKeyframe(f)){
 	const VectorXd& key_u_full = interpolator->getKeyframe(f);
 	if (key_u_full.size() > 0){
-	  vol_obj->interpolate(&key_u_full[0]);
+	  vol_obj->interpolate(key_u_full);
 	  pobj = vol_obj->getObjMesh();
 	}
   }
@@ -241,12 +242,10 @@ bool AniEditDM::interpolate(){
 void AniEditDM::print()const{
 
   if(vol_obj){
-
-	INFO_LOG( "obj vertex number " << vol_obj->objVertexNum());
-	INFO_LOG( "vol vertex number " << vol_obj->volVertexNum());
-	INFO_LOG( "vol tet number " << vol_obj->volElementNum());
+	INFO_LOG( "obj vertex number " << vol_obj->getObjMesh()->getVertsNum());
+	INFO_LOG( "vol vertex number " << vol_obj->getTetMesh()->nodes().size());
+	INFO_LOG( "vol tet number " << vol_obj->getTetMesh()->tets().size());
   }
-
   INFO_LOG( "reduce dimension " << this->reducedDim());
   INFO_LOG( "total frame number " << this->totalFrameNum());
 }
@@ -301,7 +300,7 @@ bool AniEditDM::saveOutputMeshes(const string filename)const{
   	const string f_id = boost::lexical_cast<string>(f);
     const string frame = filename +getZeroStr(f,T)+ f_id + string(".obj");
   	cout << frame << endl;
-  	succ = getOutputObjMesh(f)->save(frame);
+  	succ = UTILITY::write(frame,*(getOutputObjMesh(f)));
   	if(!succ){
   	  ERROR_LOG("failed to save frame " << f << " to " << frame);
   	  break;
@@ -319,7 +318,7 @@ bool AniEditDM::saveInputMeshes(const string filename)const{
   	const string f_id = boost::lexical_cast<string>(f);
     const string frame = filename +getZeroStr(f,T)+ f_id + string(".obj");
 	INFO_LOG(frame);
-  	succ = getInputObjMesh(f)->save(frame);
+	succ = UTILITY::write(frame,*(getInputObjMesh(f)));
   	if(!succ){
   	  ERROR_LOG("failed to save frame " << f << " to " << frame);
   	  break;
@@ -329,27 +328,24 @@ bool AniEditDM::saveInputMeshes(const string filename)const{
 }
 
 bool AniEditDM::saveCurrentOutputMesh(const string filename)const{
-  
-  return getOutputObjMesh(currentFrameNum())->save(filename);
+  return UTILITY::write(filename,*getOutputObjMesh(currentFrameNum()));
 }
 
 bool AniEditDM::saveCurrentInputMesh(const string filename)const{
-
-  return getInputObjMesh(currentFrameNum())->save(filename);
+  return UTILITY::write(filename,*getInputObjMesh(currentFrameNum()));
 }
 
 bool AniEditDM::saveCurrentOutputVolMesh(const string filename){
   
-  pVolumetricMesh vol_mesh = getVolMesh();
+  pTetMesh vol_mesh = getVolMesh();
   bool succ = false;
   if (vol_mesh) {
 	const VectorXd &u = getVolFullU(currentFrameNum());
 	if(u.size() > 0){
 	  const VectorXd _u = -1.0f*u;
-	  assert_eq (u.size(), vol_mesh->numVertices()*3);
-	  vol_mesh->applyDeformation(const_cast<double*>(&u[0]));
-	  succ = ( vol_mesh->save( const_cast<char*>(filename.c_str()) ) == 0);
-	  vol_mesh->applyDeformation(const_cast<double*>(&_u[0]));
+	  vol_mesh->applyDeformation(u);
+	  succ = vol_mesh->write(filename);
+	  vol_mesh->applyDeformation(_u);
 	}
   }
   return succ;
@@ -427,10 +423,17 @@ bool AniEditDM::saveAllReducedEdits(const string filename)const{
 VectorXd AniEditDM::barycenOfRestShape(const vector<set<int> >&g)const{
 
   VectorXd rest_barycenters(g.size()*3);
-  if (g.size() > 0){
-	assert ( vol_obj != NULL);
-	assert ( vol_obj->getVolMesh() );
-	vol_obj->getVolMesh()->barycentersOfGroup(g,&(rest_barycenters[0]));
+  rest_barycenters.setZero();
+  pTetMesh_const tet = getVolMesh();
+  assert(tet);
+  const VVec3d &nodes = tet->nodes();
+  for (size_t i = 0; i < g.size(); ++i){
+	const set<int> &one_group = g[i];
+	set<int>::const_iterator it = one_group.begin();
+	for (; it != one_group.end(); ++it)
+	  rest_barycenters.segment(i*3,3) += nodes[*it];
+	if (one_group.size() > 0)
+	  rest_barycenters.segment(i*3,3) /= one_group.size();
   }
   return rest_barycenters;
 }
@@ -521,7 +524,6 @@ bool AniEditDM::loadConPath(const string filename){
 	if (interpolator != NULL)
 	  interpolator->setConGroups(con_frame_ids[i] ,con_nodes, bary_uc);
   }
-
   return true;
 }
 
@@ -535,9 +537,8 @@ int AniEditDM::reducedDim()const{
 }
 
 int AniEditDM::fullDim()const{
-
   if (vol_obj){
-	return vol_obj->volVertexNum()*3;
+	return vol_obj->getTetMesh()->nodes().size()*3;
   }
   return 0;
 }
@@ -560,7 +561,7 @@ bool AniEditDM::playRecodDrag(){
 
 void AniEditDM::computeConNodeTrajectory(){
   
-  pVolumetricMesh_const vol_mesh = this->getVolMesh();
+  pTetMesh_const vol_mesh = this->getVolMesh();
   const vector<set<int> > groups = this->getConNodes();
   size_t total_con_node = 0;
   for (size_t i = 0; i < groups.size(); ++i){
@@ -571,14 +572,12 @@ void AniEditDM::computeConNodeTrajectory(){
     con_node_traj[i].resize(3*totalFrameNum());
 	con_node_traj[i].setZero();
   }
-
-  double rest_v[3];
   for (int f = 0; f < totalFrameNum(); ++f){
 	const VectorXd &vol_u = this->getVolFullU(f);
 	int count = 0;
 	for (size_t g = 0; g < groups.size(); ++g){
 	  BOOST_FOREACH(int i, groups[g]){
-		vol_mesh->vertex(i,rest_v);
+		const Vector3d &rest_v = vol_mesh->nodes()[i];
 		con_node_traj[count][f*3+0] = vol_u[i*3+0] + rest_v[0];
 		con_node_traj[count][f*3+1] = vol_u[i*3+1] + rest_v[1];
 		con_node_traj[count][f*3+2] = vol_u[i*3+2] + rest_v[2];

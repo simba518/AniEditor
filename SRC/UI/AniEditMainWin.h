@@ -57,7 +57,7 @@ namespace LSW_ANI_EDIT_UI{
 	pAniCtrl ani_ctrl;
 
 	// data model and operations
-	pVolObjMesh p_VolObjMesh;
+	pTetMeshEmbeding p_VolObjMesh;
 	pVolObjMeshCtrl p_VolObjMeshCtrl;
 	pAniEditDM p_AniEditDM;
 	pAniDataModel p_animation;

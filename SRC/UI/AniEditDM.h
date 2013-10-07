@@ -5,7 +5,7 @@
 #include <AniDataModel.h>
 #include <ConNodesOfFrame.h>
 #include <BaseInterpolator.h>
-#include <VolObjMesh.h>
+#include <TetMeshEmbeding.h>
 #include "DragTrajectoryRecord.h"
 using namespace QGLVEXT;
 using namespace LSW_ANI_EDITOR;
@@ -20,8 +20,8 @@ namespace LSW_ANI_EDIT_UI{
   class AniEditDM{
 	
   public: 
-	AniEditDM(pVolObjMesh vol_obj, pAniDataModel animation);
-	AniEditDM(pVolObjMesh vol_obj, pAniDataModel animation, pBaseInterpolator interpolator);
+	AniEditDM(pTetMeshEmbeding vol_obj, pAniDataModel animation);
+	AniEditDM(pTetMeshEmbeding vol_obj, pAniDataModel animation, pBaseInterpolator interpolator);
 
 	bool initialize(const string filename, const bool create_interpolator = true);
 
@@ -40,26 +40,23 @@ namespace LSW_ANI_EDIT_UI{
 	  return 0;
 	}
 
-	pObjRenderMesh_const getOutputObjMesh()const{
+	pObjmesh_const getOutputObjMesh()const{
 	  return getOutputObjMesh(currentFrameNum());
 	}
-	pObjRenderMesh_const getOutputObjMesh(const int frame)const;
-	pObjRenderMesh_const getInputObjMesh()const{
+	pObjmesh_const getOutputObjMesh(const int f)const;
+	pObjmesh_const getInputObjMesh()const{
 	  return getInputObjMesh( currentFrameNum() );
 	}
-	pObjRenderMesh_const getInputObjMesh(const int frame)const;
-	pObjRenderMesh_const getKeyframeObjMesh()const;
-	pVolObjMesh_const getVolObjMesh()const{
+	pObjmesh_const getInputObjMesh(const int f)const;
+	pObjmesh_const getKeyframeObjMesh()const;
+	pTetMeshEmbeding_const getVolObjMesh()const{
 	  return vol_obj;
 	}
-	pVolumetricMesh_const getVolMesh()const{
-	  return vol_obj->getVolMesh();
+	pTetMesh_const getVolMesh()const{
+	  return vol_obj->getTetMesh();
 	}
-	pVolumetricMesh getVolMesh(){
-	  return vol_obj->getVolMesh();
-	}
-	pObjRenderMesh_const getVolSurface()const{
-	  return vol_obj->getVolSurface();
+	pTetMesh getVolMesh(){
+	  return vol_obj->getTetMesh();
 	}
 
 	const VectorXd &getVolFullU()const{
@@ -154,7 +151,7 @@ namespace LSW_ANI_EDIT_UI{
 	pBaseInterpolator interpolator; // perform the edit operation.
 	ConNodesOfFrameSet con_nodes_for_warping; // con nodes for warping.
 	ConNodesOfFrameSet con_nodes_for_edit; // con nodes under edit.
-	pVolObjMesh vol_obj; // store both vol and obj mesh.
+	pTetMeshEmbeding vol_obj; // store both vol and obj mesh.
 	DragTrajectoryRecord drag_record;
 	bool record_drag; // if true then record the drag operation.
 	vector<VectorXd> con_node_traj; // trajectory of contraint nodes.

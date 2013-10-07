@@ -3,7 +3,7 @@
 #include <GL/gl.h>
 using namespace LSW_SIM_UI;
 
-void DragGroupSelDraw::drawAllGroupsWithPoints(pVolumetricMesh_const vol_mesh,
+void DragGroupSelDraw::drawAllGroupsWithPoints(pTetMesh_const vol_mesh,
 											   const vector<set<int> >&drag_groups, 
 											   const double*vol_u){
 
@@ -18,7 +18,7 @@ void DragGroupSelDraw::drawAllGroupsWithPoints(pVolumetricMesh_const vol_mesh,
   }
 }
 
-void DragGroupSelDraw::drawAllGroupsWithShpere(pVolumetricMesh_const vol_mesh,
+void DragGroupSelDraw::drawAllGroupsWithShpere(pTetMesh_const vol_mesh,
 											   const vector<set<int> >&drag_groups, 
 											   const double *vol_u, 
 											   const double radius){
@@ -34,13 +34,13 @@ void DragGroupSelDraw::drawAllGroupsWithShpere(pVolumetricMesh_const vol_mesh,
   }
 }
 
-void DragGroupSelDraw::drawPoints(pVolumetricMesh_const vol_mesh,
+void DragGroupSelDraw::drawPoints(pTetMesh_const vol_mesh,
 								  const set<int> &group,
 								  const double *vol_u){
 
   glBegin(GL_POINTS);
   BOOST_FOREACH(int vertex_id, group ){
-	const Vec3d &v = *(vol_mesh->vertex(vertex_id));
+	const Vector3d &v = vol_mesh->nodes()[vertex_id];
 	const double x = v[0] + vol_u[vertex_id*3+0];
 	const double y = v[1] + vol_u[vertex_id*3+1];
 	const double z = v[2] + vol_u[vertex_id*3+2];		
@@ -49,7 +49,7 @@ void DragGroupSelDraw::drawPoints(pVolumetricMesh_const vol_mesh,
   glEnd();  
 }
 
-void DragGroupSelDraw::drawSphere(pVolumetricMesh_const vol_mesh,
+void DragGroupSelDraw::drawSphere(pTetMesh_const vol_mesh,
 								  const set<int> &group,
 								  const double *vol_u, const double radius){
 
@@ -58,7 +58,7 @@ void DragGroupSelDraw::drawSphere(pVolumetricMesh_const vol_mesh,
   double y = 0;
   double z = 0;
   BOOST_FOREACH(int vertex_id, group ){
-	const Vec3d &v = *(vol_mesh->vertex(vertex_id));
+	const Vector3d &v = vol_mesh->nodes()[vertex_id];
 	x += v[0] + vol_u[vertex_id*3+0];
 	y += v[1] + vol_u[vertex_id*3+1];
 	z += v[2] + vol_u[vertex_id*3+2];

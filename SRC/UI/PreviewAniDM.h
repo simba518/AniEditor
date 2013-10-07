@@ -23,11 +23,11 @@ namespace LSW_ANI_EDIT_UI{
 	  return 0;
 	}
 
-	pObjRenderMesh_const getInputObjMesh()const{
+	pObjmesh_const getInputObjMesh()const{
 	  assert (data_model != NULL);
 	  return data_model->getInputObjMesh(this->currentFrameNum());
 	}
-	pObjRenderMesh_const getOutputObjMesh()const{
+	pObjmesh_const getOutputObjMesh()const{
 	  assert (data_model != NULL);
 	  return data_model->getOutputObjMesh(this->currentFrameNum());
 	}

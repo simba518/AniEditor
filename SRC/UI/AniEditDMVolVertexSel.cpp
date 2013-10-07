@@ -10,13 +10,12 @@ int AniEditDMVolVertexSel::totalEleNum ()const{
 
   int total_ele_num = 0;
   if ( hasVolMesh() ){
-	total_ele_num = getVolMesh()->numVertices();
+	total_ele_num = getVolMesh()->nodes().size();
   }
   return total_ele_num;
 }
 
 void AniEditDMVolVertexSel::drawWithNames ()const{
-
   drawVertice();
 }
 
@@ -24,13 +23,13 @@ void AniEditDMVolVertexSel::drawVertice()const{
   
   if( this->hasVolMesh() && data_model->currentFrameNum()>=0){
 
-	pVolumetricMesh_const vol_mesh = getVolMesh();
+	pTetMesh_const vol_mesh = getVolMesh();
 	const VectorXd &vol_u = data_model->getVolFullU();
 
 	glFlush();
-	for (int i=0; i<vol_mesh->numVertices(); i++){
+	for (int i=0; i<vol_mesh->nodes().size(); i++){
 
-	  const Vec3d &v = *(vol_mesh->vertex(i));
+	  const Vector3d &v = vol_mesh->nodes()[i];
 	  const double x = v[0] + vol_u[i*3+0];
 	  const double y = v[1] + vol_u[i*3+1];
 	  const double z = v[2] + vol_u[i*3+2];		

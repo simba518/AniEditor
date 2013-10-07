@@ -19,7 +19,7 @@ AniEditDMConNodeDrag::AniEditDMConNodeDrag(pQGLViewerExt viewer, pAniEditDM dm):
 
 void AniEditDMConNodeDrag::drawWithNames ()const{
 
-  pVolumetricMesh_const vol_mesh = data_model->getVolMesh();
+  pTetMesh_const vol_mesh = data_model->getVolMesh();
   if( vol_mesh != NULL && data_model->currentFrameNum() >= 0){
 	
 	const vector<set<int> > con_groups = data_model->getConNodes();
@@ -47,7 +47,7 @@ void AniEditDMConNodeDrag::draw()const{
 	  && dragger.hasDragedGroup()){
 
 	const set<int> &dragged_nodes = dragger.getSelGroupNods();
-	pVolumetricMesh_const vol_mesh = data_model->getVolMesh();
+	pTetMesh_const vol_mesh = data_model->getVolMesh();
 	const VectorXd &vol_u = data_model->getVolFullU();
 	
 	if (vol_u.size() >= 3){
@@ -76,13 +76,10 @@ void AniEditDMConNodeDrag::selectDragEle(int sel_group_id){
   if (data_model){
 
 	const vector<set<int> > groups = data_model->getConNodes();
-	pVolumetricMesh_const vol_mesh = data_model->getVolMesh();
+	pTetMesh_const vol_mesh = data_model->getVolMesh();
 	if( vol_mesh && sel_group_id < (int)groups.size() ) {
 
-	  double point[3] = {0,0,0};
-	  vol_mesh->barycentersOfGroup(groups[sel_group_id],point);
-	  drag_point << point[0], point[1] , point[2];
-
+	  drag_point = barycentersOfGroup(vol_mesh->nodes(),groups[sel_group_id]);
 	  const VectorXd &u = data_model->getVolFullU();
 	  drag_point += getBaryCenter(groups[sel_group_id],u);
 	}
@@ -187,9 +184,8 @@ void AniEditDMConNodeDrag::updateConPos(){
   if (viewer && data_model->getVolMesh() && dragger.hasDragedGroup()){
 
 	const set<int> &dragged_nodes = dragger.getSelGroupNods();
-	pVolumetricMesh_const vol_mesh = data_model->getVolMesh();
-	double bary_p[3];
-	vol_mesh->barycentersOfGroup(dragged_nodes, bary_p);
+	pTetMesh_const vol_mesh = data_model->getVolMesh();
+	const Vector3d bary_p = barycentersOfGroup(vol_mesh->nodes(),dragged_nodes);
 
 	// initialize the center of the circle of the draged point.
 	const VectorXd &vol_u = data_model->getVolFullU();
@@ -211,4 +207,18 @@ void AniEditDMConNodeDrag::updateConPos(){
   if (viewer != NULL){
 	viewer->update();
   }
+}
+
+Vector3d AniEditDMConNodeDrag::barycentersOfGroup(const VVec3d &nodes, const set<int> &g)const{
+
+  Vector3d bary_p;
+  bary_p.setZero();
+  set<int>::const_iterator it = g.begin();
+  for (; it != g.end(); ++it){
+	assert_in(*it,0,nodes.size()-1);
+	bary_p += nodes[*it];
+  }
+  if (g.size() > 0)
+	bary_p /= g.size();
+  return bary_p;
 }

@@ -13,14 +13,14 @@ namespace LSW_ANI_EDIT_UI{
   const string fname = file_dialog->save();								\
   if(fname.size() >0){													\
 	file_dialog->warning(data_model!=NULL&&data_model->functionName(fname)); \
-  }																		
+  }
 
 #define ANIEDITDM_LOAD(functionName)									\
   const string fname = file_dialog->load();								\
   if(fname.size() >0){													\
 	file_dialog->warning(data_model!=NULL&&data_model->functionName(fname)); \
 	emit update();														\
-  }																		
+  }
 
   class AniEditDM_UI:public QObject{
 

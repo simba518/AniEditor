@@ -62,7 +62,7 @@ namespace LSW_ANI_EDIT_UI{
 	bool hasVolMesh()const{
 	  return (data_model != NULL && data_model->getVolMesh() != NULL);
 	}
-	pVolumetricMesh_const getVolMesh()const{
+	pTetMesh_const getVolMesh()const{
 	  return data_model->getVolMesh();
 	}
 	

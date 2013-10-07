@@ -11,13 +11,13 @@ SET(NONE_QT_CPP
   AniEditDMVolVertexSel.cpp
   DragTrajectoryRecord.cpp
   DragGroupSelDraw.cpp
+  VolMeshDrawer.cpp
 )
 
 #####################################QT#####################################
 SET(UI_SOURCES
 
   AniEditMainWin.cpp  
-  VolObjMeshCtrl.cpp
 )
 
 SET(UI_HEADERS 
@@ -71,6 +71,7 @@ TARGET_LINK_LIBRARIES(${APPNAME}
  
   /usr/local/lib/libutility_ui.a
   /usr/local/lib/libutility_math.a
+  /usr/local/lib/libutility_common.a
   ${QGLViewer_LIBRARIES}
   ${QT_LIBRARIES}
   ${GLM_LIBRARIES}

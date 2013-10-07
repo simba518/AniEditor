@@ -8,7 +8,8 @@ using namespace std;
 #include <assertext.h>
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
-#include <volumetricMesh.h>
+#include <TetMesh.h>
+using namespace UTILITY;
 
 namespace LSW_BASE_UI{
   
@@ -35,7 +36,7 @@ namespace LSW_BASE_UI{
 
 	// draw several groups of vertice, T could be vector<int>, set<int>.
 	template<typename T>
-	void draw(pVolumetricMesh_const vol_mesh, const vector<T >&groups, const double *vol_u, const NODE_SHAPE s=DRAW_POINT)const{
+	void draw(pTetMesh_const vol_mesh, const vector<T >&groups, const double *vol_u, const NODE_SHAPE s=DRAW_POINT)const{
 	  BOOST_FOREACH(const T &ele, groups){
 		draw(vol_mesh,ele,vol_u,s);
 	  }
@@ -43,7 +44,7 @@ namespace LSW_BASE_UI{
 
 	// draw a group of vertice, T could be vector<int>, set<int> or int.
 	template<typename T> 
-	void draw(pVolumetricMesh_const vol_mesh, const T &group, const double *vol_u, const NODE_SHAPE s=DRAW_POINT)const{
+	void draw(pTetMesh_const vol_mesh, const T &group, const double *vol_u, const NODE_SHAPE s=DRAW_POINT)const{
 
 	  if(vol_mesh == NULL){
 		return;
@@ -63,14 +64,14 @@ namespace LSW_BASE_UI{
 	}
 
   protected:
-	void drawPoints(pVolumetricMesh_const vol_mesh, int vertex_id, const double *vol_u)const;
-	void drawShpere(pVolumetricMesh_const vol_mesh, int vertex_id, const double *vol_u)const;
+	void drawPoints(pTetMesh_const vol_mesh, int vertex_id, const double *vol_u)const;
+	void drawShpere(pTetMesh_const vol_mesh, int vertex_id, const double *vol_u)const;
 
-	void drawPoints(pVolumetricMesh_const vol_mesh, const set<int> &group, const double *vol_u)const;
-	void drawShpere(pVolumetricMesh_const vol_mesh, const set<int> &group, const double *vol_u)const;
+	void drawPoints(pTetMesh_const vol_mesh, const set<int> &group, const double *vol_u)const;
+	void drawShpere(pTetMesh_const vol_mesh, const set<int> &group, const double *vol_u)const;
 
-	void drawPoints(pVolumetricMesh_const vol_mesh, const vector<int> &group, const double *vol_u)const;
-	void drawShpere(pVolumetricMesh_const vol_mesh, const vector<int> &group, const double *vol_u)const;
+	void drawPoints(pTetMesh_const vol_mesh, const vector<int> &group, const double *vol_u)const;
+	void drawShpere(pTetMesh_const vol_mesh, const vector<int> &group, const double *vol_u)const;
 
   protected:
 	void DrawSphere(float x, float y, float z, float fRadius, int M, int N)const;

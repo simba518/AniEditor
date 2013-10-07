@@ -37,12 +37,12 @@ namespace LSW_ANI_EDIT_UI{
 	bool hasVolMesh()const{
 
 	  bool has = false;
-	  if(data_model != NULL && data_model->getVolObjMesh() != NULL)
-		has = (data_model->getVolObjMesh()->getVolMesh() != NULL);
+	  if(data_model != NULL)
+		has = (data_model->getVolMesh() != NULL);
 	  return has;
 	}
-	pVolumetricMesh_const getVolMesh()const{
-	  return data_model->getVolObjMesh()->getVolMesh();
+	pTetMesh_const getVolMesh()const{
+	  return data_model->getVolMesh();
 	}
 
 	void drawVertice()const;

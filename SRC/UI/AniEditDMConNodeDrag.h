@@ -80,6 +80,7 @@ namespace LSW_ANI_EDIT_UI{
 					  const double color[3])const;
 	void drawMouseCircle()const;
 	void drawDragPointCircle()const;
+	Vector3d barycentersOfGroup(const VVec3d &nodes, const set<int> &g)const;
 	
   private:
 	pQGLViewerExt viewer;

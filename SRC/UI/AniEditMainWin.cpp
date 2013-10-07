@@ -20,7 +20,7 @@ void AniEditMainWin::initComponents(QWidget *parent,Qt::WFlags flags){
   file_dialog = pFileDialog(new FileDialog(this));
 
   p_animation = pAniDataModel(new AniDataModel());
-  p_VolObjMesh = pVolObjMesh(new VolObjMesh());
+  p_VolObjMesh = pTetMeshEmbeding(new TetMeshEmbeding());
   p_VolObjMeshCtrl = pVolObjMeshCtrl(new VolObjMeshCtrl(this, p_VolObjMesh));
   p_AniEditDM = pAniEditDM(new AniEditDM(p_VolObjMesh,p_animation));
   p_AniEditDM_UI = pAniEditDM_UI(new AniEditDM_UI(this, p_AniEditDM));

@@ -1,22 +1,16 @@
 #ifndef _MESHVTKIO_H_
 #define _MESHVTKIO_H_
 
-#include <boost/lexical_cast.hpp>
-#include <assertext.h>
 #include <eigen3/Eigen/Dense>
-#include <VolObjMesh.h>
-#include <ObjRenderMesh.h>
+#include <assertext.h>
+#include <Objmesh.h>
+#include <TetMesh.h>
 #include <IO.h>
 using namespace Eigen;
-using boost::lexical_cast;
+using namespace UTILITY;
 
 namespace LSW_SIM{
 
-  typedef Eigen::Vector3d Vec3;
-  typedef Eigen::Matrix<sizeType, 3, 1> Vec3i;
-  typedef std::vector<Vec3,Eigen::aligned_allocator<Vec3> >VectorV3;
-  typedef vector<Vec3i,Eigen::aligned_allocator<Vec3i> >VectorV3i;
-  
   /**
    * @class MeshVtkIO read and write mesh as vtk files.
    * 
@@ -24,30 +18,26 @@ namespace LSW_SIM{
   class MeshVtkIO{
 	
   public:
-	static string int2str(const int number){
-	  return lexical_cast<string>(number);
-	}
-
-	static bool write(pVolumetricMesh_const volMesh,const string filename){
+	static bool write(pTetMesh_const volMesh,const string filename){
 	  if(volMesh)
 		return write(*volMesh,filename);
 	  return false;
 	}
-	static bool write(pVolumetricMesh_const volMesh,const VectorXd &u,const string filename){
+	static bool write(pTetMesh_const volMesh,const VectorXd &u,const string filename){
 	  if(volMesh)
 		return write(*volMesh,u,filename);
 	  return false;
 	}
-	static bool write(const VolumetricMesh &volMesh,const string filename){
-	  const VectorXd u0 = VectorXd::Zero(volMesh.numVertices()*3);
+	static bool write(const TetMesh &volMesh,const string filename){
+	  const VectorXd u0 = VectorXd::Zero(volMesh.nodes().size()*3);
 	  return write(volMesh,u0,filename);
 	}
-	static bool write(const VolumetricMesh &volMesh,const VectorXd &u, const string filename){
+	static bool write(const TetMesh &volMesh,const VectorXd &u, const string filename){
 
-	  assert_eq(u.size(),volMesh.numVertices()*3);
+	  assert_eq(u.size(),volMesh.nodes().size()*3);
 	  vector<double> x;
-	  volMesh.vertices(x);
-	  VectorV3 v(x.size()/3);
+	  volMesh.nodes(x);
+	  VVec3d v(x.size()/3);
 	  for (size_t i = 0; i < v.size(); ++i){
 		v[i][0] = x[i*3+0] + u[i*3+0];
 		v[i][1] = x[i*3+1] + u[i*3+1];
@@ -63,27 +53,26 @@ namespace LSW_SIM{
 	  return true;
 	}
 
-	static bool write(pObjRenderMesh_const objMesh,const string filename){
+	static bool write(pObjmesh_const objMesh,const string filename){
 	  if(objMesh)
 		return write(*objMesh,filename);
 	  return false;
 	}
-	static bool write(const ObjRenderMesh &objMesh,const string filename){
+	static bool write(const Objmesh &objMesh,const string filename){
 
-	  const float *v = objMesh.Vertices();
-	  if(!v){
+	  const VectorXd &v = objMesh.getVerts();
+	  if(v.size() <= 0){
 		return false;
 	  }
-	  VectorV3 vertices(objMesh.getVerticesNum());
-	  for (int i = 0; i < objMesh.getVerticesNum(); ++i){
+	  VVec3d vertices(objMesh.getVertsNum());
+	  for (int i = 0; i < objMesh.getVertsNum(); ++i){
 		vertices[i][0] = v[i*3+0];
 		vertices[i][1] = v[i*3+1];
 		vertices[i][2] = v[i*3+2];
 	  }
 
-	  vector<int> tri;
-	  objMesh.Triangles(tri);
-	  VectorV3i faces(tri.size()/3);
+	  const VectorXi &tri = objMesh.getFaces();
+	  VVec3i faces(tri.size()/3);
 	  for (int i = 0; i < faces.size(); ++i){
 		faces[i][0] = tri[i*3+0];
 		faces[i][1] = tri[i*3+1];

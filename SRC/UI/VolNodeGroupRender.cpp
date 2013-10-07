@@ -36,7 +36,7 @@ void VolNodeGroupRender::setColor(const double c[4]){
   color[3] = c[3];
 }
 
-void VolNodeGroupRender::drawPoints(pVolumetricMesh_const vol_mesh, 
+void VolNodeGroupRender::drawPoints(pTetMesh_const vol_mesh, 
 									int v_id, const double *u)const{
 
   glDisable(GL_LIGHTING);
@@ -44,7 +44,7 @@ void VolNodeGroupRender::drawPoints(pVolumetricMesh_const vol_mesh,
   glColor4d(color[0], color[1], color[2],color[3]);
   glBegin(GL_POINTS);
 
-  const Vec3d &v = *(vol_mesh->vertex(v_id));
+  const Vector3d &v = vol_mesh->nodes()[v_id];
   if(u != NULL){
 
 	double x = v[0]+u[v_id*3+0];
@@ -59,11 +59,11 @@ void VolNodeGroupRender::drawPoints(pVolumetricMesh_const vol_mesh,
   glEnable(GL_LIGHTING);
 }
 
-void VolNodeGroupRender::drawShpere(pVolumetricMesh_const vol_mesh, 
+void VolNodeGroupRender::drawShpere(pTetMesh_const vol_mesh, 
 									int v_id, const double *u)const{
 
   glEnable(GL_LIGHTING);
-  const Vec3d &v = *(vol_mesh->vertex(v_id));
+  const Vector3d &v = vol_mesh->nodes()[v_id];
   if(u != NULL){
 	const double x = v[0]+u[v_id*3+0];
 	const double y = v[1]+u[v_id*3+1];
@@ -74,7 +74,7 @@ void VolNodeGroupRender::drawShpere(pVolumetricMesh_const vol_mesh,
   }
 }
 
-void VolNodeGroupRender::drawPoints(pVolumetricMesh_const vol_mesh, 
+void VolNodeGroupRender::drawPoints(pTetMesh_const vol_mesh, 
 									const vector<int> &group, const double *u)const{
 
   glDisable(GL_LIGHTING);
@@ -83,7 +83,7 @@ void VolNodeGroupRender::drawPoints(pVolumetricMesh_const vol_mesh,
   glBegin(GL_POINTS);
   BOOST_FOREACH(int v_id, group){
 
-	const Vec3d &v = *(vol_mesh->vertex(v_id));
+	const Vector3d &v = vol_mesh->nodes()[v_id];
 	if(u != NULL){
 	  double x = v[0]+u[v_id*3+0];
 	  double y = v[1]+u[v_id*3+1];
@@ -97,7 +97,7 @@ void VolNodeGroupRender::drawPoints(pVolumetricMesh_const vol_mesh,
   glEnable(GL_LIGHTING); 
 }
 
-void VolNodeGroupRender::drawShpere(pVolumetricMesh_const vol_mesh, 
+void VolNodeGroupRender::drawShpere(pTetMesh_const vol_mesh, 
 									const vector<int> &group, const double *u)const{
 
   if (group.size() <= 0){
@@ -110,7 +110,7 @@ void VolNodeGroupRender::drawShpere(pVolumetricMesh_const vol_mesh,
   glEnable(GL_LIGHTING);
   BOOST_FOREACH(int v_id, group){
 
-	const Vec3d &v = *(vol_mesh->vertex(v_id));
+	const Vector3d &v = vol_mesh->nodes()[v_id];
 	if(u != NULL){
 	  x += v[0]+u[v_id*3+0];
 	  y += v[1]+u[v_id*3+1];
@@ -128,7 +128,7 @@ void VolNodeGroupRender::drawShpere(pVolumetricMesh_const vol_mesh,
   DrawSphere(x,y,z,radius,10,10);
 }
 
-void VolNodeGroupRender::drawPoints(pVolumetricMesh_const vol_mesh, 
+void VolNodeGroupRender::drawPoints(pTetMesh_const vol_mesh, 
 									const set<int> &group, const double *u)const{
   
   glDisable(GL_LIGHTING);
@@ -137,7 +137,7 @@ void VolNodeGroupRender::drawPoints(pVolumetricMesh_const vol_mesh,
   glBegin(GL_POINTS);
   BOOST_FOREACH(int v_id, group){
 
-	const Vec3d &v = *(vol_mesh->vertex(v_id));
+	const Vector3d &v = vol_mesh->nodes()[v_id];
 	if(u != NULL){
 	  double x = v[0]+u[v_id*3+0];
 	  double y = v[1]+u[v_id*3+1];
@@ -151,7 +151,7 @@ void VolNodeGroupRender::drawPoints(pVolumetricMesh_const vol_mesh,
   glEnable(GL_LIGHTING); 
 }
 
-void VolNodeGroupRender::drawShpere(pVolumetricMesh_const vol_mesh, 
+void VolNodeGroupRender::drawShpere(pTetMesh_const vol_mesh, 
 									const set<int> &group, const double *u)const{
   
   if (group.size() <= 0){
@@ -163,7 +163,7 @@ void VolNodeGroupRender::drawShpere(pVolumetricMesh_const vol_mesh,
   double z = 0;
   BOOST_FOREACH(int v_id, group){
 
-	const Vec3d &v = *(vol_mesh->vertex(v_id));
+	const Vector3d &v = vol_mesh->nodes()[v_id];
 	if(u != NULL){
 	  x += v[0]+u[v_id*3+0];
 	  y += v[1]+u[v_id*3+1];

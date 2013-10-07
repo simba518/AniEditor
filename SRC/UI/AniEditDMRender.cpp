@@ -1,10 +1,12 @@
 #include <GL/gl.h>
 #include <boost/lexical_cast.hpp>
-#include <VolMeshDrawer.h>
 #include <ConNodeSetDrawer.h>
+#include "VolMeshDrawer.h"
 #include "AniEditDMRender.h"
+#include <MeshRender.h>
 using namespace LSW_BASE_SIM;
 using namespace LSW_ANI_EDIT_UI;
+using namespace UTILITY;
 
 AniEditDMRender::AniEditDMRender(pAniEditDM dm,int type, const string title)
   :data_model(dm),render_type(type),title(title){
@@ -79,12 +81,10 @@ void AniEditDMRender::updateFrameNumText(){
 }
 
 void AniEditDMRender::drawInputObj()const{
-
   if (data_model != NULL){
-
-	pObjRenderMesh_const obj_mesh= data_model->getInputObjMesh();
+	pObjmesh_const obj_mesh= data_model->getInputObjMesh();
 	if (obj_mesh != NULL){
-	  obj_mesh->draw(0.5,0.5,0.5);
+	  UTILITY::draw(*obj_mesh);
 	}
   }
 }
@@ -93,24 +93,23 @@ void AniEditDMRender::drawInputVol()const{
 
   if (data_model != NULL && data_model->getVolMesh() != NULL){
 
-	pVolumetricMesh_const vol_mesh = data_model->getVolMesh();
+	pTetMesh_const vol_mesh = data_model->getVolMesh();
 	const double *u = NULL;
 	if (data_model->currentFrameNum() >=0){
 	  const VectorXd &vol_u = data_model->getVolFullU();
 	  if(vol_u.size() > 0)
 		u = &(vol_u[0]);
 	}
-	VolMeshDrawer::render(vol_mesh.get(),POINT,u);
+	VolMeshDrawer::render(vol_mesh,POINT,u);
   }
 }
 
 void AniEditDMRender::drawOutputObj()const{
   
   if (data_model != NULL){
-	pObjRenderMesh_const obj_mesh= data_model->getOutputObjMesh();
+	pObjmesh_const obj_mesh= data_model->getOutputObjMesh();
 	if (obj_mesh != NULL){
-	  /// @bug the glPushAttrib and glPushAttrib can't be used here.
-	  obj_mesh->draw();
+	  UTILITY::draw(*obj_mesh);
 	}
   }
 }
@@ -119,14 +118,14 @@ void AniEditDMRender::drawOutputVol()const{
   
   if (data_model != NULL && data_model->getVolMesh() != NULL){
 
-	pVolumetricMesh_const vol_mesh = data_model->getVolMesh();
+	pTetMesh_const vol_mesh = data_model->getVolMesh();
 	const double *u = NULL;
 	if (data_model->currentFrameNum() >=0){
 	  const VectorXd &vol_u = data_model->getVolFullU();
 	  if(vol_u.size() > 0)
 		u = &(vol_u[0]);
 	}
-	VolMeshDrawer::render(vol_mesh.get(),POINT,u);
+	VolMeshDrawer::render(vol_mesh,POINT,u);
   }
 }
 
@@ -134,7 +133,7 @@ void AniEditDMRender::drawConNodes()const{
 
   if ( hasVolMesh() && data_model->currentFrameNum() >= 0){
 
-	pVolumetricMesh_const vol_mesh = getVolMesh();
+	pTetMesh_const vol_mesh = getVolMesh();
 	const vector<set<int> > groups = data_model->getConNodes();
 	const VectorXd &vol_u = data_model->getVolFullU();
 	if (vol_u.size() >= 3){
