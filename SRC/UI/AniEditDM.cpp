@@ -2,7 +2,6 @@
 #include <Timer.h>
 #include <boost/foreach.hpp>
 #include <MatrixIO.h>
-#include <ObjFileIO.h>
 #include <JsonFilePaser.h>
 #include <InterpolatorFactory.h>
 #include "AniEditDM.h"
@@ -300,7 +299,7 @@ bool AniEditDM::saveOutputMeshes(const string filename)const{
   	const string f_id = boost::lexical_cast<string>(f);
     const string frame = filename +getZeroStr(f,T)+ f_id + string(".obj");
   	cout << frame << endl;
-  	succ = UTILITY::write(frame,*(getOutputObjMesh(f)));
+  	succ = getOutputObjMesh(f)->write(frame);
   	if(!succ){
   	  ERROR_LOG("failed to save frame " << f << " to " << frame);
   	  break;
@@ -318,7 +317,7 @@ bool AniEditDM::saveInputMeshes(const string filename)const{
   	const string f_id = boost::lexical_cast<string>(f);
     const string frame = filename +getZeroStr(f,T)+ f_id + string(".obj");
 	INFO_LOG(frame);
-	succ = UTILITY::write(frame,*(getInputObjMesh(f)));
+	succ = getInputObjMesh(f)->write(frame);
   	if(!succ){
   	  ERROR_LOG("failed to save frame " << f << " to " << frame);
   	  break;
@@ -328,11 +327,11 @@ bool AniEditDM::saveInputMeshes(const string filename)const{
 }
 
 bool AniEditDM::saveCurrentOutputMesh(const string filename)const{
-  return UTILITY::write(filename,*getOutputObjMesh(currentFrameNum()));
+  return getOutputObjMesh(currentFrameNum())->write(filename);
 }
 
 bool AniEditDM::saveCurrentInputMesh(const string filename)const{
-  return UTILITY::write(filename,*getInputObjMesh(currentFrameNum()));
+  return getInputObjMesh(currentFrameNum())->write(filename);
 }
 
 bool AniEditDM::saveCurrentOutputVolMesh(const string filename){

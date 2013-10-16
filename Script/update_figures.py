@@ -5,19 +5,18 @@
 
 import os
 from resize_images import *
-from data_dir import *
 from utility import *
 
-figure_dir = "~/Workspace/AnimationEditor/Doc/"
+figure_dir = "/home/simba/Workspace/"
 # show an image
-# image_file_name = figure_dir+"/tempt/tight_pos_con_linear.jpg"
+# image_file_name = figure_dir+"/tempt/a.jpg"
 # show_image(image_file_name)
 
 # resize images
 src_dir = figure_dir+"/tempt"
-target_dir = figure_dir+"/report"
-box = [380, 230, 1400, 820]
-resize_images(src_dir, target_dir, box, "png")
+target_dir = figure_dir+"/tempt/aa"
+box = [0, 0, 1000, 1000]
+# resize_images(src_dir, target_dir, box, "png")
 resize_images(src_dir, target_dir, box, "jpg")
 
 # compile the document

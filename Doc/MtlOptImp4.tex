@@ -1,0 +1,110 @@
+\documentclass[9pt,twocolumn]{extarticle}
+
+\usepackage[hmargin=0.5in,tmargin=0.5in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{times}
+
+\usepackage{cleveref}
+\usepackage{color}
+\newcommand{\TODO}[1]{\textcolor{red}{#1}}
+
+\newcommand{\FPP}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\argmin}{\operatornamewithlimits{arg\ min}}
+\author{Siwang Li}
+
+\title{Elastic Material Optimization}
+
+%% document begin here
+\begin{document}
+\maketitle
+
+\setlength{\parskip}{0.5ex}
+
+\section{Optimize Reduced Stiffness Material}
+In the first few experiments, we intend to optimize only the stiffness materials
+in subspace.
+
+\subsection{Input data}
+First, we need to produce an animation sequence $z'_0,\cdots,z'_{T}$ in subspace
+without external forces. We fix one end of a beam, and make modal analysis to
+obtain a reduced elastic system
+\begin{equation} \label{mq}
+  \ddot{z}' + (\alpha_m+\alpha_k \Lambda')\dot{z}' + z' = f
+\end{equation} 
+Then we deform the beam using the first and sixth modes to obtain the initial
+state $z'_0$ of a reduced simulator. Finally, we produce the remaining frames
+$z'_1,\cdots,z'_{T}$ using this simulator with $f=0$. 
+
+Second, we select several frames $z'_{0},z'_{k1},\cdots,z'_{k_n}$ from the above
+sequence, and use them as keyframes in the following experiments.
+
+\subsection{Experiments}
+In all of these experiments, we use $z'_{0},z'_{k1},\cdots,z'_{k_n}$ as keyframes,
+and then solve for a new sequence $z_0,\cdots,z_{T}$ by solving this
+space-time constraint problem
+\begin{eqnarray} \label{sp}
+  \min_{z,\Lambda} E(z,\Lambda) &=& \frac{1}{2} \int_{0}^{T}\|\ddot{z} +
+  (\alpha_m+\alpha_k \Lambda)\dot{z} + z\|_2^2\\
+  \mbox{s.t. } z_{k_i} &=& z'_{k_i}
+\end{eqnarray}
+We hope that $z_i$ can satisfy these keyframes. What's
+more, we also hope that we can find some proper elastic material $\Lambda$ to
+reduce the control forces. 
+
+\subsubsection{Optimize $z$ only}
+In this experiment, we only optimize for $z$. We first fix the elastic material
+$\Lambda = \Lambda'$, and hope that the control forces are nearly zero. And then
+use a different material $\Lambda=\Lambda''$ to optimize $z$, and it should
+produce much larger control forces. Specially, we need to calculate the control
+forces when $\Lambda= 0$.
+
+\subsubsection{Optimize $z$ and $\Lambda$}
+We use $\Lambda=0$ as the initial value to optimize equation (\ref{sp}), and
+hope that we can find $\Lambda=\Lambda'$ (maybe only for the modes which are
+used to generated the keyframes).
+
+\subsubsection{Change time step and damping}
+We use time step and damping that are different from those used to generate the
+input animation, and make the second experiment. We hope that the control forces
+are much smaller, and $\Lambda$ convergent to some reasonable values other
+than zero.
+
+\subsubsection{Use dense stiffness matrix $K$}
+In this experiment, we use a dense matrix $K=A^TA$ instead of $\Lambda$ in
+equation (\ref{sp}), and then optimize for both $A$ and $z$. Then we take the
+eigen decomposition $K = U^T\Lambda U$, and we hope that $\Lambda$ is close to
+the reference value $\Lambda'$.
+
+Then we will use different time step and damping to make the same experiment,
+and we hope that $\Lambda$ convergent to some reasonable values other than zero,
+and the control forces are smaller than use $\Lambda=\Lambda'$.
+
+\subsubsection{Exchange the keyframes}
+In this experiment, we change the order of the keyframes. In such case, if we
+fix $\Lambda = \Lambda'$, and solve for $z$, the control forces will much larger
+than zero, and this is the general case in elastic optimization. Then we
+optimize for $K=A^TA$ and $z$ as above experiment, and we hope that we can find
+some better elastic materials for this animation, i.e, smaller control forces
+and reasonable $\Lambda$.
+
+\section{More experiments}
+\subsection{Optimize Basis $\hat{W}$}
+If we can obtain the desired results in the above experiments, we can try to
+introduce $\hat{W}$ as variables in the optimization process, and use the
+"Material Estimation" method in our proposal to solve this optimization
+problem. And in this experiment, we can try to use some keyframes that can not
+be defined by the initial $\hat{W}$, and we hope that the optimized $\hat{W}$
+can well define these shapes.
+
+\subsection{Partial constraints}
+We can try to use some partial constraints $Cz = u^c$ instead of the keyframes,
+and then solve for the optimal material.
+
+
+%% references
+% \begin{thebibliography}{99}
+% \bibitem{sig2011} Fast simulation of skeleton-driven deformable body
+%   characters.
+% \end{thebibliography}
+
+\end{document}
