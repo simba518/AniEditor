@@ -60,10 +60,11 @@ namespace LSW_ANI_EDITOR{
 		  displayed_mode = -1;
 		}
 		displayed_mode ++;
-		cout << "mode = " << displayed_mode << endl;
+		const double zT = s/sqrt(eigenvalues[displayed_mode]);
+		cout << "mode = " << displayed_mode << ", z[T] = "<< zT << endl;
 		for (size_t f = 0; f < T; ++f){
 		  z[f].setZero();
-		  z[f][displayed_mode]=(s*f/T)/sqrt(eigenvalues[displayed_mode]);
+		  z[f][displayed_mode]=zT*f/T;
 		}
 	  }
 

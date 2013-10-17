@@ -57,6 +57,10 @@ namespace IEDS{
 	int numBoundaryFrames()const;
 	int totalFrames()const;
 	int totalDim()const;
+	const VectorXd &getEigenvalues()const{
+	  assert(hessian_comp);
+	  return hessian_comp->getEigenvalues();
+	}
 
   protected:
 	int removedFrameNumBefore(const int frame_id)const;

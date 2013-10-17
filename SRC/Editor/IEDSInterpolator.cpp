@@ -73,6 +73,9 @@ bool IEDSInterpolator::init (const string init_filename){
 	succ = anieditor.precompute();
 	succ &= initWarper(init_filename);
   }
+
+  modalDisplayer.initialize(init_filename);
+
   ERROR_LOG_COND("failed to initialize IEDSInterpolator.",succ);
   return succ;
 }
@@ -139,6 +142,10 @@ void IEDSInterpolator::removeAllPosCon(){
 }
 
 bool IEDSInterpolator::interpolate (){
+
+  if (modalDisplayer.isShowModalModes()){
+	return modalDisplayer.showModalModes(anieditor.getEigenvalues(),delta_z);
+  }
 
   // set partial constraints
   applyPosCon();

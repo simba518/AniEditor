@@ -6,6 +6,7 @@
 #include <FastAniEditor.h>
 #include <RSWarperExt.h>
 #include <WarpedPosConAD.h>
+#include <ModalModeDisplayer.h>
 using namespace IEDS;
 using namespace LSW_WARPING;
 
@@ -125,7 +126,7 @@ namespace LSW_ANI_EDITOR{
 	vector<int> con_frame_id;   // frames that has position constraints
 	vector<SparseMatrix<double> > C;         // full constraint matrix.
 	vector<VectorXd> uc;        // target displacements with respect to the rest.
-
+	ModalModeDisplayer modalDisplayer;
   };
   
   typedef boost::shared_ptr<IEDSInterpolator> pIEDSInterpolator;

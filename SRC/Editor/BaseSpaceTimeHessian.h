@@ -49,6 +49,9 @@ namespace IEDS{
 	  this->eigen_values = eigen_values;
 	}
 
+	const VectorXd &getEigenvalues()const{
+	  return eigen_values;
+	}
 	int reducedDim()const{
 	  return eigen_values.size();
 	}
