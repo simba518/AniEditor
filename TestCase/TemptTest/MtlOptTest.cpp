@@ -31,11 +31,12 @@ typedef struct _MtlOptModel{
 	Kid.resize(6);
 	Kid << 0,12,50,85,140,199;
 
-	testModeId.resize(2);
-	testModeId<<0,1;
+	testModeId.resize(3);
+	testModeId<<0,1,2;
 	z0.resize(testModeId.size());
 	z0[0] = 10000;
 	z0[1] = 7000;
+	z0[2] = 7000;
 
 	loadLambda(dataDir+"eigen_values80.b");
 	const VectorXd tlam = lambda;
@@ -303,48 +304,11 @@ BOOST_AUTO_TEST_CASE(Opt_Z_Damping){
   const VSX damping = makeSymbolic(model.redDim(),"d");
   ad.setDamping(damping);
 
-  // const VSX ak = makeSymbolic(model.redDim(),"ak");
-  // const VSX am = makeSymbolic(model.redDim(),"am");
-  // ad.setDamping(ak,am,model.lambda);
-
   ad.assembleEnergy();
-  VSX varX = ad.getVarZ();
 
+  VSX varX = ad.getVarZ();
   varX.insert(varX.end(),damping.begin(),damping.end());
-  // varX.insert(varX.end(),ak.begin(),ak.end());
-  // varX.insert(varX.end(),am.begin(),am.end());
-
   model.initSolver(ad.getEnergy(),varX);
-  model.solve();
-  model.saveRlst();
-}
-
-BOOST_AUTO_TEST_CASE(Opt_Z_Lambda){
-
-  MtlOptModel model;
-  model.produceSimRlst();
-
-  RedSpaceTimeEnergyAD ad;
-  model.initMtlOpt(ad);
-
-  const VSX lambda = makeSymbolic(model.redDim(),"La");
-  ad.setK(lambda);
-  ad.setDamping(0.150809,0.244,model.lambda);
-
-  ad.assembleEnergy();
-  VSX varX = ad.getVarZ();
-  varX.insert(varX.end(),lambda.begin(),lambda.end());
-  model.initSolver(ad.getEnergy(),varX);
-
-  // vector<double> x0(varX.size(),0);
-  // const int lenZ = ad.getVarZ().size();
-  // const VectorXd &cZ = Map<VectorXd>(&model.CorrectZ(0,0),model.CorrectZ.size());
-  // ASSERT_EQ(lenZ,cZ.size());
-  // for (int i = 0; i < lenZ; ++i){
-  //   x0[i] = cZ[i]*0.8f;
-  // }
-  // x0[lenZ] = 1.0f;
-  // model.solver.setInput(x0,CasADi::NLP_X_INIT);
 
   model.solve();
   model.saveRlst();
@@ -354,7 +318,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_Damping_Lambda){
 
   MtlOptModel model;
   model.produceSimRlst();
-  // model.extrangeKeyframes();
+  model.extrangeKeyframes();
 
   RedSpaceTimeEnergyAD ad;
   model.initMtlOpt(ad);
@@ -376,8 +340,6 @@ BOOST_AUTO_TEST_CASE(Opt_Z_Damping_Lambda){
   ASSERT_EQ(lenZ,cZ.size());
   for (int i = 0; i < lenZ; ++i)
     x0[i] = cZ[i]*0.8f;
-  x0[lenZ] = 0.0159731;
-  x0[lenZ+1] = 0.0497447;
   model.solver.setInput(x0,CasADi::NLP_X_INIT);
 
   model.solve();
@@ -416,15 +378,19 @@ BOOST_AUTO_TEST_CASE(Opt_Z_Damping_K){
     x0[i] = cZ[i]*0.8f;
   MatrixXd initA(r,r);
   initA.setZero();
-  for (int i = 0; i < r; ++i){
+  for (int i = 0; i < r; ++i)
 	initA(i,i) = sqrt(model.lambda[i]);
-  }
   const VectorXd &vA = Map<VectorXd>(&initA(0,0),initA.size());
-  for (int i = lenZ+damping.size(); i < x0.size(); ++i){
+  for (int i = lenZ+damping.size(); i < x0.size(); ++i)
 	x0[i] = vA[i-lenZ-damping.size()]*0.8f;
-  }
 
   model.solver.setInput(x0,CasADi::NLP_X_INIT);
+
+  vector<double> lowerB(x0.size(),-std::numeric_limits<double>::infinity());
+  for (int i = lenZ; i < x0.size()-ax.size(); ++i)
+	lowerB[i] = 0.0f;
+
+  model.solver.setInput(lowerB,CasADi::NLP_LBX);
 
   model.solve();
   model.saveRlst();

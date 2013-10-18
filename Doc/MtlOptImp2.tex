@@ -58,7 +58,7 @@ Given the input sequence $z_0,\cdots,z_T$, we define a quadratic energy function
 \begin{equation} \label{qua-en}
   E(k,d) = \sum_{i=2}^{T-1} \|\frac{1}{h^2}\hat{z}_i+\frac{1}{h}\hat{D}(d)(z_{i+1}-z_{i})+ K(k)z_i\|_2^2
 \end{equation}
-where $h$ is the time step,$\hat{z}_i=z_{i+1}-2z_{i}+z_{i-1}$,$\hat{D}(d) =
+where $h$ is the time step,$\hat{z}_i=z_{i+1}-2z_{i}+z_{i-1}$o,$\hat{D}(d) =
 diag(d_1,\dots,d_m)$ is a diagonal matrix represent the damping, and $K(k)$ is a
 dense symmetric matrix which is obtained by properly assemble $k_i$ into
 $K$. Firstly, we will suppose $\hat{D}$ is known, and optimize for $K$

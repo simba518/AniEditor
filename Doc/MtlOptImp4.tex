@@ -7,6 +7,7 @@
 \usepackage{cleveref}
 \usepackage{color}
 \newcommand{\TODO}[1]{\textcolor{red}{#1}}
+\newcommand{\RED}[1]{\textcolor{red}{#1}}
 
 \newcommand{\FPP}[2]{\frac{\partial #1}{\partial #2}}
 \newcommand{\argmin}{\operatornamewithlimits{arg\ min}}
@@ -20,7 +21,7 @@
 
 \setlength{\parskip}{0.5ex}
 
-\section{Optimize Reduced Stiffness Material}
+\section{Optimize Reduced Stiffness Material}\label{sec:optim-reduc-stiffn}
 In the first few experiments, we intend to optimize only the stiffness materials
 in subspace.
 
@@ -29,11 +30,11 @@ First, we need to produce an animation sequence $z'_0,\cdots,z'_{T}$ in subspace
 without external forces. We fix one end of a beam, and make modal analysis to
 obtain a reduced elastic system
 \begin{equation} \label{mq}
-  \ddot{z}' + (\alpha_m+\alpha_k \Lambda')\dot{z}' + z' = f
+  \ddot{z}' + D'\dot{z}' + \Lambda'z' = f
 \end{equation} 
-Then we deform the beam using the first and sixth modes to obtain the initial
-state $z'_0$ of a reduced simulator. Finally, we produce the remaining frames
-$z'_1,\cdots,z'_{T}$ using this simulator with $f=0$. 
+Then we deform the beam using the first few modes to obtain the initial state
+$z'_0$ of a reduced simulator. Finally, we produce the remaining frames
+$z'_1,\cdots,z'_{T}$ using this simulator with $f=0$.
 
 Second, we select several frames $z'_{0},z'_{k1},\cdots,z'_{k_n}$ from the above
 sequence, and use them as keyframes in the following experiments.
@@ -44,12 +45,18 @@ and then solve for a new sequence $z_0,\cdots,z_{T}$ by solving this
 space-time constraint problem
 \begin{eqnarray} \label{sp}
   \min_{z,\Lambda} E(z,\Lambda) &=& \frac{1}{2} \int_{0}^{T}\|\ddot{z} +
-  (\alpha_m+\alpha_k \Lambda)\dot{z} + z\|_2^2\\
+  D\dot{z} + \Lambda z\|_2^2\\
   \mbox{s.t. } z_{k_i} &=& z'_{k_i}
 \end{eqnarray}
-We hope that $z_i$ can satisfy these keyframes. What's
-more, we also hope that we can find some proper elastic material $\Lambda$ to
-reduce the control forces. 
+And in our implementation, we discrete this problem using Central Difference
+Method
+\begin{equation}\label{spd}
+  E(z) = \sum_{i=2}^{T-1} \|\frac{1}{h^2}\hat{z}_i+\frac{1}{h}D(z_{i+1}-z_{i})+
+  \Lambda z_i\|_2^2
+\end{equation}
+where $h$ is the time step, and $\hat{z}_i=z_{i+1}-2z_{i}+z_{i-1}$.  We hope
+that the resulting $z_i$ can satisfy these keyframes, and we can find some
+proper elastic material $\Lambda$ to reduce the control forces.
 
 \subsubsection{Optimize $z$ only}
 In this experiment, we only optimize for $z$. We first fix the elastic material
@@ -79,13 +86,88 @@ Then we will use different time step and damping to make the same experiment,
 and we hope that $\Lambda$ convergent to some reasonable values other than zero,
 and the control forces are smaller than use $\Lambda=\Lambda'$.
 
-\subsubsection{Exchange the keyframes}
+\subsubsection{Exchange the keyframes}\label{sec:exchange-keyframes}
 In this experiment, we change the order of the keyframes. In such case, if we
 fix $\Lambda = \Lambda'$, and solve for $z$, the control forces will much larger
 than zero, and this is the general case in elastic optimization. Then we
 optimize for $K=A^TA$ and $z$ as above experiment, and we hope that we can find
 some better elastic materials for this animation, i.e, smaller control forces
 and reasonable $\Lambda$.
+
+\begin{center}
+  \begin{table*}[ht]
+    {\small
+      \hfill{}
+      \begin{tabular}{ | l | c | c | c | c | c | c | c| c | c | c | c | c |}
+        \hline
+        modes& \multicolumn{5}{c|}{Key frame unchanged: 0,\RED{12,50},85,140,199} & 
+        \multicolumn{3}{c|}{Key frame changed: 0,\RED{50,12},85,140,199}\\\cline{2-9}
+        &$E(z)$ & $E(z,D)$ & $E(z,D,\Lambda)$ & $E'(z,D,\Lambda)$& $E'(z,D,A)$ &
+        $E(z,D)$& $E'(z,D,\Lambda)$& $E'(z,D,A)$\\ \hline
+        0 &29556&$1.3\times10^{-15}$&$\RED{1.8\times10^{8}}$&$6.1\times10^{-16}$&&$3.0\times10^{6}$&$2.98\times10^{6}$&\\ \hline
+        1 &199176&$1.1\times10^{-16}$&  &  &  &  & &\\ \hline
+        2 & &$1.4\times10^{-17}$&  &  &  &  & &\\ \hline
+        0,1 &&$1.7\times10^{-14}$&  &$7.1\times10^{-16}$&$4.5\times10^{-5}$&$3.2\times10^{6}$&$3.0\times10^{6}$&$\RED{2.9\times10^{6}}$\\ \hline
+        0,1,2 & &\RED{346285}&  & &$2.6\times10^{-5}$  &  &$3.0\times10^{6}$&$2.9\times10^{6}$\\ \hline
+      \end{tabular}
+      \hfill{}
+}
+\caption{Experiment results for section \ref{sec:optim-reduc-stiffn}. $E(x)$ is
+  the residual when we optimize for $x$, and we use 0 as the initial value. 
+  While for $E'(x)$, we use $z=0.8z'$ as the initial value. For the last three columns, 
+  we changed the order of two keyframes (frame 50 and 12). }
+\label{rlst}
+\end{table*}
+\end{center}
+
+\subsection{Results and analysis}
+The experiments results are shown in table \ref{rlst}. The parameters for
+generating the input data are, eigen values $\Lambda' =
+(0.0497447,0.15304,1.61794)$, time step $h=0.3$, damping $\alpha_k'=\alpha_m'
+=0.001$, and initial value $z'_0 = (10000,7000,7000)$. And we further required
+that \RED{$\Lambda_i \ge 0$}, $D$ is a diagonal matrix with \RED{$D_{ii}\ge 0$},
+and \RED{$A_{ij} \ge 0$}.
+
+From the results in table \ref{rlst}, we can conclude that
+\begin{itemize}
+\item The residual $E(z)$ is very large, and it can be reduced by introducing
+  the damping $D$ into the optimization, e.g. use $E(z,D)$. This is because the
+  implicit integration method for generating $z'$ will introduce numerical
+  damping, while the central difference method in equation (\ref{spd}) will not.
+\item We need good initial value to optimize $z,D,\Lambda$ simultaneously. See
+  the difference between $E(z,D,\Lambda)$ and $E'(z,D,\Lambda)$ of mode 0.
+\item With good initial value, we can find a dense $K=A^TA$ with small residual
+  $E'(z,D,A)$ (see $E'(z,D,A)$ of modes (0,1) and (0,1,2) with the keyframe unchanged.).
+\item When we change the order of the keyframes as described in section
+  \ref{sec:exchange-keyframes}, $E'(z,D,A)$ is smaller than $E'(z,D,\Lambda)$
+  and $E(z,D)$, as shown by the results of modes (0,1) with the keyframe
+  changed. \RED{However, the difference is small, and $E'(z,D,A)$ takes more
+    than 2000 iterations to convergent, while $E'(z,D,\Lambda)$ takes only 70
+    iterations.}
+\item \RED{The residual of $E(z,D)$ with mode (0,1,2) (last row, red.) is very
+    large.} It seems that the mode $2$ impacts the optimization of mode 0 and
+  1. However, as these three mode are decoupled, this effects should not happen.
+\item \RED{ We need to require that $A_{ij} \ge 0$}, otherwise the residual
+  $E'(z,D,A)$ will be much larger, which is about $11.6$ for mode (0,1,2) with
+  keyframe unchanged, and $2.6\times 10^8$ when keyframe changed (These data is
+  not shown in the table).
+\end{itemize}
+
+\paragraph{Problems } There are three problems need to be discussed according to
+these results,
+\begin{itemize}
+\item When keyframe changed, the difference between $E'(z,D,A)$,
+  $E'(z,D,\Lambda)$ and $E(z,D)$ is small. Does this means that optimizing $K$
+  makes limited help on reducing the control forces?
+\item Why the residual of $E(z,D)$ for modes (0,1,2) is large?
+\item Why we need to constraint $A_{ij} \ge 0$?
+\end{itemize}
+
+\section{Optimize $E(z,D,A)$  Iteratively}
+In this experiment, we will optimize $E(z,D,A)$ iteratively, with
+$K=A^TA$. That is, we first optimize $E(z)$, then fix $z$, and optimize for $D$
+and $A$. We make this experiment iteratively, and hope it can convergent to some
+materials with small residuals.
 
 \section{More experiments}
 \subsection{Optimize Basis $\hat{W}$}
@@ -108,3 +190,22 @@ and then solve for the optimal material.
 % \end{thebibliography}
 
 \end{document}
+
+% \paragraph{Results} 
+% We found that the residual $E(z)$ is still large when we use $\Lambda =
+% \Lambda'$. This because the input animation are produced by an implicit
+% integration method, which will introduce numerical damping. While for the
+% discretion of $E(z)$, we use  This is
+% method will not introduce numerical damping as implicit integration, and they
+% are different. The solution is to introduce a diagonal damping matrix $\RED{D}$
+% as additional variables in the optimization.
+
+% \begin{center}
+%   \begin{tabular}{ | l | l |  l | l | l |}
+%     \hline
+% 	mode & $E(z)$ & $E(z,D)$ & $E(z,D,\Lambda)$ & $E(z,D,\Lambda)$ ($z= 0.8z'$)& \\
+%     \hline
+% 	&  \\ \hline
+% 	&  \\ \hline
+%   \end{tabular}
+% \end{center}
