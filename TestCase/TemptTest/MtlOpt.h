@@ -15,7 +15,7 @@ public:
   template<class SCALAR> 
   void setTimestep(const SCALAR h){_h = h;}
   void setDamping(const double ak, const double am, const VectorXd &lambda){
-	setDamping(am*VectorXd::Ones(lambda.size())+ak*lambda);
+	setDamping((VectorXd)(am*VectorXd::Ones(lambda.size())+ak*lambda));
   }
   void setDamping(const VectorXd &d){
 	const MatrixXd D = d.asDiagonal();
@@ -25,7 +25,12 @@ public:
 	_D = makeEyeMatrix(d);
   }
   void setDamping(const SXMatrix &D){
+	assert_eq(D.size1(),D.size2());
 	_D = D;
+  }
+  void setDamping(const MatrixXd &D){
+	assert_eq(D.rows(),D.cols());
+	convert(D,_D);
   }
   template<class VECTOR>
   void setDamping(const VSX &ak,const VSX &am, const VECTOR &lambda){
@@ -36,7 +41,8 @@ public:
 	  d[i] += ak[i]*lambda[i];
 	setDamping(d);
   }
-  void setK(const SXMatrix &K){ assert_eq(_K.size1(),_K.size2());  _K = K;}
+  void setK(const SXMatrix &K){ assert_eq(K.size1(),K.size2());  _K = K;}
+  void setK(const MatrixXd &K){ assert_eq(K.rows(),K.cols()); convert(K,_K); }
   template<class VECTOR>
   void setK(const VECTOR &v){_K = makeEyeMatrix(v);}
   template<class VECTOR>
@@ -82,6 +88,9 @@ public:
   const VSX &getVarZ()const{return _varZ;}
   int reducedDim()const{
   	return _K.size1();
+  }
+  int getT()const{
+	return _T;
   }
   template<class VECTOR>
   static int isKeyframe(const VECTOR& kid,const int f){
