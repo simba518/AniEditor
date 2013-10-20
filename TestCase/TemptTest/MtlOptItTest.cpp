@@ -56,6 +56,9 @@ public:
   MtlEnergyAtA(const MtlOptModel &model):_model(model){
 	model.initMtlOpt(_energy);
   }
+  void setZeroInitKd(){
+	_KDInit.setZero();
+  }
   void setZ(VectorXd z){
 
 	const int T = _energy.getT();
@@ -183,11 +186,12 @@ protected:
 	const int r = _model.redDim();
 	_KDInit.resize(r*r*2);
 	MatrixXd K = _model.lambda.asDiagonal();
-	for (int i = 0; i < r; ++i)
-	  K(i,i) = sqrt(K(i,i));
 	const double ak = _model.alphaK;
 	const double am = _model.alphaM;
 	MatrixXd D = MatrixXd::Identity(r,r)*am + K*ak;
+
+	for (int i = 0; i < r; ++i)
+	  K(i,i) = sqrt(K(i,i));
 
 	_KDInit.segment(0,r*r) = Map<VectorXd>(&K(0,0),r*r);
 	_KDInit.segment(r*r,r*r) = Map<VectorXd>(&D(0,0),r*r);
@@ -284,14 +288,15 @@ BOOST_AUTO_TEST_CASE(Opt_AtA){
 
   MtlOptModel model;
   model.produceSimRlst();
-  // model.extrangeKeyframes();
+  model.extrangeKeyframes();
 
   MtlEnergyZ optZ(model);
   MtlEnergyAtA optK(model);
   
   // const int r = model.redDim();
   // optZ.setMtl(MatrixXd::Zero(r,r),MatrixXd::Zero(r,r));
-  for (int i = 0; i < 20; ++i){
+  // optK.setZeroInitKd();
+  for (int i = 0; i < 2000; ++i){
 
 	optZ.optimize();
 	optK.setZ(optZ.getZ());
@@ -299,6 +304,12 @@ BOOST_AUTO_TEST_CASE(Opt_AtA){
 	optZ.setMtl(optK.getD(),optK.getK());
 	cout << "ITERATION: " << i << "---------------------------------------" << endl;
   }
+
+  VectorXd z = optZ.getZ();
+  assert_eq(z.size(),model.T*model.redDim());
+  const MatrixXd Z = Map<MatrixXd>(&z[0],model.redDim(),model.T);
+  model.saveMesh(Z,"Opt_AtA");
+  model.saveMesh(model.Z,"input");
 }
 
 BOOST_AUTO_TEST_CASE(Opt_K){
@@ -312,7 +323,7 @@ BOOST_AUTO_TEST_CASE(Opt_K){
   
   // const int r = model.redDim();
   // optZ.setMtl(MatrixXd::Zero(r,r),MatrixXd::Zero(r,r));
-  for (int i = 0; i < 20; ++i){
+  for (int i = 0; i < 2000; ++i){
 
 	optZ.optimize();
 	optK.setZ(optZ.getZ());
@@ -320,6 +331,12 @@ BOOST_AUTO_TEST_CASE(Opt_K){
 	optZ.setMtl(optK.getD(),optK.getK());
 	cout << "ITERATION: " << i << "---------------------------------------" << endl;
   }
+
+  VectorXd z = optZ.getZ();
+  assert_eq(z.size(),model.T*model.redDim());
+  const MatrixXd Z = Map<MatrixXd>(&z[0],model.redDim(),model.T);
+  model.saveMesh(Z,"Opt_K");
+  model.saveMesh(model.Z,"input");
 }
 
 BOOST_AUTO_TEST_CASE(Opt_AtA_denseD){
@@ -333,7 +350,7 @@ BOOST_AUTO_TEST_CASE(Opt_AtA_denseD){
   
   // const int r = model.redDim();
   // optZ.setMtl(MatrixXd::Zero(r,r),MatrixXd::Zero(r,r));
-  for (int i = 0; i < 30; ++i){
+  for (int i = 0; i < 2000; ++i){
 
 	optZ.optimize();
 	optK.setZ(optZ.getZ());

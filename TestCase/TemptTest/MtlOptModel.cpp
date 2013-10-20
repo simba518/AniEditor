@@ -7,12 +7,13 @@ MtlOptModel::_MtlOptModel(){
   h = 0.3f;
   alphaK = 0.001f;
   alphaM = 0.001f;
-  Kid.resize(6);
-  Kid << 0,12,50,85,140,199;
+  Kid.resize(9);
+  Kid << 0,12,20,30,40,50,85,140,199;
 
   testModeId.resize(3);
   testModeId<<0,1,2;
   z0.resize(testModeId.size());
+  // z0[0] = 7000;
   z0[0] = 10000;
   z0[1] = 7000;
   z0[2] = 7000;
@@ -81,8 +82,8 @@ void MtlOptModel::produceSimRlst(){
   }
 }
 void MtlOptModel::extrangeKeyframes(){
-  ASSERT_EQ(Kid.size(),6);
-  Kid << 0,50,12,85,140,199;
+  ASSERT_EQ(Kid.size(),9);
+  Kid << 0,50,20,30,40,12,85,140,199;
 }
 void MtlOptModel::initMtlOpt(RedSpaceTimeEnergyAD &ad)const{
 
