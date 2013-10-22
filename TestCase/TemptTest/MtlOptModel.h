@@ -30,6 +30,7 @@ typedef struct _MtlOptModel{
   void produceSimRlst();
   void extrangeKeyframes();
   void initMtlOpt(RedSpaceTimeEnergyAD &ad)const;
+  void initMtlData(MtlDataModel &model);
   void initSolver(const SXMatrix &E, const VSX &x);
   void solve();
   VectorXd getOutput();

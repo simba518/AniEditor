@@ -2,6 +2,7 @@
 #define _HARMONICOSCILLATOR_H_
 
 #include <math.h>
+#include <vector>
 #include <boost/shared_ptr.hpp>
 #include <assertext.h>
 
@@ -78,6 +79,60 @@ namespace UTILITY{
   
   typedef boost::shared_ptr<HarmonicOscillator<double> > pHarmonicOscillatorD;
   typedef boost::shared_ptr<HarmonicOscillator<float> > pHarmonicOscillatorF;
+
+  template <class T>
+  class HarmonicOscillatorSet{
+	
+  public:
+	template <typename VECTOR>
+	HarmonicOscillatorSet(const VECTOR&lambda,const T d,const VECTOR&z0,const VECTOR&v0){
+
+	  assert_eq(lambda.size(),z0.size());
+	  assert_eq(lambda.size(),v0.size());
+	  _oscillators.clear();
+	  for (size_t i = 0; i < lambda.size(); ++i){
+		_oscillators.push_back(HarmonicOscillator<T>(lambda[i],d,z0[i],v0[i]));
+		_oscillators[i].precompute();
+	  }
+	}
+
+	template <typename VECTOR>
+	HarmonicOscillatorSet(const VECTOR &lambda,const T alpha_k,const T alpha_m,const VECTOR &z0,const VECTOR &v0){
+	  assert_eq(lambda.size(),z0.size());
+	  assert_eq(lambda.size(),v0.size());
+	  _oscillators.clear();
+	  for (int i = 0; i < (int)lambda.size(); ++i){
+		_oscillators.push_back(HarmonicOscillator<T>(lambda[i],alpha_k,alpha_m,z0[i],v0[i]));
+		_oscillators[i].precompute();
+	  }
+	}
+
+	template <typename VECTOR>
+	VECTOR at(const T t)const{
+	  assert_ge(t,0);
+	  VECTOR z(_oscillators.size());
+	  for (int i = 0; i < z.size(); ++i)
+		z[i] = _oscillators[i](t);
+	  return z;
+	}
+
+	template <typename MATRIX>
+	MATRIX generateSequence(const T t0,const T dt,const int len)const{
+
+	  MATRIX Z(_oscillators.size(),len);
+	  std::vector<T> q;
+	  for (size_t i = 0; i < _oscillators.size(); ++i){
+		_oscillators[i].generateSequence(t0,dt,len,q);
+		for (size_t j = 0; j < q.size(); ++j){
+		  Z(i,j) = q[j];
+		}
+	  }
+	  return Z;
+	}
+	
+  private:
+	std::vector<HarmonicOscillator<T> > _oscillators;
+  };
   
 }//end of namespace
 

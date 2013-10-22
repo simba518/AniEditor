@@ -1,22 +1,37 @@
 #include "MtlOptModel.h"
+#include "HarmonicOscillator.h"
+#include <JsonFilePaser.h>
+using namespace UTILITY;
 
 MtlOptModel::_MtlOptModel(){
 
   dataDir = "/home/simba/Workspace/AnimationEditor/Data/beam/";
-  T = 200;
-  h = 0.3f;
-  alphaK = 0.001f;
-  alphaM = 0.001f;
-  Kid.resize(9);
-  Kid << 0,12,20,30,40,50,85,140,199;
+  const string jsf = dataDir+"/mtlopt.ini";
+  JsonFilePaser jsonf;
+  TEST_ASSERT ( jsonf.open(jsf) );
+  TEST_ASSERT ( jsonf.read("T",T) );
+  TEST_ASSERT ( jsonf.read("h",h) );
+  TEST_ASSERT ( jsonf.read("alphaK",alphaK) );
+  TEST_ASSERT ( jsonf.read("alphaM",alphaM) );
+  vector<int> keyid, modes;
+  TEST_ASSERT ( jsonf.read("keyId", keyid) );
+  TEST_ASSERT ( jsonf.read("modes", modes) );
+  vector<double> initZ;
+  TEST_ASSERT ( jsonf.read("z0", initZ) );
+  assert_eq (initZ.size(), modes.size());
 
-  testModeId.resize(3);
-  testModeId<<0,1,2;
+  Kid.resize(keyid.size());
+  for (int i = 0; i < Kid.size(); ++i){
+	assert_in(keyid[i],0,T-1);
+	Kid[i] = keyid[i];
+  }
+
+  testModeId.resize(modes.size());
   z0.resize(testModeId.size());
-  // z0[0] = 7000;
-  z0[0] = 10000;
-  z0[1] = 7000;
-  z0[2] = 7000;
+  for (int i = 0; i < testModeId.size(); ++i){
+    testModeId[i] = modes[i];
+	z0[i] = initZ[i];
+  }
 
   loadLambda(dataDir+"eigen_values80.b");
   const VectorXd tlam = lambda;
@@ -54,24 +69,19 @@ void MtlOptModel::initVolObj(){
 void MtlOptModel::produceSimRlst(){
 
   const int r = redDim();
-  LSW_ANI_EDITOR::MASimulatorAD sim;
-  sim.setTimeStep(h);
-  sim.setEigenValues(lambda);
-  sim.setStiffnessDamping(alphaK);
-  sim.setMassDamping(alphaM);
   const VectorXd zero = VectorXd::Zero(r);
-  sim.setIntialStatus(zero,z0);
-
-  Z.resize(r,T);
+  HarmonicOscillatorSet<double> sim(lambda,alphaK,alphaM,z0,zero);
+  Z = sim.generateSequence<MatrixXd>(0,h,T);
+  assert_eq(Z.rows(),r);
+  assert_eq(Z.cols(),T);
+  
   CorrectZ.resize(r,(T-Kid.size()));
   int ci = 0;
   for (int i = 0; i < T; ++i){
-	Z.col(i) = sim.getEigenZ();
 	if( RedSpaceTimeEnergyAD::isKeyframe(Kid,i) < 0){
-	  CorrectZ.col(ci) = sim.getEigenZ();
+	  CorrectZ.col(ci) = Z.col(i);
 	  ci ++;
 	}
-	sim.forward(zero);
   }
 
   Kz.resize(r,Kid.size());
@@ -92,6 +102,15 @@ void MtlOptModel::initMtlOpt(RedSpaceTimeEnergyAD &ad)const{
   ad.setDamping(alphaK,alphaM,lambda);
   ad.setK(lambda);
   ad.setKeyframes(Kz,Kid);
+}
+void MtlOptModel::initMtlData(MtlDataModel &model){
+
+  model.setT(T);
+  model.setTimestep(h);
+  model.setDamping(alphaK,alphaM,lambda);
+  model.setLambda(lambda);
+  model.setKeyframes(Kz,Kid);
+  model.setSubZ(CorrectZ);
 }
 void MtlOptModel::initSolver(const SXMatrix &E, const VSX &x){
 
