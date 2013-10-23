@@ -149,11 +149,20 @@ public:
   }
   void print()const{
 
-	EigenSolver<MatrixXd> eigenK(K);
+	cout<< "K \n" << K << endl;
+	SelfAdjointEigenSolver<MatrixXd> eigenK(K);
 	cout<< "eigen(K): " << eigenK.eigenvalues().transpose() << endl;
 
-	EigenSolver<MatrixXd> eigenD(D);
+	cout<< "D \n" << D << endl;
+	SelfAdjointEigenSolver<MatrixXd> eigenD(D);
 	cout<< "eigen(D): " << eigenD.eigenvalues().transpose() << endl;
+  }
+  MatrixXd getRotZ()const{
+	return getUt()*Z;
+  }
+  MatrixXd getUt()const{
+	SelfAdjointEigenSolver<MatrixXd> eigenK(K);
+	return eigenK.eigenvectors().transpose();
   }
 
 public:

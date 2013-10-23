@@ -15,6 +15,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
   model.produceSimRlst();
   // model.extrangeKeyframes();
   model.lambda *= 0.25f;
+  model.Kz.col(model.Kz.cols()-1).setZero();
 
   MtlDataModel dataM;
   model.initMtlData(dataM);
@@ -52,19 +53,21 @@ BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
   model.saveMesh(model.Z,"input");
 
   PythonScriptDraw2DCurves<VectorXd> curves;
+  const MatrixXd newZ = dataM.getRotZ();
+  const MatrixXd newKZ = dataM.getUt()*model.Kz;
   for (int i = 0; i < model.Z.rows(); ++i){
 
-	const VectorXd &z = model.Z.row(i).transpose();
-	curves.add("z_input",z,1.0f,0);
+	// const VectorXd &z = model.Z.row(i).transpose();
+	// curves.add("z_input",z,1.0f,0);
 
-	const VectorXd &z2 = dataM.Z.row(i).transpose();
-	curves.add("z_output",z2,1.0f,0,"--");
+	const VectorXd &z2 = newZ.row(i).transpose();
+	curves.add(string("mode ")+TOSTR(i),z2,1.0f,0,"--");
 
-	const VectorXd &kz = model.Kz.row(i).transpose();
+	const VectorXd &kz = newKZ.row(i).transpose();
 	VectorXd kid(model.Kid.size());
-	for (int i = 0; i < kid.size(); ++i)
-	  kid[i] = model.Kid[i];
-	curves.add("keyframes",kz,kid,"o");
+	for (int j = 0; j < kid.size(); ++j)
+	  kid[j] = model.Kid[j];
+	curves.add(string("keyframes of mode ")+TOSTR(i),kz,kid,"o");
   }
   TEST_ASSERT( curves.write("Opt_Z_K_AkAm") );
 }
@@ -75,9 +78,11 @@ BOOST_AUTO_TEST_CASE(Opt_Z){
   model.produceSimRlst();
   // model.extrangeKeyframes();
   model.lambda *= 0.25f;
+  model.Kz.col(model.Kz.cols()-1).setZero();
 
   MtlDataModel dataM;
   model.initMtlData(dataM);
+
   ZOptimizer optZ(dataM);
 
   for (int i = 0; i < 50; ++i){
@@ -99,17 +104,17 @@ BOOST_AUTO_TEST_CASE(Opt_Z){
   PythonScriptDraw2DCurves<VectorXd> curves;
   for (int i = 0; i < model.Z.rows(); ++i){
 
-	const VectorXd &z = model.Z.row(i).transpose();
-	curves.add("z_input",z,1.0f,0);
+	// const VectorXd &z = model.Z.row(i).transpose();
+	// curves.add("z_input",z,1.0f,0);
 
 	const VectorXd &z2 = dataM.Z.row(i).transpose();
-	curves.add("z_output",z2,1.0f,0,"--");
+	curves.add(string("mode ")+TOSTR(i),z2,1.0f,0,"--");
 
 	const VectorXd &kz = model.Kz.row(i).transpose();
 	VectorXd kid(model.Kid.size());
-	for (int i = 0; i < kid.size(); ++i)
-	  kid[i] = model.Kid[i];
-	curves.add("keyframes",kz,kid,"o");
+	for (int j = 0; j < kid.size(); ++j)
+	  kid[j] = model.Kid[j];
+	curves.add(string("keyframes of mode ")+TOSTR(i),kz,kid,"o");
   }
   TEST_ASSERT( curves.write("Opt_Z") );
 }
