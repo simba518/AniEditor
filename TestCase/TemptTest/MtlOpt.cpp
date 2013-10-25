@@ -1,3 +1,4 @@
+#include <Log.h>
 #include "MtlOpt.h"
 
 void RedSpaceTimeEnergyAD::insertKeyframes(MatrixXd &Z)const{
@@ -20,6 +21,36 @@ void RedSpaceTimeEnergyAD::insertKeyframes(MatrixXd &Z)const{
   	  xpos++;
   	}
   }
+}
+
+void RedSpaceTimeEnergyAD::assembleEnergy(){
+
+  const int T = _T;
+  const int r = reducedDim();
+  const VSX vz = makeSymbolic(T*r,"z");
+  VMatSX z(T);
+  _varZ.clear();
+  for (int i = 0; i < T; ++i){
+	const int k = isKeyframe(_keyId,i);
+	if(k >= 0){
+	  CASADI::convert((VectorXd)(_keyZ.col(k)),z[i]);
+	}else{
+	  const VSX zi(vz.begin()+r*i,vz.begin()+r*(i+1));
+	  assert_eq(zi.size(),r);
+	  z[i] = zi;
+	  _varZ.insert(_varZ.end(),zi.begin(),zi.end());
+	}
+  }
+
+  _energy = 0;
+  for (int i = 1; i < T-1; ++i){
+	const SXMatrix za = (z[i+1]-z[i]*2.0f+z[i-1])/(_h*_h);
+	const SXMatrix zv = _D.mul(z[i+1]-z[i])/(_h);
+	const SXMatrix diff = za+zv+_K.mul(z[i]);
+	for (int j = 0; j < r; ++j)
+	  _energy += diff.elem(j,0)*diff.elem(j,0);
+  }
+  _energy = _energy/2;
 }
 
 void MtlOptimizer::optimize(){
@@ -66,7 +97,6 @@ void MtlOptimizer::resetEnergy(const bool useAllZ){
   _energy.setDamping(_model.D);
   _energy.setK(_model.K);
   _energy.setKeyframes(_model.keyZ,_model.keyId);
-	
   if(useAllZ){
 	assert_eq(_model.Z.cols(), T);
 	assert_eq(_model.Z.rows(), _energy.reducedDim());
@@ -82,6 +112,7 @@ bool MtlOptimizer::getInitValue(VectorXd &x0, const int size)const{
   if(_rlst.size() == size){
 	x0 = _rlst;
   }else {
+	WARN_LOG("use zero initial values.");
 	x0.resize(size);
 	x0.setZero();
   }

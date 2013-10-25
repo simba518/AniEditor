@@ -44,12 +44,14 @@ BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
   KOptimizer optK(dataM);
   KAtAmOptimizer optKAtAm(dataM);
   AkAmOptimizer optAkAm(dataM);
+  AtAAkAmOptimizer optAtAkAm(dataM);
 
-  for (int i = 0; i < 20; ++i){
+  for (int i = 0; i < 100; ++i){
 
 	const MatrixXd oldZ = dataM.Z;
   	optZ.optimize();
-  	optKAtAm.optimize();
+	optAtAkAm.optimize();
+  	// optKAtAm.optimize();
   	// optk.optimize();
   	// optAkAm.optimize();
 

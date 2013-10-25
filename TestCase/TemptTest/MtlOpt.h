@@ -14,6 +14,9 @@ using CasADi::SXMatrix;
 class RedSpaceTimeEnergyAD{
   
 public:
+  RedSpaceTimeEnergyAD(const double Zpenalty = 0.0f):_Zpenalty(Zpenalty){
+	
+  }
   void setT(const int T){_T = T;}
   template<class SCALAR> 
   void setTimestep(const SCALAR h){_h = h;}
@@ -57,35 +60,7 @@ public:
   	  _keyId[i] = fid[i];
   }
 
-  void assembleEnergy(){
-
-  	const int T = _T;
-  	const int r = reducedDim();
-  	const VSX vz = makeSymbolic(T*r,"z");
-  	VMatSX z(T);
-  	_varZ.clear();
-  	for (int i = 0; i < T; ++i){
-  	  const int k = isKeyframe(_keyId,i);
-  	  if(k >= 0){
-  		CASADI::convert((VectorXd)(_keyZ.col(k)),z[i]);
-  	  }else{
-  		const VSX zi(vz.begin()+r*i,vz.begin()+r*(i+1));
-  		assert_eq(zi.size(),r);
-  		z[i] = zi;
-  		_varZ.insert(_varZ.end(),zi.begin(),zi.end());
-  	  }
-  	}
-
-  	_energy = 0;
-  	for (int i = 1; i < T-1; ++i){
-  	  const SXMatrix za = (z[i+1]-z[i]*2.0f+z[i-1])/(_h*_h);
-  	  const SXMatrix zv = _D.mul(z[i+1]-z[i])/(_h);
-  	  const SXMatrix diff = za+zv+_K.mul(z[i]);
-  	  for (int j = 0; j < r; ++j)
-  		_energy += diff.elem(j,0)*diff.elem(j,0);
-  	}
-  	_energy = _energy/2;
-  }
+  void assembleEnergy();
 
   const SXMatrix &getEnergy()const{return _energy;}
   const VSX &getVarZ()const{return _varZ;}
@@ -112,6 +87,7 @@ public:
   }
   
 private:
+  const double _Zpenalty;
   int _T;
   SX _h;
   SXMatrix _D;
@@ -213,15 +189,14 @@ class ZOptimizer:public MtlOptimizer{
   
 public:
   ZOptimizer(MtlDataModel &m):MtlOptimizer(m){
-	setInitZ(m.subZ);
-  }
 
-protected:
-  void setInitZ(const MatrixXd &Z){
+	const MatrixXd &Z = m.subZ;
 	assert_gt(Z.size(),0);
 	MatrixXd zz = Z;
 	_rlst = Map<VectorXd>( &(zz(0,0)),zz.size() );
   }
+
+protected:
   void optimizationBegin(){
 	resetEnergy(false);
   }
@@ -237,6 +212,82 @@ protected:
 	return _energy.getVarZ();
   }
 
+};
+
+class AtAAkAmOptimizer:public MtlOptimizer{
+
+public:
+  AtAAkAmOptimizer(MtlDataModel &m):MtlOptimizer(m){
+	
+	const int r = _model.K.rows();
+	const VSX a = makeSymbolic(r*r,"a");
+	const VSX ak = makeSymbolic(r,"ak");
+	const VSX am = makeSymbolic(r,"am");
+	_a_ak_am.clear();
+	_a_ak_am.insert( _a_ak_am.end(),a.begin(),a.end() );
+	_a_ak_am.insert( _a_ak_am.end(),ak.begin(),ak.end() );
+	_a_ak_am.insert( _a_ak_am.end(),am.begin(),am.end() );
+
+	_Ak = makeEyeMatrix( ak );
+	_Am = makeEyeMatrix( am );
+	const SXMatrix A = convert( a,r );
+	_K = CasADi::trans(A).mul(A);
+	setInitVal(m.K,m.Ak,m.Am);
+  }
+
+protected:
+  void setInitVal(const MatrixXd &K,const VectorXd &Ak,const VectorXd &Am){
+
+	const int r = Ak.size();
+	assert_gt(r,0);
+	assert_eq(Am.size(), r);
+	assert_eq(K.rows(),r);
+	assert_eq(K.cols(),r);
+
+	_rlst.resize(r*r+r*2);
+	MatrixXd KK(r,r);
+	KK.setZero();
+	for (int i = 0; i < r; ++i)
+	  KK(i,i) = sqrt( K(i,i) );
+	_rlst.head(r*r) = Map<VectorXd>(&KK(0,0),r*r);
+	_rlst.segment(r*r,r) = Ak;
+	_rlst.tail(r) = Am;
+  }
+  void optimizationBegin(){
+
+	resetEnergy();
+	const SXMatrix &K = _K;
+	_energy.setK(K);
+	const SXMatrix D = _Am + _Ak.mul(K);
+	_energy.setDamping(D);
+  }
+  void optimizationEnd(){
+
+	const int r = _energy.reducedDim();
+	assert_eq(_rlst.size(),r*r+r*2);
+	const MatrixXd A = Map<MatrixXd>(&_rlst[0],r,r);
+	_model.K = A.transpose()*A;
+	_model.Ak = Map<VectorXd>(&_rlst[r*r],r);
+	_model.Am = Map<VectorXd>(&_rlst[r*r+r],r);
+	_model.D = _model.Am.asDiagonal();
+	_model.D += _model.Ak.asDiagonal()*_model.K;
+  }
+  const VSX &getVariable()const{
+	return _a_ak_am;
+  }
+  bool getLowBound(vector<double> &lower)const{
+	const int r = _energy.reducedDim();
+	lower = vector<double>(r*r+2*r,-std::numeric_limits<double>::infinity());
+	for (int i = r*r; i < lower.size(); ++i)
+	  lower[i] = 0.0f;
+	return true;
+  }
+
+private:
+  VSX _a_ak_am;
+  SXMatrix _K;
+  SXMatrix _Ak;
+  SXMatrix _Am;
 };
 
 class KOptimizer:public MtlOptimizer{
