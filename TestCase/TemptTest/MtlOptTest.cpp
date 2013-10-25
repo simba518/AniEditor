@@ -7,15 +7,29 @@
 using namespace Eigen;
 using namespace UTILITY;
 
+void loadKz(const string fname, MtlOptModel &model){
+  
+  MatrixXd Kz;
+  TEST_ASSERT( EIGEN3EXT::load(fname,Kz) );
+  ASSERT_EQ( model.Kz.cols(), Kz.cols() );
+  ASSERT_LE( model.Kz.rows(), Kz.rows() );
+  const int r = model.Kz.rows();
+  const int c = model.Kz.cols();
+  model.Kz = Kz.topLeftCorner(r,c);
+}
+
 BOOST_AUTO_TEST_SUITE(MtlOptTest)
 
 BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
 
-  MtlOptModel model;
+  const string data = "/home/simba/Workspace/AnimationEditor/Data/mushroom/";
+  MtlOptModel model(data+"mtlopt.ini");
   model.produceSimRlst();
+  loadKz(data+"Z.b",model);
+
   // model.extrangeKeyframes();
-  model.lambda *= 0.25f;
-  model.Kz.col(model.Kz.cols()-1).setZero();
+  // model.lambda *= 0.25f;
+  // model.Kz.col(model.Kz.cols()-1).setZero();
 
   MtlDataModel dataM;
   model.initMtlData(dataM);
@@ -31,7 +45,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
   KAtAmOptimizer optKAtAm(dataM);
   AkAmOptimizer optAkAm(dataM);
 
-  for (int i = 0; i < 200; ++i){
+  for (int i = 0; i < 20; ++i){
 
 	const MatrixXd oldZ = dataM.Z;
   	optZ.optimize();
@@ -49,8 +63,8 @@ BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
 	}
   }
 
-  model.saveMesh(dataM.Z,"Opt_Z_K_AkAm");
-  model.saveMesh(model.Z,"input");
+  model.saveMesh(dataM.Z,data+"/tempt/mesh/","Opt_Z_K_AkAm");
+  model.saveMesh(model.Z,"/tempt/mesh/","input");
 
   PythonScriptDraw2DCurves<VectorXd> curves;
   const MatrixXd newZ = dataM.getRotZ();
@@ -74,11 +88,14 @@ BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
 
 BOOST_AUTO_TEST_CASE(Opt_Z){
 
-  MtlOptModel model;
+  const string data = "/home/simba/Workspace/AnimationEditor/Data/mushroom/";
+  MtlOptModel model(data+"mtlopt.ini");
   model.produceSimRlst();
+  loadKz(data+"Z.b",model);
+
   // model.extrangeKeyframes();
-  model.lambda *= 0.25f;
-  model.Kz.col(model.Kz.cols()-1).setZero();
+  // model.lambda *= 0.25f;
+  // model.Kz.col(model.Kz.cols()-1).setZero();
 
   MtlDataModel dataM;
   model.initMtlData(dataM);
@@ -98,8 +115,8 @@ BOOST_AUTO_TEST_CASE(Opt_Z){
 	}
   }
 
-  model.saveMesh(dataM.Z,"Opt_Z");
-  model.saveMesh(model.Z,"input");
+  model.saveMesh(dataM.Z,data+"/tempt/mesh/","Opt_Z");
+  model.saveMesh(model.Z,data+"/tempt/mesh/","input");
 
   PythonScriptDraw2DCurves<VectorXd> curves;
   for (int i = 0; i < model.Z.rows(); ++i){

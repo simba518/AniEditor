@@ -23,10 +23,9 @@ using namespace UTILITY;
 using namespace LSW_WARPING;
 
 typedef struct _MtlOptModel{
-
-  _MtlOptModel();
-  bool loadLambda(const string fname);
-  void initVolObj();
+  _MtlOptModel(const string initf);
+  bool loadLambda(const string initf);
+  void initVolObj(const string initf);
   void produceSimRlst();
   void extrangeKeyframes();
   void initMtlOpt(RedSpaceTimeEnergyAD &ad)const;
@@ -35,14 +34,13 @@ typedef struct _MtlOptModel{
   void solve();
   VectorXd getOutput();
   void getZfromSolver(MatrixXd &Z);
-  void saveRlst();
-  void saveMesh(const MatrixXd &Z,const string fname);
+  void saveRlst(const string dir);
+  void saveMesh(const MatrixXd &Z,const string dir,const string fname);
   void saveMeshOneZ(const VectorXd &z,const string fname);
   void computeEnergy(const VectorXd &X);
   int redDim()const;
   static MatrixXd assembleFullZ(const VectorXd&subZ,const VectorXd&keyZ,const VectorXi&Kid, const int r);
 
-  string dataDir;
   MatrixXd W;
   SparseMatrix<double> G;
   MatrixXd PGW;

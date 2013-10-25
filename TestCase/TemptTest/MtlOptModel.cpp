@@ -3,12 +3,10 @@
 #include <JsonFilePaser.h>
 using namespace UTILITY;
 
-MtlOptModel::_MtlOptModel(){
+MtlOptModel::_MtlOptModel(const string initf){
 
-  dataDir = "/home/simba/Workspace/AnimationEditor/Data/beam/";
-  const string jsf = dataDir+"/mtlopt.ini";
   JsonFilePaser jsonf;
-  TEST_ASSERT ( jsonf.open(jsf) );
+  TEST_ASSERT ( jsonf.open(initf) );
   TEST_ASSERT ( jsonf.read("T",T) );
   TEST_ASSERT ( jsonf.read("h",h) );
   TEST_ASSERT ( jsonf.read("alphaK",alphaK) );
@@ -33,33 +31,46 @@ MtlOptModel::_MtlOptModel(){
 	z0[i] = initZ[i];
   }
 
-  loadLambda(dataDir+"eigen_values80.b");
+  loadLambda(initf);
   const VectorXd tlam = lambda;
   lambda.resize(testModeId.size());
   for (int i = 0; i < testModeId.size(); ++i)
 	lambda[i] = tlam[testModeId[i]];
-  initVolObj();
+  initVolObj(initf);
 }
-bool MtlOptModel::loadLambda(const string fname){
+bool MtlOptModel::loadLambda(const string initf){
+
+  JsonFilePaser jsonf;
+  TEST_ASSERT ( jsonf.open(initf) );
+  string fname;
+  TEST_ASSERT ( jsonf.readFilePath("eigen_values",fname) );
   const bool succ = load(fname,lambda);
   assert(succ);
   return succ;
 }
-void MtlOptModel::initVolObj(){
+void MtlOptModel::initVolObj(const string initf){
 
-  const string evect = dataDir+"/eigen_vectors80.b";
+  JsonFilePaser jsonf;
+  TEST_ASSERT ( jsonf.open(initf) );
+  string eigenfname, objfname, volfname, weightfname, connodefname;
+  TEST_ASSERT ( jsonf.readFilePath("eigen_vectors",eigenfname) );
+  TEST_ASSERT ( jsonf.readFilePath("obj_mesh_file",objfname) );
+  TEST_ASSERT ( jsonf.readFilePath("vol_filename",volfname) );
+  TEST_ASSERT ( jsonf.readFilePath("vol2obj_weights_filename",weightfname) );
+  TEST_ASSERT ( jsonf.readFilePath("con_nodes_file",connodefname) );
+
   MatrixXd tW;
-  TEST_ASSERT( load(evect,tW) );
+  TEST_ASSERT( load(eigenfname,tW) );
   W.resize(tW.rows(),testModeId.size());
   for (int i = 0; i < testModeId.size(); ++i){
 	W.col(i) = tW.col(testModeId[i]);
   }	
 
-  TEST_ASSERT( volobj.loadObjMesh(dataDir+"beam.obj"));
-  TEST_ASSERT( volobj.loadTetMesh(dataDir+"beam.abq"));
-  TEST_ASSERT( volobj.loadWeights(dataDir+"interp-weights.txt"));
+  TEST_ASSERT( volobj.loadObjMesh(objfname));
+  TEST_ASSERT( volobj.loadTetMesh(volfname));
+  TEST_ASSERT( volobj.loadWeights(weightfname));
   vector<int> fixed_nodes;
-  TEST_ASSERT( loadVec(dataDir+"/con_nodes.bou",fixed_nodes,UTILITY::TEXT) );
+  TEST_ASSERT( loadVec(connodefname,fixed_nodes,UTILITY::TEXT) );
   rs2euler.setTetMesh(volobj.getTetMesh());
   rs2euler.setFixedNodes(fixed_nodes);
   rs2euler.precompute();
@@ -161,18 +172,19 @@ void MtlOptModel::getZfromSolver(MatrixXd &Z){
   const VectorXd kz = Map<VectorXd>(&Kz(0,0),Kz.size());
   Z = assembleFullZ(x,kz,Kid,redDim());
 }
-void MtlOptModel::saveRlst(){
-	
-  saveMesh(Z,"input");
-  saveMesh(Kz,"key");
-  MatrixXd newZ;
-  getZfromSolver(newZ);
-  saveMesh(newZ,"new");
+void MtlOptModel::saveRlst(const string dir){
+  
+  assert(false);
+  // saveMesh(Z,dir+"/input");
+  // saveMesh(Kz,dir+"/key");
+  // MatrixXd newZ;
+  // getZfromSolver(newZ);
+  // saveMesh(newZ,dir+"/new");
 }
-void MtlOptModel::saveMesh(const MatrixXd &Z,const string fname){
+void MtlOptModel::saveMesh(const MatrixXd &Z,const string dir,const string fname){
 
   for (int i = 0; i < Z.cols(); ++i){
-	const string ffname=dataDir+"tempt/meshes/"+fname+TOSTR(i)+".vtk";
+	const string ffname=dir+fname+TOSTR(i)+".vtk";
 	saveMeshOneZ(Z.col(i),ffname);
   }
 }
