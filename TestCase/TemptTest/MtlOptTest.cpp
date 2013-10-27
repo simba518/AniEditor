@@ -22,14 +22,14 @@ BOOST_AUTO_TEST_SUITE(MtlOptTest)
 
 BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
 
-  const string data = "/home/simba/Workspace/AnimationEditor/Data/mushroom/";
+  const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
   MtlOptModel model(data+"mtlopt.ini");
   model.produceSimRlst();
-  loadKz(data+"Z.b",model);
+  // loadKz(data+"Z.b",model);
 
   // model.extrangeKeyframes();
-  // model.lambda *= 0.25f;
-  // model.Kz.col(model.Kz.cols()-1).setZero();
+  model.lambda *= 0.25f;
+  model.Kz.col(model.Kz.cols()-1).setZero();
 
   MtlDataModel dataM;
   model.initMtlData(dataM);
@@ -50,8 +50,8 @@ BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
 
 	const MatrixXd oldZ = dataM.Z;
   	optZ.optimize();
-	optAtAkAm.optimize();
-  	// optKAtAm.optimize();
+	// optAtAkAm.optimize();
+  	optKAtAm.optimize();
   	// optk.optimize();
   	// optAkAm.optimize();
 
@@ -90,14 +90,14 @@ BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
 
 BOOST_AUTO_TEST_CASE(Opt_Z){
 
-  const string data = "/home/simba/Workspace/AnimationEditor/Data/mushroom/";
+  const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
   MtlOptModel model(data+"mtlopt.ini");
   model.produceSimRlst();
-  loadKz(data+"Z.b",model);
+  // loadKz(data+"Z.b",model);
 
   // model.extrangeKeyframes();
-  // model.lambda *= 0.25f;
-  // model.Kz.col(model.Kz.cols()-1).setZero();
+  model.lambda *= 0.25f;
+  model.Kz.col(model.Kz.cols()-1).setZero();
 
   MtlDataModel dataM;
   model.initMtlData(dataM);
