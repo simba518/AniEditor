@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(testAll){
 
   MASimulatorAD simulator;
   simulator.setTimeStep(h);
-  simulator.setStiffnessDamping(alpha_k);
+  simulator.setStiffnessDamping<vector<SX> >(alpha_k);
   simulator.setMassDamping(alpha_m);
   simulator.setEigenValues(lambda);
   simulator.setIntialStatus(v0,z0);

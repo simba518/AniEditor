@@ -3,6 +3,7 @@
 #include <IEDSInterpolator.h>
 #include <IMWInterpolator.h>
 #include <RedRSInterpolator.h>
+#include <MtlOptInterpolator.h>
 #include "InterpolatorFactory.h"
 using namespace LSW_ANI_EDITOR;
 
@@ -27,10 +28,11 @@ bool InterpolatorFactory::validMethod(const string method_name){
 
   const bool valid = ( string("IEDS") == method_name ||
 					   string("IMW") == method_name||
-					   string("REDRS") == method_name);
+					   string("REDRS") == method_name||
+					   string("MTLOPT") == method_name);
   if(!valid){
 	ERROR_LOG("the method name is invalid!(in json node : interp_method )"<<
-			  "the method name is " << method_name << ", which should be 'IEDS' or 'IMW' or 'REDRS'");
+			  "the method name is " << method_name << ", which should be 'IEDS' or 'IMW' or 'REDRS' or 'MTLOPT'");
   }
   return valid;
 }
@@ -42,6 +44,8 @@ pBaseInterpolator InterpolatorFactory::createMethod(const string in_method){
   	interpolator = pBaseInterpolator(new IEDSInterpolator());
   }else if(string("REDRS") == in_method){
   	interpolator = pBaseInterpolator(new RedRSInterpolator());
+  }else if(string("MTLOPT") == in_method){
+  	interpolator = pBaseInterpolator(new MtlOptInterpolator());
   }else{
   	interpolator = pIMWInterpolator(new IMWInterpolator());
   }

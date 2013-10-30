@@ -187,7 +187,8 @@ namespace LSW_WARPING{
 	  VectorXd x(inputP.size()+z.size());
 	  x.segment(0,inputP.size()) = inputP;
 	  x.segment(inputP.size(),z.size()) = z;
-	  CASADI::evaluate(Jacobian,x,J);
+	  SXFunction jac = Jacobian;
+	  CASADI::evaluate(jac,x,J);
 	}
 
   protected:
@@ -282,7 +283,8 @@ namespace LSW_WARPING{
 	  x.segment(0,3) = inputW3;
 	  x.segment(3,3) = inputP3;
 	  x.segment(6,z.size()) = z;
-	  CASADI::evaluate(Jacobian[nodeId],x,J);
+	  SXFunction jac = Jacobian[nodeId];
+	  CASADI::evaluate(jac,x,J);
 	}
 	
   private:

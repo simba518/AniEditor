@@ -24,41 +24,55 @@ namespace LSW_ANI_EDITOR{
 	void setTimeStep(const SX &h){
 	  _h = h;
 	}
-	void setEigenValues(const vector<SX> &eval){
-	  _lambda = eval;
-	}
-	void setEigenValues(const VectorXd &eval){
+ 	template<typename VECTOR>
+	void setEigenValues(const VECTOR &eval){
 	  _lambda.resize(eval.size());
-	  for (int i = 0; i < eval.size(); ++i){
+	  for (int i = 0; i < (int)eval.size(); ++i)
 		_lambda[i] = eval[i];
-	  }
 	}
 	void setEigenValue(const SX eval){
 	  // only one mode.
 	  _lambda.resize(1);
 	  _lambda[0] = eval;
 	}
-	void setStiffnessDamping(const vector<SX> &s){
-	  _alphaK = s;
+ 	template<typename VECTOR>
+	void setStiffnessDamping(const VECTOR &s){
+	  _alphaK.resize(s.size());
+	  for (int i = 0; i < (int)s.size(); ++i)
+		_alphaK[i] = s[i];
 	}
- 	void setMassDamping(const vector<SX> &s){
-	  _alphaM = s;
+ 	template<typename VECTOR>
+ 	void setMassDamping(const VECTOR &s){
+	  _alphaM.resize(s.size());
+	  for (int i = 0; i < (int)s.size(); ++i)
+		_alphaM[i] = s[i];
 	}
 	void setStiffnessDamping(const SX s){
 	  assert_gt(_lambda.size(),0);
 	  _alphaK.resize(_lambda.size());
-	  for (size_t i = 0; i < _lambda.size(); ++i){
+	  for (size_t i = 0; i < _lambda.size(); ++i)
 		_alphaK[i] = s;
-	  }
 	}
  	void setMassDamping(const SX s){
 	  assert_gt(_lambda.size(),0);
 	  _alphaM.resize(_lambda.size());
-	  for (size_t i = 0; i < _lambda.size(); ++i){
+	  for (size_t i = 0; i < _lambda.size(); ++i)
 		_alphaM[i] = s;
-	  }
 	}
-	void setIntialStatus(const VectorXd &v0,const VectorXd &z0){
+	void setStiffnessDamping(const double s){
+	  setStiffnessDamping(SX(s));
+	}
+ 	void setMassDamping(const double s){
+	  setMassDamping(SX(s));
+	}
+	void setStiffnessDamping(const float s){
+	  setStiffnessDamping(SX(s));
+	}
+ 	void setMassDamping(const float s){
+	  setMassDamping(SX(s));
+	}
+ 	template<typename VECTOR>
+	void setIntialStatus(const VECTOR &v0,const VECTOR &z0){
 	  assert_eq(v0.size(),z0.size());
 	  assert_eq(v0.size(),reducedDim());
 	  _v.resize(v0.size());
@@ -68,16 +82,9 @@ namespace LSW_ANI_EDITOR{
 		_z[i] = z0[i];
 	  }
 	}
-	void setIntialStatus(const vector<SX> &v0,const vector<SX> &z0){
-	  assert_eq(v0.size(),z0.size());
-	  assert_eq(v0.size(),reducedDim());
-	  _v = v0;
-	  _z = z0;
-	}
 	void removeVelecity(){
-	  for (size_t i = 0; i < _v.size(); ++i){
+	  for (size_t i = 0; i < _v.size(); ++i)
 		_v[i] = 0;
-	  }
 	}
 
 	const SX &getTimeStep(){
@@ -94,7 +101,8 @@ namespace LSW_ANI_EDITOR{
 	}
 
 	// simulate
-	void forward(const vector<SX> &w){
+	template<typename VECTOR>
+	void forward(const VECTOR &w){
 
 	  const int r = reducedDim();
 	  assert_eq((int)w.size(),r);
@@ -107,12 +115,19 @@ namespace LSW_ANI_EDITOR{
 		_z[i] = G[1][0]*v0[i] + G[1][1]*z0[i] + S[1]*w[i];
 	  }
 	}
-	void forward(const VectorXd &w){
-	  vector<SX> ws(w.size());
-	  for (int i = 0; i < w.size(); ++i){
-		ws[i] = w[i];
+
+	template<typename VECTOR>
+	void forward(const vector<VECTOR> &ws,vector<VECTOR>&V,vector<VECTOR>&Z){
+
+	  V.resize(ws.size()+1);
+	  Z.resize(ws.size()+1);
+	  getV(V[0]);
+	  getZ(Z[0]);
+	  for (int i = 0; i < ws.size(); ++i){
+		this->forward(ws[i]);
+		getV(V[i+1]);
+		getZ(Z[i+1]);
 	  }
-	  forward(ws);
 	}
 
 	// get data
@@ -125,22 +140,31 @@ namespace LSW_ANI_EDITOR{
 	const vector<SX> &getZ()const{
 	  return _z;
 	}
+	template<typename VECTOR> 
+	void getV(VECTOR &v)const{
+	  v.resize(_v.size());
+	  for (int i = 0; i < v.size(); ++i) 
+		v[i] = _v[i].getValue();
+	}
+	template<typename VECTOR>
+	void getZ(VECTOR &z)const{
+	  z.resize(_z.size());
+	  for (int i = 0; i < z.size(); ++i) 
+		z[i] = _z[i].getValue();
+	}
 	const VectorXd getEigenV()const{
 	  VectorXd v(_v.size());
-	  for (int i = 0; i < v.size(); ++i){
+	  for (int i = 0; i < v.size(); ++i)
 		v[i] = _v[i].getValue();
-	  }
 	  return v;
 	}
 	const VectorXd getEigenZ()const{
 	  VectorXd z(_z.size());
-	  for (int i = 0; i < z.size(); ++i){
+	  for (int i = 0; i < z.size(); ++i)
 		z[i] = _z[i].getValue();
-	  }
 	  return z;
 	}
 
-  protected:
 	void getImpIntegMat(SX G[2][2],SX S[2],const int mode_id)const{
 
 	  assert_in(mode_id,0,reducedDim()-1);
