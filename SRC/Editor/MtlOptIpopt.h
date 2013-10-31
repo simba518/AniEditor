@@ -103,6 +103,7 @@ public:
 	_app = IpoptApplicationFactory();
 	_app->Options()->SetStringValue("hessian_approximation", "limited-memory");
 	_app->Options()->SetIntegerValue("print_level",0);
+	_app->Options()->SetStringValue("print_timing_statistics","yes");
   }
   void setTol(const double tol){
 	assert_gt(tol,0.0f);

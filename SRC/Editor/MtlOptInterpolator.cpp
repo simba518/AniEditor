@@ -11,10 +11,12 @@ MtlOptInterpolator::MtlOptInterpolator(){
 
   warper = pRSWarperExt(new RSWarperExt());
   ctrlF = pCtrlForceEnergy(new CtrlForceEnergy());
+  // ctrlF = pCtrlForceEnergyNoWarp(new CtrlForceEnergyNoWarp());
   mtlOpt = pMtlOptEnergy(new MtlOptEnergy());
   ctrlFSolver = pNoConIpoptSolver(new NoConIpoptSolver(ctrlF));
   mtlOptSolver = pNoConIpoptSolver(new NoConIpoptSolver(mtlOpt));
   use_warp = true;
+  _optMtl = false;
 }
 
 bool MtlOptInterpolator::init (const string init_filename){
@@ -60,6 +62,8 @@ bool MtlOptInterpolator::init (const string init_filename){
   }
   if (succ){
 	succ = initWarper(json_f);
+	// pNoWarp warper = pNoWarp(new NoWarp(W));
+	// ctrlF->setRedWarper(warper);
 	if (succ)  ctrlF->setRedWarper(nodeWarper);
   }
   modalDisplayer.initialize(init_filename);
@@ -84,7 +88,7 @@ void MtlOptInterpolator::setUc(const int frame_id, const VectorXd &uc){
 	  break;
 	}
   }
-  ERROR_LOG_COND("failed to setUc!", (i < (int)con_frame_id.size())); 
+  ERROR_LOG_COND("failed to setUc for frame "<< frame_id, (i < (int)con_frame_id.size()));
 }
 
 void MtlOptInterpolator::removeAllPosCon(){
@@ -102,13 +106,16 @@ bool MtlOptInterpolator::interpolate (){
   }
 
   ctrlF->setPartialCon(con_frame_id,con_nodes,uc);
+  ctrlF->setZ0(delta_z[0]);
+  ctrlF->setV0(VectorXd::Ones(reducedDim())*0.0f);
   const int MAX_IT = 100;
   const double TOL = 1e-3;
+  ctrlFSolver->setPrintLevel(12);
   bool succ = ctrlFSolver->solve();
   double objValue = ctrlF->getObjValue();
 
   static MatrixXd V,Z;
-  for (int it = 0; it < MAX_IT && succ; ++it){
+  for (int it = 0; it < MAX_IT && succ && _optMtl; ++it){
 
 	ctrlF->forward(V,Z);
 	mtlOpt->setVZ(V,Z);
@@ -189,9 +196,9 @@ void MtlOptInterpolator::setAllConGroups(const set<pConNodesOfFrame> &newCons){
 }
 
 void MtlOptInterpolator::addConGroups(const int frame_id,const vector<set<int> >&group,const VectorXd&uc){
-  
+
   if(!validConstraints(frame_id)){
-	ERROR_LOG("frame "<<frame_id<<" can not constrained.");
+	ERROR_LOG("frame "<<frame_id<<" can not be constrained.");
 	return ;
   }
   assert_in (frame_id,0,getT()-1);

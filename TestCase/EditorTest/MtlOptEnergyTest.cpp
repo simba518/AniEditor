@@ -45,50 +45,7 @@ private:
 };
 typedef boost::shared_ptr<TestIpoptObjfun> pTestIpoptObjfun;
 
-class TemptTestWaper{
-  
-public:
-  // u(z) = W*z
-  TemptTestWaper(const int nx3,const int r){
-	assert_gt(r,0);
-	assert_ge(nx3,r);
-	assert_eq(nx3%3,0);
-	W = MatrixXd::Random(nx3,r);
-  }
-  void warp(const VectorXd &z,int frame_id,const vector<int> &nodes,VectorXd &ui){
-	assert_eq(z.size(),W.cols());
-	ui = block(W,nodes)*z;
-  }
-  void jacobian(const VectorXd &z,int frame_id,int node,Eigen::Matrix<double,3,-1> &J){
-	J = W.block(node*3,0,3,W.cols());
-  }
-  void jacobian(const VectorXd &z,int frame_id,const vector<int> &nodes,
-				const VectorXd &uc,VectorXd &g){
-	const MatrixXd Wb = block(W,nodes);
-	g = Wb.transpose()*(Wb*z-uc);
-  }
-  SXMatrix warp(const SXMatrix &z,const vector<int> &nodes){
-	assert_eq(z.size1(),W.cols());
-	assert_eq(z.size2(),1);
-	SXMatrix sWi;  CASADI::convert(this->block(W,nodes),sWi);
-	return sWi.mul(z);
-  }
-  
-protected:
-  MatrixXd block(const MatrixXd &W,const vector<int> &nodes)const{
-
-	MatrixXd Wi(nodes.size()*3, W.cols());
-	for (size_t i = 0; i < nodes.size(); ++i){
-	  const int j3 = nodes[i]*3;
-	  assert_le(j3,W.rows()-3);
-	  Wi.block( i*3,0,3, W.cols() ) = W.block( j3,0,3,W.cols() );
-	}
-	return Wi;
-  }
-  
-private:
-  MatrixXd W;
-};
+typedef NoWarp TemptTestWaper;
 typedef boost::shared_ptr<TemptTestWaper> pTemptTestWaper;
 typedef CtrlForceEnergyT<pTemptTestWaper> CtrlForceEnergyTempt;
 typedef boost::shared_ptr<CtrlForceEnergyTempt> pCtrlForceEnergyTempt;
@@ -131,7 +88,7 @@ public:
 	}
 
 	{// initialize
-	  warper = pTemptTestWaper(new TemptTestWaper(30*3,r));
+	  warper = pTemptTestWaper(new TemptTestWaper(MatrixXd::Random(30*3,r)));
 	  ctrlF = pCtrlForceEnergyTempt(new CtrlForceEnergyTempt());
 	  ctrlF->setRedWarper(warper);
 
@@ -268,7 +225,7 @@ BOOST_AUTO_TEST_SUITE(MtlOptEnergyTest)
 
 BOOST_AUTO_TEST_CASE(testTemptTestWarper){
  
-  TemptTestWaper warper(30,4);
+  TemptTestWaper warper(MatrixXd::Random(30,4));
   const VectorXd z = VectorXd::Random(4);
   vector<int> nodes(2);
   nodes[0] = 1;

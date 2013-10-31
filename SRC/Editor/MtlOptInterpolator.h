@@ -44,9 +44,7 @@ namespace LSW_ANI_EDITOR{
 	void setAllConGroups(const set<pConNodesOfFrame> &newCons);
 
 	void setConGroups(const int f,const vector<set<int> >&g,const VectorXd&uc){
-	  /// @todo
-	  // addConGroups(f,g,uc);
-	  // anieditor.setConstrainedFrames(con_frame_id);
+	  addConGroups(f,g,uc);
 	}
 
 	void setUc(const int frame_id,const VectorXd &uc);
@@ -131,10 +129,12 @@ namespace LSW_ANI_EDITOR{
 	bool loadUref(JsonFilePaser &json_f,vector<VectorXd> &u_ref)const;
 	
   private:
+	// pCtrlForceEnergyNoWarp ctrlF;
 	pCtrlForceEnergy ctrlF;
 	pMtlOptEnergy mtlOpt;
 	pNoConIpoptSolver ctrlFSolver;
 	pNoConIpoptSolver mtlOptSolver;
+	bool _optMtl;
 
 	vector<VectorXd> u_ref; // reference sequence in fullspace.
 	vector<VectorXd> delta_z; // increamental displacements in linear subspace.
