@@ -115,6 +115,20 @@ namespace LSW_ANI_EDITOR{
 		_z[i] = G[1][0]*v0[i] + G[1][1]*z0[i] + S[1]*w[i];
 	  }
 	}
+	void forward(const SXMatrix &w){
+
+	  const int r = reducedDim();
+	  assert_eq((int)w.size1(),r);
+	  assert_eq((int)w.size2(),1);
+	  const vector<SX> v0 = _v;
+	  const vector<SX> z0 = _z;
+	  SX G[2][2],S[2];
+	  for (int i = 0; i < r; ++i){
+		getImpIntegMat(G,S,i);
+		_v[i] = G[0][0]*v0[i] + G[0][1]*z0[i] + S[0]*w.elem(i,0);
+		_z[i] = G[1][0]*v0[i] + G[1][1]*z0[i] + S[1]*w.elem(i,0);
+	  }
+	}
 
 	template<typename VECTOR>
 	void forward(const vector<VECTOR> &ws,vector<VECTOR>&V,vector<VECTOR>&Z){
@@ -146,11 +160,21 @@ namespace LSW_ANI_EDITOR{
 	  for (int i = 0; i < v.size(); ++i) 
 		v[i] = _v[i].getValue();
 	}
+	void getV(SXMatrix &v)const{
+	  v.resize(_v.size(),1);
+	  for (int i = 0; i < _v.size(); ++i)
+		v.elem(i,0) = _v[i];
+	}
 	template<typename VECTOR>
 	void getZ(VECTOR &z)const{
 	  z.resize(_z.size());
 	  for (int i = 0; i < z.size(); ++i) 
 		z[i] = _z[i].getValue();
+	}
+	void getZ(SXMatrix &z)const{
+	  z.resize(_z.size(),1);
+	  for (int i = 0; i < _z.size(); ++i)
+		z.elem(i,0) = _z[i];
 	}
 	const VectorXd getEigenV()const{
 	  VectorXd v(_v.size());
