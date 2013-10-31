@@ -30,14 +30,39 @@ namespace LSW_WARPING{
 
 	  const int elemNum = y.size()/9;
 	  static Eigen::Matrix<double,9,9> J;
-	  dBdz.resize(y.size(),hatW.cols());
 
 	  grad(Sqrt_V[0],&y[0],&J(0,0));
 	  Jz = (BP.block(nodeId*3,0,3,9)*J)*hatW.block(0,0,9,hatW.cols());
 
 	  for (int i = 1; i < elemNum; ++i){
 		grad(Sqrt_V[i],&y[i*9],&J(0,0));
-		Jz += (BP.block(nodeId*3,i*9,3,9)*J)*hatW.block(9*i,0,9,hatW.cols());
+		Jz += (BP.block<3,9>(nodeId*3,i*9)*J)*hatW.block(9*i,0,9,hatW.cols());
+	  }
+	}
+
+	inline void jacobianXu(const VectorXd &y,
+						   const vector<double> &Sqrt_V,
+						   const vector<int> nodes,
+						   const MatrixXd &hatW,
+						   const MatrixXd &BP,
+						   const VectorXd &u,
+						   VectorXd &g){
+
+	  const int elemNum = y.size()/9;
+	  const int cnode = nodes.size();
+	  static Eigen::Matrix<double,9,9> J;
+	  
+	  g.resize(hatW.cols());
+	  g.setZero();
+	  for (int i = 0; i < elemNum; ++i){
+	  	grad(Sqrt_V[i],&y[i*9],&J(0,0));
+		for (int k = 0; k < cnode; ++k){
+		  const MatrixXd &Wt = hatW.block(9*i,0,9,hatW.cols()).transpose();
+		  const Eigen::Matrix<double,9,9> &Jt = J.transpose();
+		  const Eigen::Matrix<double,9,3> &BPt = BP.block<3,9>(nodes[k]*3,i*9).transpose();
+		  const Eigen::Matrix<double,3,1> &ui = u.block<3,1>(k*3,0);
+		  g += (Wt)*(Jt*(BPt*ui));
+		}
 	  }
 	}
 
@@ -317,8 +342,6 @@ namespace LSW_WARPING{
 	  out[80]=x187;
 	}
 
-  private:
-	MatrixXd dBdz;
   };
 
   /**
@@ -361,15 +384,43 @@ namespace LSW_WARPING{
 
 	// warp nodes using z of frame f.
 	void warp(const VectorXd &z,int frame_id,const vector<int> &nodes,VectorXd &ui){
-	  
+
+	  static VectorXd b;
+	  computeB(z,frame_id,b);
+	  assert_eq(BP.cols(),b.size());
+	  ui.resize(nodes.size()*3);
+	  const int c = BP.cols();
+	  for (size_t i = 0; i < nodes.size(); ++i)
+		ui.segment(i*3,3) = BP.block(nodes[i]*3,0,3,c)*b;
 	}
 
 	// return the jacobian of one node with respect to z of frame f
 	void jacobian(const VectorXd &z,int frame_id,int node,Eigen::Matrix<double,3,-1> &J){
 
 	  VectorXd y = hatW*z + ref_y[frame_id];
-	  for (int i = 0; i < y.size(); i+=9) y[i] += 1e-8;
+	  for (int i = 0; i < y.size(); i+=9) y[i] += 1e-10;
 	  grad.jacobian(y,Sqrt_V,node,hatW,BP,J);
+	}
+
+	// return the jacobian with respect to z of frame f
+	void jacobian(const VectorXd &z,int frame_id,const vector<int> &nodes,
+				  const VectorXd &uc,VectorXd &g){
+
+	  // compute u
+	  VectorXd y = hatW*z + ref_y[frame_id];
+	  VectorXd b(y.size());
+	  for (int i = 0; i < y.size(); i+=9){
+		y[i] += 1e-10; //@todo
+		ComputeBj::compute(&y[i],Sqrt_V[i/9],&b[i]);
+	  }
+	  VectorXd ui(nodes.size()*3);
+	  const int c = BP.cols();
+	  for (size_t i = 0; i < nodes.size(); ++i)
+		ui.segment(i*3,3) = BP.block(nodes[i]*3,0,3,c)*b;
+
+	  // compute g
+	  ui -= uc;
+	  grad.jacobianXu(y,Sqrt_V,nodes,hatW,BP,ui,g);
 	}
 
   protected:

@@ -161,7 +161,6 @@ namespace LSW_ANI_EDITOR{
 	  forward(w,_V,_Z);
 	  compute_pEpz(_pEpz);
 	  adjoint(_r);
-
 	  static MatrixXd G;
 	  G.resize(reducedDim(),getT()-1);
 	  memcpy(&G(0,0),x,dim()*sizeof(double));
@@ -244,8 +243,11 @@ namespace LSW_ANI_EDITOR{
 	  const int T = getT();
 	  R.resize(r*2,T-1);
 	  R.col(T-2).setZero();
-	  if (_confIndex[T-1] >= 0)
-		R.block(r,T-2,r,1) = _pEpz.col(_confIndex[T-1]);
+	  if (_confIndex[T-1] >= 0){
+		const int kk = _confIndex[T-1];
+		for (int c = 0; c < r; ++c)
+		  R(c*2+1,T-2) = _pEpz(c,kk);
+	  }
 
 	  for (int f = T-3; f >= 0; --f){
 		const int f_1 = f+1;
@@ -259,21 +261,26 @@ namespace LSW_ANI_EDITOR{
 		  R(i2,f) = g0*R(i2,f_1) + g2*R(i2_1,f_1);
 		  R(i2_1,f) = g1*R(i2,f_1) + g3*R(i2_1,f_1);
 		}
-		if (_confIndex[f_1] >= 0)
-		  R.block(r,f,r,1) += _pEpz.col(_confIndex[f_1]);
+		if (_confIndex[f_1] >= 0){
+		  const int kk = _confIndex[f_1];
+		  for (int c = 0; c < r; ++c)
+			R(c*2+1,f) += _pEpz(c,kk);
+		}
 	  }
 	}
 	void compute_pEpz(MatrixXd &pEpz)const{
+
+	  VectorXd g;
 	  if (_conFrames.size() > 0){
 		const int r = reducedDim();
 		pEpz.resize(r,_conFrames.size());
 		for (size_t i = 0; i < _conFrames.size(); ++i){
 		  const int f = _conFrames[i];
 		  const VectorXd &z = _Z.col(f);
-		  ///@todo
-		  // _warper->warp(z,f,_conNodes[i],ui);
-		  // assert_eq(_uc[i].size(),ui.size());
+		  _warper->jacobian(z,f,_conNodes[i],_uc[i],g);
+		  pEpz.col(i) = g;
 		}
+		pEpz *= _penaltyCon;
 	  }
 	}
 	

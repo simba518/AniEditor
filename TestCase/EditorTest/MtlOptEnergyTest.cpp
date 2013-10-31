@@ -62,6 +62,11 @@ public:
   void jacobian(const VectorXd &z,int frame_id,int node,Eigen::Matrix<double,3,-1> &J){
 	J = W.block(node*3,0,3,W.cols());
   }
+  void jacobian(const VectorXd &z,int frame_id,const vector<int> &nodes,
+				const VectorXd &uc,VectorXd &g){
+	const MatrixXd Wb = block(W,nodes);
+	g = Wb.transpose()*(Wb*z-uc);
+  }
   SXMatrix warp(const SXMatrix &z,const vector<int> &nodes){
 	assert_eq(z.size1(),W.cols());
 	assert_eq(z.size2(),1);
@@ -86,6 +91,7 @@ private:
 };
 typedef boost::shared_ptr<TemptTestWaper> pTemptTestWaper;
 typedef CtrlForceEnergyT<pTemptTestWaper> CtrlForceEnergyTempt;
+typedef boost::shared_ptr<CtrlForceEnergyTempt> pCtrlForceEnergyTempt;
 
 class MtlOptEnergyTestDataModel{
   
@@ -99,39 +105,46 @@ public:
 	  alpha_k = 0.1;
 	  alpha_m = 0.2;	  
 
-	  lambda.resize(2);
-	  v0.resize(2);
-	  z0.resize(2);
-	  lambda << 0.25f, 2.5f;
-	  v0 << 1,2;
-	  z0 << 3,4;
+	  lambda = VectorXd::Random(r)+VectorXd::Ones(r)*10.0f;
+	  v0 = VectorXd::Random(r)*1.2f;
+	  z0 = VectorXd::Random(r);
 	  w = VectorXd::Random(r*T-r);
 	}
 
 	{// constraints
-	  penaltyCon = 10.0f;
-	  // conF.push_back(1);
+	  penaltyCon = 100.0f;
+	  conF.push_back(1);
 	  conF.push_back(3);
 	  conN.push_back(vector<int>(1,1));
-	  // conN.push_back(vector<int>(1,2));
-	  uc.push_back(VectorXd::Random(3));
-	  // uc.push_back(VectorXd::Random(3));
+	  conN.push_back(vector<int>(1,2));
+	  conN[conN.size()-1].push_back(3);
+	  for (int i = 0; i < conN.size(); ++i)
+		uc.push_back(VectorXd::Random(conN[i].size()*3));
+	}
+	
+	{ // set all as zero
+	  // v0.setZero();
+	  // z0.setZero();
+	  // w.setZero();
+	  // for (int i = 0; i < uc.size(); ++i)
+	  // 	uc[i].setZero();
 	}
 
 	{// initialize
 	  warper = pTemptTestWaper(new TemptTestWaper(30*3,r));
-	  ctrlF.setRedWarper(warper);
+	  ctrlF = pCtrlForceEnergyTempt(new CtrlForceEnergyTempt());
+	  ctrlF->setRedWarper(warper);
 
-	  ctrlF.setTimestep(h);
-	  ctrlF.setTotalFrames(T);
+	  ctrlF->setTimestep(h);
+	  ctrlF->setTotalFrames(T);
 	  const VectorXd diagD = alpha_k*lambda+VectorXd::Ones(r)*alpha_m;
-	  ctrlF.setMtl(lambda,diagD);
-	  ctrlF.setV0(v0);
-	  ctrlF.setZ0(z0);
-	  ctrlF.precompute();
+	  ctrlF->setMtl(lambda,diagD);
+	  ctrlF->setV0(v0);
+	  ctrlF->setZ0(z0);
+	  ctrlF->precompute();
 
-	  ctrlF.setPenaltyCon(penaltyCon);
-	  ctrlF.setPartialCon(conF,conN,uc);
+	  ctrlF->setPenaltyCon(penaltyCon);
+	  ctrlF->setPartialCon(conF,conN,uc);
 	}
   }
   void initSimulator(MASimulatorAD &simulator){
@@ -158,7 +171,7 @@ public:
   vector<VectorXd> uc;
 
   pTemptTestWaper warper;
-  CtrlForceEnergyTempt ctrlF;
+  pCtrlForceEnergyTempt ctrlF;
 };
 
 template<typename WARPER_POINTER>
@@ -292,7 +305,7 @@ BOOST_AUTO_TEST_CASE(testCtrlForward){
   MtlOptEnergyTestDataModel data;
  
   MatrixXd V,Z;
-  data.ctrlF.forward(data.w,V,Z);
+  data.ctrlF->forward(data.w,V,Z);
   
   MASimulatorAD simulator;
   data.initSimulator(simulator);
@@ -310,8 +323,10 @@ BOOST_AUTO_TEST_CASE(testCtrlForward){
   	S(0,0) = sS[0].getValue();
   	S(1,0) = sS[1].getValue();
 
-  	ASSERT_EQ(G,(data.ctrlF.getG().block<2,2>(i*2,0)));
-  	ASSERT_EQ(S,(data.ctrlF.getS().block<2,1>(i*2,0)));
+	const MatrixXd G2 = (data.ctrlF->getG().block<2,2>(i*2,0));
+	const MatrixXd S2 = (data.ctrlF->getS().block<2,1>(i*2,0));
+  	ASSERT_EQ_SMALL_MAT_TOL(G,G2,1e-12);
+  	ASSERT_EQ_SMALL_MAT_TOL(S,S2,1e-12);
   }
 
   vector<VectorXd> w2,v2,z2;
@@ -324,8 +339,8 @@ BOOST_AUTO_TEST_CASE(testCtrlForward){
   
   ASSERT_EQ(V.size(),V2.size());
   ASSERT_EQ(Z.size(),Z2.size());
-  ASSERT_EQ(V,V2);
-  ASSERT_EQ(Z,Z2);
+  ASSERT_EQ_SMALL_MAT_TOL(V,V2,1e-10);
+  ASSERT_EQ_SMALL_MAT_TOL(Z,Z2,1e-10);
     
 }
 
@@ -341,7 +356,7 @@ BOOST_AUTO_TEST_CASE(testCtrlObjValue){
   ctrlFAD.precompute();
 
   ASSERT_GT (data.w.size(),0);
-  const double obj_1 = data.ctrlF.fun(&data.w[0]);
+  const double obj_1 = data.ctrlF->fun(&data.w[0]);
   const double obj_2 = ctrlFAD.fun(&data.w[0]);
   ASSERT_EQ_TOL(obj_1,obj_2,1e-12);
 
@@ -363,17 +378,22 @@ BOOST_AUTO_TEST_CASE(testCtrlGrad){
   VectorXd g1(ctrlFAD.dim());
   VectorXd g2(ctrlFAD.dim());
 
-  data.ctrlF.grad(&data.w[0],&g1[0]);
+  data.ctrlF->grad(&data.w[0],&g1[0]);
   ctrlFAD.grad(&data.w[0],&g2[0]);
 
-  ASSERT_EQ_SMALL_VEC_TOL(g1,g2,g1.size(),1e-12);
+  ASSERT_EQ_SMALL_VEC_TOL(g1,g2,g1.size(),1e-10);
 
 }
 
 BOOST_AUTO_TEST_CASE(testCtrlOpt){
- 
-  CtrlForceEnergy ctrlF;
-  
+
+  MtlOptEnergyTestDataModel data;
+  NoConIpoptSolver solver(data.ctrlF);
+  solver.setTol(1e-8);
+  solver.setMaxIt(100);
+  // solver.setPrintLevel(5);
+  TEST_ASSERT( solver.initialize() );
+  TEST_ASSERT( solver.solve() );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
