@@ -372,14 +372,31 @@ namespace LSW_ANI_EDITOR{
 	}
 	void grad(const double *x,double *g){
 
-	  computeKD(x,_K,_D);
-	  const MatrixXd X = _D*_hV1+_K*_hZ1+_V1_V0;
-
 	  const int r = reducedDim();
-	  const VectorXd ak = _hV1.transpose()*(_K*X);
-	  const VectorXd am = _hV1.transpose()*X;
-	  memcpy(g,&ak[0],r*sizeof(double));
-	  memcpy(&g[r],&am[0],r*sizeof(double));
+	  const VectorXd &ak = Map<VectorXd>(const_cast<double*>(x),r);
+	  const VectorXd &am = Map<VectorXd>(const_cast<double*>(&x[r]),r);
+	  const MatrixXd &A = Map<MatrixXd>(const_cast<double*>(&x[r*2]),r,r);
+	  _K = A.transpose()*A;
+
+	  {// grad ak, am
+		const MatrixXd &E = _hV1;
+		const MatrixXd F1 = _K*_hZ1+_V1_V0;
+		const MatrixXd F = ak.asDiagonal()*_K*_hV1+F1;
+		const MatrixXd G = _K*_hV1;
+		const MatrixXd H = am.asDiagonal()*_hV1+F1;
+		for (int i = 0; i < r; ++i){
+		  const VectorXd &rowE = E.row(i);
+		  const VectorXd &rowF = F.row(i);
+		  const VectorXd &rowG = G.row(i);
+		  const VectorXd &rowH = H.row(i);
+		  g[i+r] = (rowE.transpose()*rowF+am[i]*rowE.transpose()*rowE)(0,0); // grad(am)
+		  g[i] = (rowG.transpose()*rowH+ak[i]*rowG.transpose()*rowG)(0,0); // grad(ak)
+		}
+	  }
+
+	  {// grad A.
+		
+	  }
 	}
 	void setRlst(const double *x, const double objValue){
 	  memcpy(&_AkAmA[0],x,dim()*sizeof(double));
