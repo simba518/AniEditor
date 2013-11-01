@@ -147,12 +147,12 @@ namespace LSW_ANI_EDITOR{
 	  forward(w,_V,_Z);
 	  static VectorXd ui;
 	  for (size_t i = 0; i < _conFrames.size(); ++i){
-		const int f = _conFrames[i];
-		const VectorXd &z = _Z.col(f);
-		_warper->warp(z,f,_conNodes[i],ui);
-		assert_eq(_uc[i].size(),ui.size());
-		const double n = (_uc[i]-ui).norm();
-		objValue += _penaltyCon*n*n;
+	  	const int f = _conFrames[i];
+	  	const VectorXd &z = _Z.col(f);
+	  	_warper->warp(z,f,_conNodes[i],ui);
+	  	assert_eq(_uc[i].size(),ui.size());
+	  	const double n = (_uc[i]-ui).norm();
+	  	objValue += _penaltyCon*n*n;
 	  }
 	  return objValue*0.5f;
 	}
@@ -329,14 +329,30 @@ namespace LSW_ANI_EDITOR{
 	  assert_gt(h,0.0f);
 	  _h = h;
 	}
-	void setMtl(const VectorXd &Lambda,const VectorXd &diagD){
-	  
+	void setMtl(const VectorXd &Lambda,const double ak,const double am){
+	  assert_ge(ak,0.0f);
+	  assert_ge(am,0.0f);
+	  const int r = Lambda.size();
+	  _AkAmA.resize(r+r+r*r);
+	  _AkAmA.head(r) = ak*VectorXd::Ones(r);
+	  _AkAmA.segment(r,r) = am*VectorXd::Ones(r);
+	  _AkAmA.tail(r*r).setZero();
+	  int c = 0;
+	  for (int i = 0; i < r; ++i){
+		assert_ge(Lambda[i],0.0f);
+		_AkAmA[r*2+c] = sqrt(Lambda[i]);
+		c += (r+1);
+	  }
 	}
 	void setVZ(const MatrixXd &V, const MatrixXd &Z){
 	  assert_eq(V.rows(),Z.rows());
 	  assert_eq(V.cols(),Z.cols());
-	  _V = V;
-	  _Z = Z;
+	  assert_gt(V.cols(),1);
+	  assert_gt(_h,0.0f);
+	  const int T = V.cols();
+	  _hV1 = V.rightCols(T-1)*_h;
+	  _hZ1 = Z.rightCols(T-1)*_h;
+	  _V1_V0 = V.rightCols(T-1)-V.leftCols(T-1);
 	}
 
 	int dim()const{
@@ -345,37 +361,66 @@ namespace LSW_ANI_EDITOR{
 	  return r*r+r*2;
 	}
 	void init(double *x,const int n){
-	  
+	  assert_eq(n,dim());
+	  assert_gt(n,0);
+	  memcpy(x,&_AkAmA[0],n*sizeof(double));
 	}
 	double fun(const double *x){
-	  
+	  computeKD(x,_K,_D);
+	  const double E = (_D*_hV1+_K*_hZ1+_V1_V0).norm();
+	  return E*E*0.5f;
 	}
 	void grad(const double *x,double *g){
-	  
+
+	  computeKD(x,_K,_D);
+	  const MatrixXd X = _D*_hV1+_K*_hZ1+_V1_V0;
+
+	  const int r = reducedDim();
+	  const VectorXd ak = _hV1.transpose()*(_K*X);
+	  const VectorXd am = _hV1.transpose()*X;
+	  memcpy(g,&ak[0],r*sizeof(double));
+	  memcpy(&g[r],&am[0],r*sizeof(double));
 	}
 	void setRlst(const double *x, const double objValue){
-	  
+	  memcpy(&_AkAmA[0],x,dim()*sizeof(double));
+	  computeKD(x,_K,_D);
 	}
 
-	MatrixXd &getK()const{
-	  
+	const MatrixXd &getK()const{
+	  return _K;
 	}
-	MatrixXd &getD()const{
-	  
+	const MatrixXd &getD()const{
+	  return _D;
 	}
 	int reducedDim()const{
-	  return _Z.rows();
+	  return _hZ1.rows();
+	}
+	const VectorXd &getX()const{
+	  return _AkAmA;
 	}
 
-  private:
+  protected:
+	void computeKD(const double *x,MatrixXd &K,MatrixXd &D)const{
+	  const int r = reducedDim();
+	  const VectorXd &ak = Map<VectorXd>(const_cast<double*>(x),r);
+	  const VectorXd &am = Map<VectorXd>(const_cast<double*>(&x[r]),r);
+	  const MatrixXd &A = Map<MatrixXd>(const_cast<double*>(&x[r*2]),r,r);
+	  K = A.transpose()*A;
+	  D = am.asDiagonal();
+	  D += ak.asDiagonal()*K;
+	}
+
+  protected:
 	int _T;
 	double _h;
 	VectorXd _AkAmA;
-	MatrixXd _V;
-	MatrixXd _Z;
+	MatrixXd _hV1;
+	MatrixXd _hZ1;
+	MatrixXd _V1_V0;
+	MatrixXd _K;
+	MatrixXd _D;
   };
   typedef boost::shared_ptr<MtlOptEnergy> pMtlOptEnergy;
-
 
   class NoWarp{
 	// u(z) = W*z

@@ -57,7 +57,7 @@ bool MtlOptInterpolator::init (const string init_filename){
 
 	  mtlOpt->setTimestep(h);
 	  mtlOpt->setTotalFrames(getT());
-	  mtlOpt->setMtl(lambda,D);
+	  mtlOpt->setMtl(lambda,alpha_k,alpha_m);
 	}
   }
   if (succ){
@@ -110,7 +110,7 @@ bool MtlOptInterpolator::interpolate (){
   ctrlF->setV0(VectorXd::Ones(reducedDim())*0.0f);
   const int MAX_IT = 100;
   const double TOL = 1e-3;
-  ctrlFSolver->setPrintLevel(12);
+  ctrlFSolver->setPrintLevel(5);
   bool succ = ctrlFSolver->solve();
   double objValue = ctrlF->getObjValue();
 

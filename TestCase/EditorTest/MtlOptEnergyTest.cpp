@@ -6,7 +6,10 @@
 #include <CASADITools.h>
 #include <MatrixTools.h>
 #include <MASimulatorAD.h>
+#include <Timer.h>
+#include <JsonFilePaser.h>
 using namespace Eigen;
+using namespace UTILITY;
 using namespace LSW_ANI_EDITOR;
 
 class TestIpoptObjfun:public BaseFunGrad{
@@ -56,7 +59,7 @@ public:
   MtlOptEnergyTestDataModel(){
 
 	{// input data
-	  h = 3.0;
+	  h = 0.3;
 	  r = 2;
 	  T = 4;
 	  alpha_k = 0.1;
@@ -111,6 +114,11 @@ public:
 	simulator.setStiffnessDamping(SX(alpha_k));
 	simulator.setMassDamping(SX(alpha_m));
 	simulator.setIntialStatus(v0,z0);
+  }
+  void initMtlEnergy(MtlOptEnergy &mtl){
+	mtl.setTotalFrames(T);
+	mtl.setTimestep(h);
+	mtl.setMtl(lambda,alpha_k,alpha_m);
   }
   
 public:
@@ -220,6 +228,63 @@ private:
 };
 typedef CtrlForceEnergyTestADT<pTemptTestWaper> CtrlForceEnergyTestAD;
 
+class MtlOptEnergyAD:public MtlOptEnergy{
+  
+public:
+  void precompute(){
+
+	const int r = reducedDim();
+	const vector<SX> akama = CASADI::makeSymbolic(dim(),"x");
+	const SXMatrix ak = CASADI::makeEyeMatrix(vector<SX>(akama.begin(),akama.begin()+r));
+	const SXMatrix am = CASADI::makeEyeMatrix(vector<SX>(akama.begin()+r,akama.begin()+r*2));
+	const SXMatrix A = CASADI::convert(vector<SX>(akama.begin()+2*r,akama.end()),r);
+	const SXMatrix K = CasADi::trans(A).mul(A);
+	const SXMatrix D = am+ak.mul(K);
+	
+	SXMatrix E = 0.0f;
+	const int T = _Z.size();
+	for (int k = 0; k < T-1; ++k){
+	  const SXMatrix vk = CASADI::convert(_V[k]);
+	  const SXMatrix vk1 = CASADI::convert(_V[k+1]);
+	  const SXMatrix zk1 = CASADI::convert(_Z[k+1]);
+	  const SXMatrix n = vk1-vk+_h*D.mul(vk1)+_h*K.mul(zk1);
+	  for (int i = 0; i < r; ++i)
+		E += n.elem(i,0)*n.elem(i,0);
+	}
+
+	E = 0.5f*E;
+	_energyFun = CasADi::SXFunction(akama,E);
+	_energyFun.init();
+	const SXMatrix g = _energyFun.jac();
+	_gradFun = CasADi::SXFunction(akama,g);
+	_gradFun.init();
+  }
+  double fun(const double *x){
+	_energyFun.setInput(x);
+	_energyFun.evaluate();
+	double f = 0.0f;
+	_energyFun.getOutput(&f);
+	return f;
+  }
+  void grad(const double *x,double *g){
+	_gradFun.setInput(x);
+	_gradFun.evaluate();
+	_gradFun.getOutput(g);
+  }
+  void setVZ(const MatrixXd &V,const MatrixXd &Z){
+	MtlOptEnergy::setVZ(V,Z);
+	EIGEN3EXT::convert(V,_V);
+	EIGEN3EXT::convert(Z,_Z);
+  }
+  
+protected:
+  
+private:
+  CasADi::SXFunction _energyFun;
+  CasADi::SXFunction _gradFun;
+  vector<VectorXd> _V;
+  vector<VectorXd> _Z;
+};
 
 BOOST_AUTO_TEST_SUITE(MtlOptEnergyTest)
 
@@ -351,6 +416,170 @@ BOOST_AUTO_TEST_CASE(testCtrlOpt){
   // solver.setPrintLevel(5);
   TEST_ASSERT( solver.initialize() );
   TEST_ASSERT( solver.solve() );
+}
+
+BOOST_AUTO_TEST_CASE(testCtrlOptTiming){
+
+  const int T = 400;
+  JsonFilePaser inf;
+  { // open json file
+	const string infname = "/home/simba/Workspace/AnimationEditing/Data/beam/aniedit.ini";
+	TEST_ASSERT( inf.open(infname) );
+  }
+
+  pRedRSWarperExt nodeWarper;
+  { // init warper
+	pRSWarperExt warper = pRSWarperExt(new RSWarperExt());
+
+	string vol_filename;
+	TEST_ASSERT( inf.readFilePath("vol_filename",vol_filename) );
+	pTetMesh tet_mesh = pTetMesh(new TetMesh());
+	TEST_ASSERT( tet_mesh->load(vol_filename) );
+	warper->setTetMesh(tet_mesh);
+
+	vector<int> fixed_nodes;
+	TEST_ASSERT(inf.readVecFile("fixed_nodes_RS2Euler",fixed_nodes,UTILITY::TEXT));
+	warper->setFixedNodes(fixed_nodes);
+
+	MatrixXd W,B;
+	TEST_ASSERT( inf.readMatFile("eigen_vectors",W) );
+	TEST_ASSERT( inf.readMatFile("nonlinear_basis",B) );
+	const MatrixXd Uref(W.rows(),T);
+	vector<VectorXd> u_ref;
+	EIGEN3EXT::convert(Uref,u_ref);
+	warper->setRefU(u_ref);
+	TEST_ASSERT( warper->precompute() );
+
+	vector<int> cubP;
+	vector<double> cubW;
+	TEST_ASSERT( inf.readVecFile("cubaturePoints",cubP,UTILITY::TEXT) );
+	TEST_ASSERT( inf.readVecFile("cubatureWeights",cubW) );
+	nodeWarper = pRedRSWarperExt(new RedRSWarperExt(warper,B,W,cubP,cubW));
+  }
+  
+  pCtrlForceEnergy ctrlF = pCtrlForceEnergy(new CtrlForceEnergy);
+  { // init ctrlF
+	double h, alpha_k, alpha_m, penalty;
+	VectorXd lambda;
+	TEST_ASSERT( inf.read("h",h));
+	TEST_ASSERT( inf.read("alpha_k",alpha_k));
+	TEST_ASSERT( inf.read("alpha_m",alpha_m));
+	TEST_ASSERT( inf.read("penaltyCon",penalty));
+	TEST_ASSERT( inf.readVecFile("eigen_values",lambda));
+
+	ctrlF->setTimestep(h);
+	ctrlF->setTotalFrames(T);
+	ctrlF->setPenaltyCon(penalty);
+	const VectorXd D = alpha_m*VectorXd::Ones(lambda.size())+lambda*alpha_k;
+	ctrlF->setMtl(lambda,D);
+	ctrlF->precompute();
+	ctrlF->setRedWarper(nodeWarper);
+	ctrlF->setZ0(VectorXd::Random(lambda.size()));
+	ctrlF->setV0(VectorXd::Random(lambda.size()));
+  }
+
+  { // set constraints
+	vector<int> conF;
+	vector<vector<int> > conN;
+	vector<VectorXd> uc;
+	ASSERT_GE(T,200);
+	conF.push_back(20);
+	conF.push_back(50);
+	conF.push_back(100);
+	conF.push_back(120);
+	conF.push_back(160);
+	conF.push_back(190);
+
+	for (int i = 0; i < conF.size(); ++i){
+	  vector<int> nodes;
+	  for (int j = 0; j < 10; ++j)
+		nodes.push_back(j+i);
+	  conN.push_back(nodes);
+	}
+
+	for (int i = 0; i < conN.size(); ++i)
+	  uc.push_back(VectorXd::Random(conN[i].size()*3));
+
+	ctrlF->setPartialCon(conF,conN,uc);
+  }
+
+  { // test timing
+	const VectorXd w = VectorXd::Random(ctrlF->dim());
+	Timer timer;
+	timer.start();
+	for (int i = 0; i < 1000; ++i)
+	  ctrlF->fun(&w[0]);
+	timer.stop("compute function value: ");
+
+	VectorXd g(w.size());
+	timer.start();
+	for (int i = 0; i < 1000; ++i)
+	  ctrlF->grad(&w[0],&g[0]);
+	timer.stop("compute gradient: ");
+  }
+}
+
+BOOST_AUTO_TEST_CASE(testMtlEnergyObjValue){
+  
+  MtlOptEnergyTestDataModel data;
+  const MatrixXd V = MatrixXd::Random(data.ctrlF->reducedDim(),data.T);
+  const MatrixXd Z = MatrixXd::Random(data.ctrlF->reducedDim(),data.T);
+
+  MtlOptEnergy mtl;
+  data.initMtlEnergy(mtl);
+  mtl.setVZ(V,Z);
+  const VectorXd akamA = VectorXd::Random(mtl.dim());
+  const double objV1 = mtl.fun(&akamA[0]);
+
+  MtlOptEnergyAD mtlAD;
+  data.initMtlEnergy(mtlAD);
+  mtlAD.setVZ(V,Z);
+  mtlAD.precompute();
+  const double objV2 = mtlAD.fun(&akamA[0]);
+  
+  ASSERT_EQ_TOL (objV1,objV2,1e-14);
+}
+
+BOOST_AUTO_TEST_CASE(testMtlEnergyObjValue2){
+  
+  MtlOptEnergyTestDataModel data;
+  data.ctrlF->clearPartialCon();
+  const VectorXd w = VectorXd::Random(data.ctrlF->dim());
+  const double objV1 = data.ctrlF->fun(&w[0]);
+
+  MatrixXd V,Z;
+  data.ctrlF->forward(w,V,Z);
+
+  MtlOptEnergy mtl;
+  data.initMtlEnergy(mtl);
+  mtl.setVZ(V,Z);
+  const VectorXd akamA = mtl.getX();
+  const double objV2 = mtl.fun(&akamA[0])/(data.h*data.h);
+  
+  ASSERT_EQ_TOL (objV1,objV2,1e-14);
+}
+
+BOOST_AUTO_TEST_CASE(testMtlEnergyGrad){
+  
+  MtlOptEnergyTestDataModel data;
+  const MatrixXd V = MatrixXd::Random(data.ctrlF->reducedDim(),data.T);
+  const MatrixXd Z = MatrixXd::Random(data.ctrlF->reducedDim(),data.T);
+
+  MtlOptEnergy mtl;
+  data.initMtlEnergy(mtl);
+  mtl.setVZ(V,Z);
+  const VectorXd akamA = VectorXd::Random(mtl.dim());
+  VectorXd g1(akamA.size());
+  mtl.grad(&akamA[0],&g1[0]);
+
+  MtlOptEnergyAD mtlAD;
+  data.initMtlEnergy(mtlAD);
+  mtlAD.setVZ(V,Z);
+  mtlAD.precompute();
+  VectorXd g2(akamA.size());
+  mtlAD.grad(&akamA[0],&g2[0]);
+  
+  ASSERT_EQ_SMALL_VEC_TOL (g1,g2,g1.size(),1e-14);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
