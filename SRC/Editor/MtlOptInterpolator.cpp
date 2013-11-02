@@ -39,18 +39,19 @@ bool MtlOptInterpolator::init (const string init_filename){
   }
   if (succ){
 
-	double h, alpha_k, alpha_m, penalty;
+	double h, alpha_k, alpha_m, penaltyCon,penaltyKey;
 	VectorXd lambda;
 	succ &= json_f.read("h",h);
 	succ &= json_f.read("alpha_k",alpha_k);
 	succ &= json_f.read("alpha_m",alpha_m);
-	succ &= json_f.read("penaltyCon",penalty);
+	succ &= json_f.read("penaltyCon",penaltyCon);
+	succ &= json_f.read("penaltyKey",penaltyKey);
 	succ &= json_f.readVecFile("eigen_values",lambda);
 	if (succ){
 
 	  ctrlF->setTimestep(h);
 	  ctrlF->setTotalFrames(getT());
-	  ctrlF->setPenaltyCon(penalty);
+	  ctrlF->setPenaltyCon(penaltyCon,penaltyKey);
 	  const VectorXd D = alpha_m*VectorXd::Ones(lambda.size())+lambda*alpha_k;
 	  ctrlF->setMtl(lambda,D);
 	  ctrlF->precompute();

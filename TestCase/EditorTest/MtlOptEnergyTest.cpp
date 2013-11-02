@@ -73,6 +73,7 @@ public:
 
 	{// constraints
 	  penaltyCon = 100.0f;
+	  penaltyKey = 1000.0f;
 	  conF.push_back(1);
 	  conF.push_back(3);
 	  conN.push_back(vector<int>(1,1));
@@ -80,6 +81,12 @@ public:
 	  conN[conN.size()-1].push_back(3);
 	  for (int i = 0; i < conN.size(); ++i)
 		uc.push_back(VectorXd::Random(conN[i].size()*3));
+
+	  keyframes.push_back(1);
+	  keyframes.push_back(3);
+	  for (int i = 0; i < keyframes.size(); ++i){
+		keyZ.push_back(VectorXd::Random(lambda.size()));
+	  }
 	}
 	
 	{ // set all as zero
@@ -103,8 +110,9 @@ public:
 	  ctrlF->setZ0(z0);
 	  ctrlF->precompute();
 
-	  ctrlF->setPenaltyCon(penaltyCon);
+	  ctrlF->setPenaltyCon(penaltyCon,penaltyKey);
 	  ctrlF->setPartialCon(conF,conN,uc);
+	  ctrlF->setKeyframes(keyZ,keyframes);
 	}
   }
   void initSimulator(MASimulatorAD &simulator){
@@ -128,9 +136,12 @@ public:
   double alpha_k;
   double alpha_m;
   double penaltyCon;
+  double penaltyKey;
 
   VectorXd lambda,v0,z0,w;
 
+  vector<int> keyframes;
+  vector<VectorXd> keyZ;
   vector<int> conF;
   vector<vector<int> > conN;
   vector<VectorXd> uc;
@@ -152,39 +163,61 @@ public:
   void setTotalFrames(const int T){
 	_T = T;
   }
-  void setPenaltyCon(const double pc){
+  void setPenaltyCon(const double pc,const double pk){
 	assert_ge(pc,0.0f);
+	assert_ge(pk,0.0f);
 	_penaltyCon = pc;
+	_penaltyKey = pk;
+  }
+  void setKeyframes(const vector<VectorXd> &kZ, const vector<int> &keyf){
+	_keyZ = kZ;
+	_keyframes = keyf;
   }
   void setPartialCon(vector<int>&conF,vector<vector<int> >&conN,vector<VectorXd>&uc){
 	_conFrames = conF;
 	_conNodes = conN;
 	_uc = uc;
   }
+  
   void precompute(){
 
 	_w = CASADI::makeSymbolic(dim(),"w");
-
 	SXMatrix E = 0.0f;
 	for (int i = 0; i < _w.size(); ++i){
 	  E += _w[i]*_w[i];
 	}
-	
 	const vector<SXMatrix> w = CASADI::Sx2Mat(_w,_T-1);
 	vector<SXMatrix> V,Z;
 	_simulator.forward(w,V,Z);
-	for (int i = 0; i < _conFrames.size(); ++i){
-	  const int f = _conFrames[i];
-	  const SXMatrix ui = _warper->warp(Z[f],_conNodes[i]);
-	  const SXMatrix suc = CASADI::convert((VectorXd)_uc[i]);
-	  assert_eq(ui.size1(),suc.size1());
-	  assert_eq(ui.size2(),suc.size2());
-	  for (int k = 0; k < ui.size(); ++k){
-		const SX n = (ui.elem(k,0)-suc.elem(k,0));
-		E += _penaltyCon*n*n;
+
+	{ // full constraints
+	  for (size_t i = 0; i < _keyframes.size(); ++i){
+		const SXMatrix &zi = Z[_keyframes[i]];
+		const SXMatrix zk = CASADI::convert((VectorXd)_keyZ[i]);
+		assert_eq(zk.size1(),zi.size1());
+		assert_eq(zk.size2(),zi.size2());
+		assert_eq(zk.size2(),1);
+		for (int k = 0; k < zi.size(); ++k){
+		  const SX n = (zi.elem(k,0)-zk.elem(k,0));
+		  E += _penaltyKey*n*n;
+		}		
 	  }
 	}
-		
+
+	{ // partial constraints
+	  for (int i = 0; i < _conFrames.size(); ++i){
+		const int f = _conFrames[i];
+		const SXMatrix ui = _warper->warp(Z[f],_conNodes[i]);
+		const SXMatrix suc = CASADI::convert((VectorXd)_uc[i]);
+		assert_eq(ui.size1(),suc.size1());
+		assert_eq(ui.size2(),suc.size2());
+		for (int k = 0; k < ui.size(); ++k){
+		  const SX n = (ui.elem(k,0)-suc.elem(k,0));
+		  E += _penaltyCon*n*n;
+		}
+	  }
+	}
+
 	E = 0.5f*E;
 	_energyFun = CasADi::SXFunction(_w,E);
 	_energyFun.init();
@@ -218,6 +251,9 @@ private:
   WARPER_POINTER _warper;
 
   double _penaltyCon;
+  double _penaltyKey;
+  vector<int> _keyframes;
+  vector<VectorXd> _keyZ;
   vector<int> _conFrames;
   vector<vector<int> > _conNodes;
   vector<VectorXd> _uc;
@@ -371,8 +407,9 @@ BOOST_AUTO_TEST_CASE(testCtrlObjValue){
   MtlOptEnergyTestDataModel data;
   CtrlForceEnergyTestAD ctrlFAD;
   data.initSimulator(ctrlFAD.getSimulator());
-  ctrlFAD.setPenaltyCon(data.penaltyCon);
+  ctrlFAD.setPenaltyCon(data.penaltyCon,data.penaltyKey);
   ctrlFAD.setPartialCon(data.conF,data.conN,data.uc);
+  ctrlFAD.setKeyframes(data.keyZ,data.keyframes);
   ctrlFAD.setTotalFrames(data.T);
   ctrlFAD.setRedWarper(data.warper);
   ctrlFAD.precompute();
@@ -389,8 +426,9 @@ BOOST_AUTO_TEST_CASE(testCtrlGrad){
   MtlOptEnergyTestDataModel data;
   CtrlForceEnergyTestAD ctrlFAD;
   data.initSimulator(ctrlFAD.getSimulator());
-  ctrlFAD.setPenaltyCon(data.penaltyCon);
+  ctrlFAD.setPenaltyCon(data.penaltyCon,data.penaltyKey);
   ctrlFAD.setPartialCon(data.conF,data.conN,data.uc);
+  ctrlFAD.setKeyframes(data.keyZ,data.keyframes);
   ctrlFAD.setTotalFrames(data.T);
   ctrlFAD.setRedWarper(data.warper);
   ctrlFAD.precompute();
@@ -459,17 +497,18 @@ BOOST_AUTO_TEST_CASE(testCtrlOptTiming){
   
   pCtrlForceEnergy ctrlF = pCtrlForceEnergy(new CtrlForceEnergy);
   { // init ctrlF
-	double h, alpha_k, alpha_m, penalty;
+	double h, alpha_k, alpha_m, penaltyCon,penaltyKey;
 	VectorXd lambda;
 	TEST_ASSERT( inf.read("h",h));
 	TEST_ASSERT( inf.read("alpha_k",alpha_k));
 	TEST_ASSERT( inf.read("alpha_m",alpha_m));
-	TEST_ASSERT( inf.read("penaltyCon",penalty));
+	TEST_ASSERT( inf.read("penaltyCon",penaltyCon));
+	TEST_ASSERT( inf.read("penaltyKey",penaltyKey));
 	TEST_ASSERT( inf.readVecFile("eigen_values",lambda));
 
 	ctrlF->setTimestep(h);
 	ctrlF->setTotalFrames(T);
-	ctrlF->setPenaltyCon(penalty);
+	ctrlF->setPenaltyCon(penaltyCon,penaltyKey);
 	const VectorXd D = alpha_m*VectorXd::Ones(lambda.size())+lambda*alpha_k;
 	ctrlF->setMtl(lambda,D);
 	ctrlF->precompute();

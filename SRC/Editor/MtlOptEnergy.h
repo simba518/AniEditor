@@ -40,9 +40,11 @@ namespace LSW_ANI_EDITOR{
 		_keyfIndex[i] = -1;
 	  clearPartialCon();
 	}
-	void setPenaltyCon(const double pc){
+	void setPenaltyCon(const double pc,const double pk){
 	  assert_ge(pc,0.0f);
+	  assert_ge(pk,0.0f);
 	  _penaltyCon = pc;
+	  _penaltyKey = pk;
 	}
 	void setMtl(const VectorXd &Lambda,const VectorXd &diagD){
 	  _Lambda = Lambda;
@@ -94,7 +96,9 @@ namespace LSW_ANI_EDITOR{
 	  }
 	}
 
-	void setKeyframes(const VectorXd &zk, const int f){
+	void addKeyframes(const VectorXd &zk, const int f){
+	  assert_in(f,0,getT()-1);
+	  assert_eq(zk.size(),reducedDim());
 	  if (_keyfIndex[f] >= 0){
 	  	_keyZ[ _keyfIndex[f] ] = zk;
 	  }else{
@@ -102,6 +106,13 @@ namespace LSW_ANI_EDITOR{
 	  	_keyframes.push_back(f);
 	  	_keyfIndex[f] = _keyframes.size()-1;
 	  }
+	}
+	void setKeyframes(const vector<VectorXd> &keyZ, const vector<int> &keyframes){
+
+	  clearKeyframes();
+	  assert_eq(keyZ.size(),keyframes.size());
+	  for (size_t i = 0; i < keyframes.size(); ++i)
+		addKeyframes(keyZ[i],keyframes[i]);
 	}
 	void setPartialCon(vector<int>&conF,vector<vector<int> >&conN,vector<VectorXd>&uc){
 
@@ -124,6 +135,14 @@ namespace LSW_ANI_EDITOR{
 	  for (int i = 0; i < _T; ++i)
 		_confIndex[i] = -1;
 	}
+	void clearKeyframes(){
+	  _keyframes.clear();
+	  _keyZ.clear();
+	  _keyfIndex.resize(getT());
+	  for (size_t i = 0; i < _keyfIndex.size(); ++i){
+		_keyfIndex[i] = -1;
+	  }
+	}
 
 	int dim()const{
 	  const int n = (getT()-1)*reducedDim();
@@ -140,19 +159,35 @@ namespace LSW_ANI_EDITOR{
 	  memcpy(x,&_w[0],n*sizeof(double));
 	}
 	double fun(const double *x){
+
 	  const VectorXd &w = Map<VectorXd>(const_cast<double*>(x),dim());
 	  double objValue = 0.0f;
-	  objValue = w.norm();
-	  objValue = objValue*objValue;
 	  forward(w,_V,_Z);
-	  static VectorXd ui;
-	  for (size_t i = 0; i < _conFrames.size(); ++i){
-	  	const int f = _conFrames[i];
-	  	const VectorXd &z = _Z.col(f);
-	  	_warper->warp(z,f,_conNodes[i],ui);
-	  	assert_eq(_uc[i].size(),ui.size());
-	  	const double n = (_uc[i]-ui).norm();
-	  	objValue += _penaltyCon*n*n;
+
+	  {	// control forces
+		objValue = w.norm();
+		objValue = objValue*objValue;
+	  }
+
+	  { // keyframes
+		for (size_t i = 0; i < _keyframes.size(); ++i){
+		  const VectorXd &zf = _Z.col(_keyframes[i]);
+		  const VectorXd &zk = _keyZ[i];
+		  const double znorm = (zf-zk).norm();
+		  objValue += _penaltyKey*znorm*znorm;
+		}
+	  }
+
+	  { // partial constraints
+		static VectorXd ui;
+		for (size_t i = 0; i < _conFrames.size(); ++i){
+		  const int f = _conFrames[i];
+		  const VectorXd &z = _Z.col(f);
+		  _warper->warp(z,f,_conNodes[i],ui);
+		  assert_eq(_uc[i].size(),ui.size());
+		  const double n = (_uc[i]-ui).norm();
+		  objValue += _penaltyCon*n*n;
+		}
 	  }
 	  return objValue*0.5f;
 	}
@@ -160,7 +195,7 @@ namespace LSW_ANI_EDITOR{
   
 	  const VectorXd &w = Map<VectorXd>(const_cast<double*>(x),dim());
 	  forward(w,_V,_Z);
-	  compute_pEpz(_pEpz);
+	  compute_pEpz(_pEpzCon,_pEpzKey);
 	  adjoint(_r);
 	  static MatrixXd G;
 	  G.resize(reducedDim(),getT()-1);
@@ -249,7 +284,12 @@ namespace LSW_ANI_EDITOR{
 	  if (_confIndex[T-1] >= 0){
 		const int kk = _confIndex[T-1];
 		for (int c = 0; c < r; ++c)
-		  R(c*2+1,T-2) = _pEpz(c,kk);
+		  R(c*2+1,T-2) = _pEpzCon(c,kk);
+	  }
+	  if (_keyfIndex[T-1] >= 0){
+		const int kk = _keyfIndex[T-1];
+		for (int c = 0; c < r; ++c)
+		  R(c*2+1,T-2) += _pEpzKey(c,kk);
 	  }
 
 	  for (int f = T-3; f >= 0; --f){
@@ -264,26 +304,45 @@ namespace LSW_ANI_EDITOR{
 		  R(i2,f) = g0*R(i2,f_1) + g2*R(i2_1,f_1);
 		  R(i2_1,f) = g1*R(i2,f_1) + g3*R(i2_1,f_1);
 		}
+
 		if (_confIndex[f_1] >= 0){
 		  const int kk = _confIndex[f_1];
 		  for (int c = 0; c < r; ++c)
-			R(c*2+1,f) += _pEpz(c,kk);
+			R(c*2+1,f) += _pEpzCon(c,kk);
+		}
+		if(_keyfIndex[f_1] >= 0){
+		  const int kk = _keyfIndex[f_1];
+		  for (int c = 0; c < r; ++c)
+			R(c*2+1,f) += _pEpzKey(c,kk);
 		}
 	  }
 	}
-	void compute_pEpz(MatrixXd &pEpz)const{
+	void compute_pEpz(MatrixXd &pEpzCon,MatrixXd &pEpzKey)const{
 
-	  VectorXd g;
-	  if (_conFrames.size() > 0){
+	  { // keyframes
 		const int r = reducedDim();
-		pEpz.resize(r,_conFrames.size());
-		for (size_t i = 0; i < _conFrames.size(); ++i){
-		  const int f = _conFrames[i];
-		  const VectorXd &z = _Z.col(f);
-		  _warper->jacobian(z,f,_conNodes[i],_uc[i],g);
-		  pEpz.col(i) = g;
+		pEpzKey.resize(r,_keyframes.size());
+		for (size_t i = 0; i < _keyframes.size(); ++i){
+		  const int f = _keyframes[i];
+		  const VectorXd &zf = _Z.col(f);
+		  pEpzKey.col(i) = zf-_keyZ[i];
 		}
-		pEpz *= _penaltyCon;
+		pEpzKey *= _penaltyKey;
+	  }
+
+	  { // partial constraints
+		static VectorXd g;
+		if (_conFrames.size() > 0){
+		  const int r = reducedDim();
+		  pEpzCon.resize(r,_conFrames.size());
+		  for (size_t i = 0; i < _conFrames.size(); ++i){
+			const int f = _conFrames[i];
+			const VectorXd &z = _Z.col(f);
+			_warper->jacobian(z,f,_conNodes[i],_uc[i],g);
+			pEpzCon.col(i) = g;
+		  }
+		  pEpzCon *= _penaltyCon;
+		}
 	  }
 	}
 	
@@ -292,6 +351,7 @@ namespace LSW_ANI_EDITOR{
 	double _h;
 	int _T;
 	double _penaltyCon;
+	double _penaltyKey;
 	VectorXd _Lambda; 
 	VectorXd _diagD;
 	MatrixXd _U; // K=U^T*Lambda*U
@@ -313,7 +373,7 @@ namespace LSW_ANI_EDITOR{
 	vector<VectorXd> _uc;
 
 	// tempt data
-	MatrixXd _V, _Z, _pEpz, _r;
+	MatrixXd _V, _Z, _pEpzCon, _pEpzKey, _r;
   };
   typedef CtrlForceEnergyT<pRedRSWarperExt> CtrlForceEnergy;
   typedef boost::shared_ptr<CtrlForceEnergy> pCtrlForceEnergy;
