@@ -395,7 +395,20 @@ namespace LSW_ANI_EDITOR{
 	  }
 
 	  {// grad A.
-		
+		const MatrixXd &E = _hV1;
+		const MatrixXd &At = A.transpose();
+		const MatrixXd &J = ak.asDiagonal();
+		const MatrixXd &L = _hZ1;
+		const MatrixXd M = am.asDiagonal()*_hV1+_V1_V0;
+		const MatrixXd &Et = E.transpose();
+		const MatrixXd &Jt = J.transpose();
+		const MatrixXd &Lt = L.transpose();
+		const MatrixXd &Mt = M.transpose();
+		const MatrixXd gA = (At*A*L*Lt*At).transpose()+(A*L*Et*At*A*Jt)+(A*L*Mt)+
+		  (A*At*A*L*Lt)+(L*Et*At*A*Jt*At).transpose()+(A*M*Lt)+
+		  (A*Jt*At*A*L*Et)+(E*Et*At*A*Jt*J*At).transpose()+(A*Jt*M*Et)+
+		  (Jt*At*A*L*Et*At).transpose()+(A*E*Et*At*A*Jt*J)+(A*E*Mt*J);
+		memcpy(&g[2*r],&gA(0,0),sizeof(double)*r*r);
 	  }
 	}
 	void setRlst(const double *x, const double objValue){

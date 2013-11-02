@@ -16,7 +16,7 @@ MtlOptInterpolator::MtlOptInterpolator(){
   ctrlFSolver = pNoConIpoptSolver(new NoConIpoptSolver(ctrlF));
   mtlOptSolver = pNoConIpoptSolver(new NoConIpoptSolver(mtlOpt));
   use_warp = true;
-  _optMtl = false;
+  _optMtl = true;
 }
 
 bool MtlOptInterpolator::init (const string init_filename){
@@ -111,22 +111,28 @@ bool MtlOptInterpolator::interpolate (){
   const int MAX_IT = 100;
   const double TOL = 1e-3;
   ctrlFSolver->setPrintLevel(5);
+  mtlOptSolver->setPrintLevel(5);
+  ctrlFSolver->setTol(0.01);
+  mtlOptSolver->setTol(0.01);
+  ctrlFSolver->setMaxIt(500);
+  mtlOptSolver->setMaxIt(500);
   bool succ = ctrlFSolver->solve();
   double objValue = ctrlF->getObjValue();
 
   static MatrixXd V,Z;
-  for (int it = 0; it < MAX_IT && succ && _optMtl; ++it){
-
+  // for (int it = 0; (it < MAX_IT) && succ && _optMtl; ++it){
+  for (int it = 0; (it < MAX_IT) && _optMtl; ++it){
+	INFO_LOG("----------------OUTTER ITERATION: "<< it);
 	ctrlF->forward(V,Z);
 	mtlOpt->setVZ(V,Z);
 	succ = mtlOptSolver->solve();
-	if(succ){
-	  ctrlF->setKD(mtlOpt->getK(),mtlOpt->getD());
-	  succ = ctrlFSolver->solve();
-	  if( fabs(ctrlF->getObjValue() - objValue) <= TOL )
-		break;
-	  objValue = ctrlF->getObjValue();
-	}
+	// if(succ){
+	ctrlF->setKD(mtlOpt->getK(),mtlOpt->getD());
+	succ = ctrlFSolver->solve();
+	if( fabs(ctrlF->getObjValue() - objValue) <= TOL )
+	  break;
+	objValue = ctrlF->getObjValue();
+	// }
   }
 
   ctrlF->forward(V,Z);
