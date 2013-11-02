@@ -41,6 +41,11 @@ namespace LSW_ANI_EDITOR{
 	  return !(ctrlF->isKeyframe(frame_id));
 	}
 
+	void setKeyframe(const vector<VectorXd> &keyZ, 
+					 const vector<int>& keyframes){
+	  ctrlF->setKeyframes(keyZ,keyframes);
+	}
+
 	void setAllConGroups(const set<pConNodesOfFrame> &newCons);
 
 	void setConGroups(const int f,const vector<set<int> >&g,const VectorXd&uc){

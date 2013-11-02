@@ -96,7 +96,7 @@ namespace LSW_ANI_EDITOR{
 	  }
 	}
 
-	void addKeyframes(const VectorXd &zk, const int f){
+	void addKeyframe(const VectorXd &zk, const int f){
 	  assert_in(f,0,getT()-1);
 	  assert_eq(zk.size(),reducedDim());
 	  if (_keyfIndex[f] >= 0){
@@ -112,7 +112,7 @@ namespace LSW_ANI_EDITOR{
 	  clearKeyframes();
 	  assert_eq(keyZ.size(),keyframes.size());
 	  for (size_t i = 0; i < keyframes.size(); ++i)
-		addKeyframes(keyZ[i],keyframes[i]);
+		addKeyframe(keyZ[i],keyframes[i]);
 	}
 	void setPartialCon(vector<int>&conF,vector<vector<int> >&conN,vector<VectorXd>&uc){
 

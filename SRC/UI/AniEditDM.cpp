@@ -4,6 +4,7 @@
 #include <MatrixIO.h>
 #include <JsonFilePaser.h>
 #include <InterpolatorFactory.h>
+#include <MatrixTools.h>
 #include "AniEditDM.h"
 using namespace std;
 using namespace UTILITY;
@@ -36,14 +37,23 @@ bool AniEditDM::initialize(const string filename,const bool create_interp){
   if (succ){
 
 	UTILITY::JsonFilePaser inf;
-	string con_path, partial_con, drag_trajectory;
 	if ( inf.open(filename) ){
+
+	  string con_path, partial_con, drag_trajectory;
 	  if ( inf.readFilePath("con_path", con_path) )
 		succ = loadConPath(con_path);
 	  if ( inf.readFilePath("partial_constraints",partial_con) )
 		succ &= loadParitalCon(partial_con);
 	  if ( inf.readFilePath("drag_trajectory",drag_trajectory) )
 		succ &= loadDragRecord(drag_trajectory);
+	  
+	  MatrixXd keyZM;
+	  vector<int> keyframes;
+	  if(inf.read("keyframes",keyframes) && inf.readMatFile("keyZ",keyZM)){
+		vector<VectorXd> keyZ;
+		EIGEN3EXT::convert(keyZM,keyZ);
+		interpolator->setKeyframe(keyZ,keyframes);
+	  }
 	}
   }
 
