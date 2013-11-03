@@ -35,14 +35,14 @@ ELSEIF(${CMAKE_BUILD_TYPE} STREQUAL "DEBUG")
 ELSEIF(${CMAKE_BUILD_TYPE} STREQUAL "MSSE")
   # release msse mode
   MESSAGE("generate realse-msse version")
-  SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall -msse -DHAVE_NAMESPACES")
+  SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall -msse -DHAVE_NAMESPACES -ldl")
   SET(CMAKE_BUILD_TYPE_DIR "Release")
   SET(CMAKE_BUILD_TYPE "Release")
 
 ELSEIF(${CMAKE_BUILD_TYPE} STREQUAL "DMSSE")
   # debug mess mode
   MESSAGE("generate debug-msse version")
-  SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb -msse -DHAVE_NAMESPACES")
+  SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb -msse -DHAVE_NAMESPACES -ldl")
   SET(CMAKE_BUILD_TYPE_DIR "Debug")
   SET(CMAKE_BUILD_TYPE "Debug")
   
@@ -120,23 +120,13 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 
 INCLUDE_FOR_PROJECT(${PROJECT_NAME} 
 
-  SRC/ExternalLib
-  SRC/ExternalLib/matrix-v2.0
-  SRC/ExternalLib/minivector-v1.0
-  SRC/ExternalLib/sparseMatrix-v2.0
-  SRC/ExternalLib/volumetricMesh-v2.0
-
   SRC/BaseSim
   SRC/BaseSim/ConAndDrag
   SRC/BaseSim/Shader
-
   SRC/Editor
-
   SRC/Warping
-
   /usr/local/include/commonfile
   /usr/local/include/utility
-
   )
 
 FIND_INTERNAL_PACKAGE(${PROJECT_SOURCE_DIR}/Lib/${CMAKE_BUILD_TYPE_DIR}

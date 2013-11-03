@@ -28,6 +28,6 @@ TARGET_LINK_LIBRARIES( ${APPNAME}
   ${SUITESPARSE_LIBRARIES}
   ${IPOPT_LIBRARIES}
   /usr/lib/liblapack.a
-  ${LAPACK_LIBRARIES}  
+  ${LAPACK_LIBRARIES}
   libpthread.so
   )
