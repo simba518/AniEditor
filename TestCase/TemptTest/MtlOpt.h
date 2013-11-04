@@ -290,6 +290,92 @@ private:
   SXMatrix _Am;
 };
 
+class AtAakamOptimizer:public MtlOptimizer{
+
+public:
+  AtAakamOptimizer(MtlDataModel &m):MtlOptimizer(m){
+	
+	const int r = _model.K.rows();
+	const VSX a = makeSymbolic(r*r,"a");
+	const SX ak("ak");
+	const SX am("am");
+	_a_ak_am.clear();
+	_a_ak_am.insert( _a_ak_am.end(),a.begin(),a.end() );
+	_a_ak_am.push_back(ak);
+	_a_ak_am.push_back(am);
+
+	VSX Ak,Am;
+	for (int i = 0; i < r; ++i){
+	  Ak.push_back(ak);
+	  Am.push_back(am);
+	}
+	
+	_Ak = CASADI::makeEyeMatrix(Ak);
+	_Am = CASADI::makeEyeMatrix(Am);
+	const SXMatrix A = convert( a,r );
+	_K = CasADi::trans(A).mul(A);
+
+	setInitVal(m.K,m.Ak[0],m.Am[0]);
+  }
+
+protected:
+  void setInitVal(const MatrixXd &K,const double ak,const double &am){
+
+	const int r = K.rows();
+	assert_gt(r,0);
+	assert_eq(K.rows(),r);
+	assert_eq(K.cols(),r);
+
+	_rlst.resize(r*r+2);
+	MatrixXd KK(r,r);
+	KK.setZero();
+	for (int i = 0; i < r; ++i)
+	  KK(i,i) = sqrt( K(i,i) );
+	_rlst.head(r*r) = Map<VectorXd>(&KK(0,0),r*r);
+	_rlst[r*r] = ak;
+	_rlst[r*r+1] = am;
+  }
+  void optimizationBegin(){
+
+	resetEnergy();
+	const SXMatrix &K = _K;
+	_energy.setK(K);
+	const SXMatrix D = _Am + _Ak.mul(K);
+	_energy.setDamping(D);
+  }
+  void optimizationEnd(){
+
+	const int r = _energy.reducedDim();
+	assert_eq(_rlst.size(),r*r+2);
+	const MatrixXd A = Map<MatrixXd>(&_rlst[0],r,r);
+	_model.K = A.transpose()*A;
+	_model.Ak.resize(r);
+	_model.Am.resize(r);
+	for (int i = 0; i < r; ++i){
+	  _model.Ak[i] = _rlst[r*r];
+	  _model.Am[i] = _rlst[r*r+1];
+	}
+	_model.D = _model.Am.asDiagonal();
+	_model.D += _model.Ak.asDiagonal()*_model.K;
+  }
+  const VSX &getVariable()const{
+	return _a_ak_am;
+  }
+  bool getLowBound(vector<double> &lower)const{
+	const int r = _energy.reducedDim();
+	lower = vector<double>(r*r+2,-std::numeric_limits<double>::infinity());
+	for (int i = r*r; i < lower.size(); ++i)
+	  lower[i] = 0.0f;
+	return true;
+  }
+
+private:
+  VSX _a_ak_am;
+  SXMatrix _K;
+  SXMatrix _Ak;
+  SXMatrix _Am;
+};
+
 class KOptimizer:public MtlOptimizer{
 
 public: 

@@ -15,18 +15,29 @@ MtlOptInterpolator::MtlOptInterpolator(){
   mtlOpt = pMtlOptEnergy(new MtlOptEnergy());
   ctrlFSolver = pNoConIpoptSolver(new NoConIpoptSolver(ctrlF));
   mtlOptSolver = pNoConIpoptSolver(new NoConIpoptSolver(mtlOpt));
-  use_warp = true;
-  _optMtl = true;
+  use_warp = false;
+  _optMtl = false;
 }
 
 bool MtlOptInterpolator::init (const string init_filename){
   
   TRACE_FUN();
   JsonFilePaser json_f;
+  VectorXd lambda;
   bool succ = json_f.open(init_filename);
   if (succ){
 	succ &= json_f.readMatFile("eigen_vectors",W);
 	succ &= json_f.readMatFile("nonlinear_basis",B);
+	succ &= json_f.readVecFile("eigen_values",lambda);
+	assert_eq(lambda.size(),W.cols());
+	int use_sub_MA_modes = 0;
+	if (json_f.read("use_sub_MA_modes",use_sub_MA_modes) && use_sub_MA_modes > 0){
+	  assert_in(use_sub_MA_modes,1,lambda.size());
+	  const MatrixXd tW = W;
+	  const VectorXd tL = lambda;
+	  W = tW.leftCols(use_sub_MA_modes);
+	  lambda = tL.head(use_sub_MA_modes);
+	}
 	use_warp = json_f.read("use_warp",use_warp) ? use_warp:false;
 	succ &= loadUref(json_f,u_ref);
   }
@@ -40,13 +51,11 @@ bool MtlOptInterpolator::init (const string init_filename){
   if (succ){
 
 	double h, alpha_k, alpha_m, penaltyCon,penaltyKey;
-	VectorXd lambda;
 	succ &= json_f.read("h",h);
 	succ &= json_f.read("alpha_k",alpha_k);
 	succ &= json_f.read("alpha_m",alpha_m);
 	succ &= json_f.read("penaltyCon",penaltyCon);
 	succ &= json_f.read("penaltyKey",penaltyKey);
-	succ &= json_f.readVecFile("eigen_values",lambda);
 	if (succ){
 
 	  ctrlF->setTimestep(h);
@@ -63,9 +72,10 @@ bool MtlOptInterpolator::init (const string init_filename){
   }
   if (succ){
 	succ = initWarper(json_f);
-	// pNoWarp warper = pNoWarp(new NoWarp(W));
-	// ctrlF->setRedWarper(warper);
 	if (succ)  ctrlF->setRedWarper(nodeWarper);
+  }
+  if (succ){
+	if(!json_f.read("optimize_mtl",_optMtl)) _optMtl = false;
   }
   modalDisplayer.initialize(init_filename);
   succ &= ctrlFSolver->initialize();
@@ -115,8 +125,8 @@ bool MtlOptInterpolator::interpolate (){
   mtlOptSolver->setPrintLevel(5);
   ctrlFSolver->setTol(0.01);
   mtlOptSolver->setTol(0.01);
-  ctrlFSolver->setMaxIt(500);
-  mtlOptSolver->setMaxIt(500);
+  ctrlFSolver->setMaxIt(50);
+  mtlOptSolver->setMaxIt(50);
   bool succ = ctrlFSolver->solve();
   double objValue = ctrlF->getObjValue();
 
@@ -287,4 +297,16 @@ bool MtlOptInterpolator::loadUref(JsonFilePaser &json_f,vector<VectorXd> &u_ref)
 	}
   }
   return succ;
+}
+
+VectorXd MtlOptInterpolator::adjustToSubdim(const VectorXd &z)const{
+  assert_ge(z.size(),reducedDim());
+  return z.head(reducedDim());
+}
+
+vector<VectorXd> MtlOptInterpolator::adjustToSubdim(const vector<VectorXd> &vz)const{
+  vector<VectorXd> z = vz;
+  for (int i = 0; i < z.size(); ++i)
+	z[i] = adjustToSubdim(vz[i]);
+  return z;
 }

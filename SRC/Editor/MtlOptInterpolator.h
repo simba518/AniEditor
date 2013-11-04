@@ -43,7 +43,7 @@ namespace LSW_ANI_EDITOR{
 
 	void setKeyframe(const vector<VectorXd> &keyZ, 
 					 const vector<int>& keyframes){
-	  ctrlF->setKeyframes(keyZ,keyframes);
+	  ctrlF->setKeyframes(adjustToSubdim(keyZ),keyframes);
 	}
 
 	void setAllConGroups(const set<pConNodesOfFrame> &newCons);
@@ -61,13 +61,12 @@ namespace LSW_ANI_EDITOR{
 	void setReducedEdits(const int frame_id, const VectorXd &z_i){
 	  assert_in(frame_id,0,getT());
 	  assert_eq(getT(),(int)delta_z.size());
-	  assert_eq(z_i.size(),reducedDim());
-	  delta_z[frame_id] = z_i;
+	  delta_z[frame_id] = adjustToSubdim(z_i);
 	}
 
 	void setReducedEdits(const vector<VectorXd> &z){
 	  assert_eq(getT(),(int)z.size());
-	  this->delta_z = z;
+	  this->delta_z = adjustToSubdim(z);
 	}
 
 	const vector<VectorXd>& getInterpSeq()const{
@@ -132,6 +131,8 @@ namespace LSW_ANI_EDITOR{
 	void sortConstraints();
 	void removeConOfFrame(const int frame_id);
 	bool loadUref(JsonFilePaser &json_f,vector<VectorXd> &u_ref)const;
+	VectorXd adjustToSubdim(const VectorXd &z)const;
+	vector<VectorXd> adjustToSubdim(const vector<VectorXd> &vz)const;
 	
   private:
 	// pCtrlForceEnergyNoWarp ctrlF;

@@ -64,8 +64,12 @@ namespace LSW_ANI_EDITOR{
 	  const MatrixXd diagD = _U.transpose()*D*_U;
 	  _diagD.resize(reducedDim());
 	  for (int i = 0; i < reducedDim(); ++i)
-		_diagD[i] = D(i,i);
-	  assert_lt( D.norm()-_diagD.norm(), 1e-8 );
+		_diagD[i] = diagD(i,i);
+	  if (diagD.norm() > 0.0){
+		assert_lt( (diagD.norm()-_diagD.norm())/diagD.norm(), 1e-4 );
+	  }else{
+		assert_lt( D.norm()-_diagD.norm(), 1e-8 );
+	  }
 	}
 	void setZ0(const VectorXd &z0){
 	  _z0 = z0;
