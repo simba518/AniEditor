@@ -25,14 +25,11 @@ public:
   }
 
   bool get_bounds_info(Index n, Number* x_l, Number* x_u,
-                               Index m, Number* g_l, Number* g_u){
+					   Index m, Number* g_l, Number* g_u){
 	assert(_energy);
 	assert_eq(_energy->dim(),n);
 	assert_eq(m,0);
-	for (int i = 0; i < n; ++i){
-	  x_l[i] = -2e19;
-	  x_u[i] = 2e19;
-	}
+	_energy->bounds(x_l,x_u,n);
 	return true;
   }
 
@@ -68,8 +65,8 @@ public:
   }
 
   bool eval_jac_g(Index n, const Number* x, bool new_x,
-                          Index m, Index nele_jac, Index* iRow, Index *jCol,
-                          Number* values){
+				  Index m, Index nele_jac, Index* iRow, Index *jCol,
+				  Number* values){
 	return true;
   }
 

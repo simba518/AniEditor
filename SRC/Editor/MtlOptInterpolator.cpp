@@ -2,7 +2,9 @@
 #include <MatrixTools.h>
 #include <ConMatrixTools.h>
 #include <JsonFilePaser.h>
+#include <AuxTools.h>
 #include <Log.h>
+#include <DrawCurves.h>
 #include "MtlOptInterpolator.h"
 using namespace UTILITY;
 using namespace LSW_ANI_EDITOR;
@@ -63,7 +65,6 @@ bool MtlOptInterpolator::init (const string init_filename){
 	  ctrlF->setPenaltyCon(penaltyCon,penaltyKey);
 	  const VectorXd D = alpha_m*VectorXd::Ones(lambda.size())+lambda*alpha_k;
 	  ctrlF->setMtl(lambda,D);
-	  ctrlF->precompute();
 
 	  mtlOpt->setTimestep(h);
 	  mtlOpt->setTotalFrames(getT());
@@ -119,37 +120,59 @@ bool MtlOptInterpolator::interpolate (){
   ctrlF->setPartialCon(con_frame_id,con_nodes,uc);
   ctrlF->setZ0(delta_z[0]);
   ctrlF->setV0(VectorXd::Ones(reducedDim())*0.0f);
-  const int MAX_IT = 100;
+  const int MAX_IT = 200;
   const double TOL = 1e-3;
   ctrlFSolver->setPrintLevel(5);
   mtlOptSolver->setPrintLevel(5);
   ctrlFSolver->setTol(0.01);
   mtlOptSolver->setTol(0.01);
-  ctrlFSolver->setMaxIt(50);
-  mtlOptSolver->setMaxIt(50);
+  ctrlFSolver->setMaxIt(500);
+  mtlOptSolver->setMaxIt(500);
   bool succ = ctrlFSolver->solve();
   double objValue = ctrlF->getObjValue();
 
   static MatrixXd V,Z;
-  // for (int it = 0; (it < MAX_IT) && succ && _optMtl; ++it){
   for (int it = 0; (it < MAX_IT) && _optMtl; ++it){
-	INFO_LOG("----------------OUTTER ITERATION: "<< it);
 	ctrlF->forward(V,Z);
 	mtlOpt->setVZ(V,Z);
 	succ = mtlOptSolver->solve();
-	// if(succ){
+
 	ctrlF->setKD(mtlOpt->getK(),mtlOpt->getD());
 	succ = ctrlFSolver->solve();
 	if( fabs(ctrlF->getObjValue() - objValue) <= TOL )
 	  break;
 	objValue = ctrlF->getObjValue();
-	// }
+	INFO_LOG("----------------OUTTER ITERATION: "<< it);
   }
-
   ctrlF->forward(V,Z);
+  Z = ctrlF->getU()*Z;
   assert_eq(Z.rows(),reducedDim());
   assert_eq(Z.cols(),getT());
   EIGEN3EXT::convert(Z,delta_z);
+
+  { // save datas
+	
+	const MatrixXd &K=mtlOpt->getK();
+	const MatrixXd &D=mtlOpt->getD();
+	cout<< "K: " << K << endl << endl;
+	cout<< "D: " << D << endl << endl;
+	
+	PythonScriptDraw2DCurves<VectorXd> curves;
+	const MatrixXd newZ = ctrlF->getU().transpose()*Z;
+	for (int i = 0; i < newZ.rows(); ++i){
+	  const VectorXd &z2 = newZ.row(i).transpose();
+	  curves.add(string("mode ")+TOSTR(i),z2,1.0f,0,"--");
+	  VectorXd kz(ctrlF->getKeyframe().size());
+	  VectorXd kid(kz.size());
+	  for (int j = 0; j < kz.size(); ++j){
+		kz[j] = ctrlF->getKeyZ()[j][i];
+		kid[j] = ctrlF->getKeyframe()[j];
+	  }
+	  curves.add(string("keyframes of mode ")+TOSTR(i),kz,kid,"o");
+	}
+	curves.write("Opt_Z_K_AkAm");
+  }
+
   return succ;
 }
 

@@ -23,10 +23,11 @@ using namespace UTILITY;
 using namespace LSW_WARPING;
 
 typedef struct _MtlOptModel{
+
   _MtlOptModel(const string initf);
   bool loadLambda(const string initf);
   void initVolObj(const string initf);
-  void produceSimRlst();
+  void produceSimRlst(const bool genKeyZ=true);
   void extrangeKeyframes();
   void initMtlOpt(RedSpaceTimeEnergyAD &ad)const;
   void initMtlData(MtlDataModel &model);

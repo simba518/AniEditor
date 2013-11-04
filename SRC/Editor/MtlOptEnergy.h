@@ -14,6 +14,12 @@ namespace LSW_ANI_EDITOR{
   public:
 	virtual int dim()const = 0;
 	virtual void init(double *x,const int n) = 0;
+	virtual void bounds(double *x_l,double *x_u,const int n){
+	  for (int i = 0; i < n; ++i){
+		x_l[i] = -2e19;
+		x_u[i] = 2e19;
+	  }
+	}
 	virtual double fun(const double *x) = 0;
 	virtual void grad(const double *x,double *g) = 0;
 	virtual void setRlst(const double *x, const double objValue) = 0;
@@ -50,6 +56,7 @@ namespace LSW_ANI_EDITOR{
 	  _Lambda = Lambda;
 	  _diagD = diagD;
 	  _U = MatrixXd::Identity(Lambda.size(),Lambda.size());
+	  precompute();
 	}
 	void setKD(const MatrixXd &K,const MatrixXd &D){
 
@@ -58,57 +65,59 @@ namespace LSW_ANI_EDITOR{
 	  assert_eq(D.rows(),reducedDim());
 	  assert_eq(D.cols(),reducedDim());
 
+	  // diag K and D
 	  SelfAdjointEigenSolver<MatrixXd> eigenK(K);
 	  _Lambda = eigenK.eigenvalues();
-	  _U = eigenK.eigenvectors();
 	  const MatrixXd diagD = _U.transpose()*D*_U;
 	  _diagD.resize(reducedDim());
 	  for (int i = 0; i < reducedDim(); ++i)
 		_diagD[i] = diagD(i,i);
 	  if (diagD.norm() > 0.0){
-		assert_lt( (diagD.norm()-_diagD.norm())/diagD.norm(), 1e-4 );
+		// assert_lt( (diagD.norm()-_diagD.norm())/diagD.norm(), 1e-4 );
 	  }else{
-		assert_lt( D.norm()-_diagD.norm(), 1e-8 );
+		// assert_lt( D.norm()-_diagD.norm(), 1e-8 );
 	  }
+
+	  // rotate w,z0,v0,_U
+	  const MatrixXd &U = eigenK.eigenvectors();
+	  assert_eq(_w.size(),dim());
+	  assert_gt(_w.size(),0);
+	  MatrixXd W = U.transpose()*Map<MatrixXd>(&_w[0],reducedDim(),getT()-1);
+	  _w = Map<VectorXd>(&W(0,0),W.size());
+	  _z0 = U.transpose()*_z0;
+	  _v0 = U.transpose()*_v0;
+	  for (int i = 0; i < _keyZ.size(); ++i){
+		_keyZ[i] = U.transpose()*_keyZ[i];
+	  }
+	  _U = _U*U;
+
+	  // precompute G,S
+	  precompute();
 	}
 	void setZ0(const VectorXd &z0){
-	  _z0 = z0;
+	  assert_eq(z0.size(),_U.rows());
+	  _z0 = _U.transpose()*z0;
 	}
 	void setV0(const VectorXd &v0){
-	  _v0 = v0;
-	}
-	void precompute(){
-  
-	  const int r = reducedDim();
-	  _G.resize(r*2,2);
-	  _S.resize(r*2,1);
-	  for (int i = 0; i < r; ++i){
-
-		const double lambda = _Lambda[i];
-		const double d = _diagD[i];
-		const double gamma = 1.0f/(_h*(d+_h*lambda)+1.0f);
-
-		const int i2 = i*2;
-		const int i2_1 = i2+1;
-		_G(i2,0) = gamma;
-		_G(i2,1) = -_h*lambda*gamma;
-		_G(i2_1,0) = _h*gamma;
-		_G(i2_1,1) = 1.0f-_h*_h*lambda*gamma;
-
-		_S(i2,0) = _h*gamma;
-		_S(i2_1,0) = _h*_h*gamma;
-	  }
+	  assert_eq(v0.size(),_U.rows());
+	  _v0 = _U.transpose()*v0;
 	}
 
-	void addKeyframe(const VectorXd &zk, const int f){
+	void addKeyframe(const VectorXd &unRotZk, const int f){
+
 	  assert_in(f,0,getT()-1);
-	  assert_eq(zk.size(),reducedDim());
-	  if (_keyfIndex[f] >= 0){
-	  	_keyZ[ _keyfIndex[f] ] = zk;
+	  assert_eq(unRotZk.size(),reducedDim());
+	  if (f > 0){
+		const VectorXd zk = _U.transpose()*unRotZk;
+		if (_keyfIndex[f] >= 0){
+		  _keyZ[ _keyfIndex[f] ] = zk;
+		}else{
+		  _keyZ.push_back(zk);
+		  _keyframes.push_back(f);
+		  _keyfIndex[f] = _keyframes.size()-1;
+		}
 	  }else{
-		_keyZ.push_back(zk);
-	  	_keyframes.push_back(f);
-	  	_keyfIndex[f] = _keyframes.size()-1;
+		setZ0(unRotZk);
 	  }
 	}
 	void setKeyframes(const vector<VectorXd> &keyZ, const vector<int> &keyframes){
@@ -186,7 +195,7 @@ namespace LSW_ANI_EDITOR{
 		static VectorXd ui;
 		for (size_t i = 0; i < _conFrames.size(); ++i){
 		  const int f = _conFrames[i];
-		  const VectorXd &z = _Z.col(f);
+		  const VectorXd z = _U*_Z.col(f);
 		  _warper->warp(z,f,_conNodes[i],ui);
 		  assert_eq(_uc[i].size(),ui.size());
 		  const double n = (_uc[i]-ui).norm();
@@ -227,6 +236,12 @@ namespace LSW_ANI_EDITOR{
 	}
 	bool isKeyframe(const int f)const{
 	  return f>=0 && f < _T && _keyfIndex[f] > 0;
+	}
+	const vector<int> &getKeyframe()const{
+	  return _keyframes;
+	}
+	const vector<VectorXd> &getKeyZ()const{
+	  return _keyZ;
 	}
 	const VectorXd &getLambda()const{
 	  return _Lambda;
@@ -279,6 +294,56 @@ namespace LSW_ANI_EDITOR{
 	}
 	
   protected:
+	void precompute(){
+  
+	  const int r = reducedDim();
+	  _G.resize(r*2,2);
+	  _S.resize(r*2,1);
+	  for (int i = 0; i < r; ++i){
+
+		const double lambda = _Lambda[i];
+		const double d = _diagD[i];
+		const double gamma = 1.0f/(_h*(d+_h*lambda)+1.0f);
+
+		const int i2 = i*2;
+		const int i2_1 = i2+1;
+		_G(i2,0) = gamma;
+		_G(i2,1) = -_h*lambda*gamma;
+		_G(i2_1,0) = _h*gamma;
+		_G(i2_1,1) = 1.0f-_h*_h*lambda*gamma;
+
+		_S(i2,0) = _h*gamma;
+		_S(i2_1,0) = _h*_h*gamma;
+	  }
+	}
+	void compute_pEpz(MatrixXd &pEpzCon,MatrixXd &pEpzKey)const{
+
+	  { // keyframes
+		const int r = reducedDim();
+		pEpzKey.resize(r,_keyframes.size());
+		for (size_t i = 0; i < _keyframes.size(); ++i){
+		  const int f = _keyframes[i];
+		  const VectorXd &zf = _Z.col(f);
+		  pEpzKey.col(i) = zf-_keyZ[i];
+		}
+		pEpzKey *= _penaltyKey;
+	  }
+
+	  { // partial constraints
+		static VectorXd g;
+		if (_conFrames.size() > 0){
+		  const int r = reducedDim();
+		  pEpzCon.resize(r,_conFrames.size());
+		  for (size_t i = 0; i < _conFrames.size(); ++i){
+			const int f = _conFrames[i];
+			const VectorXd z = _U*_Z.col(f);
+			_warper->jacobian(z,f,_conNodes[i],_uc[i],g);
+			pEpzCon.col(i) = _U.transpose()*g;
+		  }
+		  pEpzCon *= _penaltyCon;
+		}
+	  }
+	}
 	void adjoint(MatrixXd &R)const{
   
 	  const int r = reducedDim();
@@ -318,34 +383,6 @@ namespace LSW_ANI_EDITOR{
 		  const int kk = _keyfIndex[f_1];
 		  for (int c = 0; c < r; ++c)
 			R(c*2+1,f) += _pEpzKey(c,kk);
-		}
-	  }
-	}
-	void compute_pEpz(MatrixXd &pEpzCon,MatrixXd &pEpzKey)const{
-
-	  { // keyframes
-		const int r = reducedDim();
-		pEpzKey.resize(r,_keyframes.size());
-		for (size_t i = 0; i < _keyframes.size(); ++i){
-		  const int f = _keyframes[i];
-		  const VectorXd &zf = _Z.col(f);
-		  pEpzKey.col(i) = zf-_keyZ[i];
-		}
-		pEpzKey *= _penaltyKey;
-	  }
-
-	  { // partial constraints
-		static VectorXd g;
-		if (_conFrames.size() > 0){
-		  const int r = reducedDim();
-		  pEpzCon.resize(r,_conFrames.size());
-		  for (size_t i = 0; i < _conFrames.size(); ++i){
-			const int f = _conFrames[i];
-			const VectorXd &z = _Z.col(f);
-			_warper->jacobian(z,f,_conNodes[i],_uc[i],g);
-			pEpzCon.col(i) = g;
-		  }
-		  pEpzCon *= _penaltyCon;
 		}
 	  }
 	}
@@ -397,14 +434,14 @@ namespace LSW_ANI_EDITOR{
 	  assert_ge(ak,0.0f);
 	  assert_ge(am,0.0f);
 	  const int r = Lambda.size();
-	  _AkAmA.resize(r+r+r*r);
-	  _AkAmA.head(r) = ak*VectorXd::Ones(r);
-	  _AkAmA.segment(r,r) = am*VectorXd::Ones(r);
+	  _AkAmA.resize(r*r+2);
+	  _AkAmA[0] = ak;
+	  _AkAmA[1] = am;
 	  _AkAmA.tail(r*r).setZero();
 	  int c = 0;
 	  for (int i = 0; i < r; ++i){
 		assert_ge(Lambda[i],0.0f);
-		_AkAmA[r*2+c] = sqrt(Lambda[i]);
+		_AkAmA[2+c] = sqrt(Lambda[i]);
 		c += (r+1);
 	  }
 	}
@@ -422,60 +459,66 @@ namespace LSW_ANI_EDITOR{
 	int dim()const{
 	  const int r = reducedDim();
 	  assert_gt(r,0);
-	  return r*r+r*2;
+	  return r*r+2;
 	}
 	void init(double *x,const int n){
 	  assert_eq(n,dim());
 	  assert_gt(n,0);
 	  memcpy(x,&_AkAmA[0],n*sizeof(double));
 	}
+	void bounds(double *x_l,double *x_u,const int n){
+	  BaseFunGrad::bounds(x_l,x_u,n);
+	  x_l[0] = 0.0f;
+	  x_l[1] = 0.0f;
+	}
 	double fun(const double *x){
 	  computeKD(x,_K,_D);
 	  const double E = (_D*_hV1+_K*_hZ1+_V1_V0).norm();
-	  return E*E*0.5f;
+	  return E*E*0.5f/(_h*_h);
 	}
 	void grad(const double *x,double *g){
 
 	  const int r = reducedDim();
-	  const VectorXd &ak = Map<VectorXd>(const_cast<double*>(x),r);
-	  const VectorXd &am = Map<VectorXd>(const_cast<double*>(&x[r]),r);
-	  const MatrixXd &A = Map<MatrixXd>(const_cast<double*>(&x[r*2]),r,r);
+	  const double &ak = x[0];
+	  const double &am = x[1];
+	  const MatrixXd &A = Map<MatrixXd>(const_cast<double*>(&x[2]),r,r);
 	  _K = A.transpose()*A;
 
 	  {// grad ak, am
-		const MatrixXd &E = _hV1;
 		const MatrixXd F1 = _K*_hZ1+_V1_V0;
-		const MatrixXd F = ak.asDiagonal()*_K*_hV1+F1;
-		const MatrixXd G = _K*_hV1;
-		const MatrixXd H = am.asDiagonal()*_hV1+F1;
-		for (int i = 0; i < r; ++i){
-		  const VectorXd &rowE = E.row(i);
-		  const VectorXd &rowF = F.row(i);
-		  const VectorXd &rowG = G.row(i);
-		  const VectorXd &rowH = H.row(i);
-		  g[i+r] = (rowE.transpose()*rowF+am[i]*rowE.transpose()*rowE)(0,0); // grad(am)
-		  g[i] = (rowG.transpose()*rowH+ak[i]*rowG.transpose()*rowG)(0,0); // grad(ak)
-		}
+		MatrixXd Fm = ak*_K*_hV1+F1;
+		MatrixXd Gm = _K*_hV1;
+		MatrixXd Hm = am*_hV1+F1;
+
+		const VectorXd &E = Map<VectorXd>(&_hV1(0,0),_hV1.size());
+		const VectorXd &F = Map<VectorXd>(&Fm(0,0),Fm.size());
+		const VectorXd &G = Map<VectorXd>(&Gm(0,0),Gm.size());
+		const VectorXd &H = Map<VectorXd>(&Hm(0,0),Hm.size());
+		
+		g[1] = (E.transpose()*(am*E+F))(0,0)/(_h*_h); // grad am
+		g[0] = (G.transpose()*(ak*G+H))(0,0)/(_h*_h); // grad ak
 	  }
 
 	  {// grad A.
 		const MatrixXd &E = _hV1;
 		const MatrixXd &At = A.transpose();
-		const MatrixXd &J = ak.asDiagonal();
+		const double &J = ak;
 		const MatrixXd &L = _hZ1;
-		const MatrixXd M = am.asDiagonal()*_hV1+_V1_V0;
+		const MatrixXd M = am*_hV1+_V1_V0;
 		const MatrixXd &Et = E.transpose();
-		const MatrixXd &Jt = J.transpose();
+		const double &Jt = J;
 		const MatrixXd &Lt = L.transpose();
 		const MatrixXd &Mt = M.transpose();
-		const MatrixXd gA = (At*A*L*Lt*At).transpose()+(A*L*Et*At*A*Jt)+(A*L*Mt)+
+		MatrixXd gA = (At*A*L*Lt*At).transpose()+(A*L*Et*At*A*Jt)+(A*L*Mt)+
 		  (A*At*A*L*Lt)+(L*Et*At*A*Jt*At).transpose()+(A*M*Lt)+
 		  (A*Jt*At*A*L*Et)+(E*Et*At*A*Jt*J*At).transpose()+(A*Jt*M*Et)+
 		  (Jt*At*A*L*Et*At).transpose()+(A*E*Et*At*A*Jt*J)+(A*E*Mt*J);
-		memcpy(&g[2*r],&gA(0,0),sizeof(double)*r*r);
+		gA /= (_h*_h);
+		memcpy(&g[2],&gA(0,0),sizeof(double)*r*r);
 	  }
 	}
 	void setRlst(const double *x, const double objValue){
+	  _objValue = objValue;
 	  memcpy(&_AkAmA[0],x,dim()*sizeof(double));
 	  computeKD(x,_K,_D);
 	}
@@ -492,19 +535,23 @@ namespace LSW_ANI_EDITOR{
 	const VectorXd &getX()const{
 	  return _AkAmA;
 	}
+	const double getObjValue()const{
+	  return _objValue;
+	}
 
   protected:
 	void computeKD(const double *x,MatrixXd &K,MatrixXd &D)const{
 	  const int r = reducedDim();
-	  const VectorXd &ak = Map<VectorXd>(const_cast<double*>(x),r);
-	  const VectorXd &am = Map<VectorXd>(const_cast<double*>(&x[r]),r);
-	  const MatrixXd &A = Map<MatrixXd>(const_cast<double*>(&x[r*2]),r,r);
+	  const double &ak = x[0];
+	  const VectorXd &am = VectorXd::Ones(r)*x[1];
+	  const MatrixXd &A = Map<MatrixXd>(const_cast<double*>(&x[2]),r,r);
 	  K = A.transpose()*A;
 	  D = am.asDiagonal();
-	  D += ak.asDiagonal()*K;
+	  D += ak*K;
 	}
 
   protected:
+	double _objValue;
 	int _T;
 	double _h;
 	VectorXd _AkAmA;

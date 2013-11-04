@@ -108,7 +108,6 @@ public:
 	  ctrlF->setMtl(lambda,diagD);
 	  ctrlF->setV0(v0);
 	  ctrlF->setZ0(z0);
-	  ctrlF->precompute();
 
 	  ctrlF->setPenaltyCon(penaltyCon,penaltyKey);
 	  ctrlF->setPartialCon(conF,conN,uc);
@@ -271,9 +270,15 @@ public:
 
 	const int r = reducedDim();
 	const vector<SX> akama = CASADI::makeSymbolic(dim(),"x");
-	const SXMatrix ak = CASADI::makeEyeMatrix(vector<SX>(akama.begin(),akama.begin()+r));
-	const SXMatrix am = CASADI::makeEyeMatrix(vector<SX>(akama.begin()+r,akama.begin()+r*2));
-	const SXMatrix A = CASADI::convert(vector<SX>(akama.begin()+2*r,akama.end()),r);
+	vector<SX> akv,amv;
+	for (int i = 0; i < r; ++i){
+	  akv.push_back(akama[0]);
+	  amv.push_back(akama[1]);
+	}
+
+	const SXMatrix ak = CASADI::makeEyeMatrix(akv);
+	const SXMatrix am = CASADI::makeEyeMatrix(amv);
+	const SXMatrix A = CASADI::convert(vector<SX>(akama.begin()+2,akama.end()),r);
 	const SXMatrix K = CasADi::trans(A).mul(A);
 	const SXMatrix D = am+ak.mul(K);
 	
@@ -288,7 +293,7 @@ public:
 		E += n.elem(i,0)*n.elem(i,0);
 	}
 
-	E = 0.5f*E;
+	E = 0.5f*E/(_h*_h);
 	_energyFun = CasADi::SXFunction(akama,E);
 	_energyFun.init();
 	const SXMatrix g = _energyFun.jac();
@@ -511,7 +516,6 @@ BOOST_AUTO_TEST_CASE(testCtrlOptTiming){
 	ctrlF->setPenaltyCon(penaltyCon,penaltyKey);
 	const VectorXd D = alpha_m*VectorXd::Ones(lambda.size())+lambda*alpha_k;
 	ctrlF->setMtl(lambda,D);
-	ctrlF->precompute();
 	ctrlF->setRedWarper(nodeWarper);
 	ctrlF->setZ0(VectorXd::Random(lambda.size()));
 	ctrlF->setV0(VectorXd::Random(lambda.size()));
@@ -583,6 +587,7 @@ BOOST_AUTO_TEST_CASE(testMtlEnergyObjValue2){
   
   MtlOptEnergyTestDataModel data;
   data.ctrlF->clearPartialCon();
+  data.ctrlF->clearKeyframes();
   const VectorXd w = VectorXd::Random(data.ctrlF->dim());
   const double objV1 = data.ctrlF->fun(&w[0]);
 
@@ -593,7 +598,7 @@ BOOST_AUTO_TEST_CASE(testMtlEnergyObjValue2){
   data.initMtlEnergy(mtl);
   mtl.setVZ(V,Z);
   const VectorXd akamA = mtl.getX();
-  const double objV2 = mtl.fun(&akamA[0])/(data.h*data.h);
+  const double objV2 = mtl.fun(&akamA[0]);
   
   ASSERT_EQ_TOL (objV1,objV2,1e-14);
 }

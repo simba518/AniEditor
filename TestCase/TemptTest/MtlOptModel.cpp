@@ -14,6 +14,7 @@ MtlOptModel::_MtlOptModel(const string initf){
   vector<int> keyid, modes;
   TEST_ASSERT ( jsonf.read("keyId", keyid) );
   TEST_ASSERT ( jsonf.read("modes", modes) );
+
   vector<double> initZ;
   TEST_ASSERT ( jsonf.read("z0", initZ) );
   assert_eq (initZ.size(), modes.size());
@@ -36,6 +37,11 @@ MtlOptModel::_MtlOptModel(const string initf){
   lambda.resize(testModeId.size());
   for (int i = 0; i < testModeId.size(); ++i)
 	lambda[i] = tlam[testModeId[i]];
+
+  MatrixXd kz;
+  TEST_ASSERT( jsonf.readMatFile("keyZ",kz) );
+  Kz = kz.topLeftCorner(redDim(),Kid.size());
+
   initVolObj(initf);
 }
 bool MtlOptModel::loadLambda(const string initf){
@@ -77,7 +83,7 @@ void MtlOptModel::initVolObj(const string initf){
   TEST_ASSERT( DefGradOperator::compute(volobj.getTetMesh(),G) );
   MapMA2RS::computeMapMatPGW(G,W,PGW);	
 }
-void MtlOptModel::produceSimRlst(){
+void MtlOptModel::produceSimRlst(const bool genKeyZ){
 
   const int r = redDim();
   const VectorXd zero = VectorXd::Zero(r);
@@ -95,11 +101,13 @@ void MtlOptModel::produceSimRlst(){
 	}
   }
 
-  Kz.resize(r,Kid.size());
-  for (int i = 0; i < Kid.size(); ++i){
-	const int f = Kid[i];
-	assert_in( f,0,Z.cols() );
-	Kz.col(i) = Z.col(f);
+  if (genKeyZ){
+	Kz.resize(r,Kid.size());
+	for (int i = 0; i < Kid.size(); ++i){
+	  const int f = Kid[i];
+	  assert_in( f,0,Z.cols() );
+	  Kz.col(i) = Z.col(f);
+	}
   }
 }
 void MtlOptModel::extrangeKeyframes(){

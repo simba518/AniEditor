@@ -7,29 +7,16 @@
 using namespace Eigen;
 using namespace UTILITY;
 
-void loadKz(const string fname, MtlOptModel &model){
-  
-  MatrixXd Kz;
-  TEST_ASSERT( EIGEN3EXT::load(fname,Kz) );
-  ASSERT_EQ( model.Kz.cols(), Kz.cols() );
-  ASSERT_LE( model.Kz.rows(), Kz.rows() );
-  const int r = model.Kz.rows();
-  const int c = model.Kz.cols();
-  model.Kz = Kz.topLeftCorner(r,c);
-}
-
 BOOST_AUTO_TEST_SUITE(MtlOptTest)
 
 BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
 
-  const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
-  MtlOptModel model(data+"mtlopt_cen.ini");
-  model.produceSimRlst();
-  loadKz(data+"W80_B40_C97_FixCen/swingKeyZ.b",model);
-
+  const string data = "/home/simba/Workspace/AnimationEditor/Data/mushroom/";
+  MtlOptModel model(data+"mtlopt.ini");
+  model.produceSimRlst(false);
   // model.extrangeKeyframes();
-  model.lambda *= 0.25f;
-  model.Kz.col(model.Kz.cols()-1).setZero();
+  // model.lambda *= 0.25f;
+  // model.Kz.col(model.Kz.cols()-1).setZero();
 
   MtlDataModel dataM;
   model.initMtlData(dataM);
@@ -51,8 +38,8 @@ BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
 
 	const MatrixXd oldZ = dataM.Z;
   	optZ.optimize();
-	// optAtakam.optimize();
-	optAtAkAm.optimize();
+	optAtakam.optimize();
+	// optAtAkAm.optimize();
   	// optKAtAm.optimize();
   	// optk.optimize();
   	// optAkAm.optimize();
@@ -95,10 +82,8 @@ BOOST_AUTO_TEST_CASE(Opt_Z){
   const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
   MtlOptModel model(data+"mtlopt.ini");
   model.produceSimRlst();
-  // loadKz(data+"Z.b",model);
-
   // model.extrangeKeyframes();
-  model.lambda *= 0.25f;
+  // model.lambda *= 0.25f;
   model.Kz.col(model.Kz.cols()-1).setZero();
 
   MtlDataModel dataM;
