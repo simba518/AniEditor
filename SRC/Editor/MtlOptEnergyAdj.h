@@ -1,69 +1,23 @@
 #ifndef _MTLOPTENERGYADJ_H_
 #define _MTLOPTENERGYADJ_H_
 
-#include <boost/shared_ptr.hpp>
-#include <CASADITools.h>
-#include <RedRSWarperExt.h>
-#include <assertext.h>
-#include <BaseOptFun.h>
-#include <NoWarp.h>
-using namespace LSW_WARPING;
+#include <BaseMtlOptEnergy.h>
 
 namespace LSW_ANI_EDITOR{
   
   template<typename WARPER_POINTER>
-  class CtrlForceEnergyT: public BaseOptFun{
+  class CtrlForceEnergyAdjT:public BaseCtrlForceEnergy,public BaseOptFun{
 	
   public:
 	void setRedWarper(WARPER_POINTER warper){
 	  _warper = warper;
 	}
-	void setTimestep(const double h){
-	  assert_gt(h,0.0f);
-	  _h = h;
-	}
-	void setTotalFrames(const int T){
-
-	  assert_ge(T,3);
-	  _T = T;
-	  _keyfIndex.resize(T);
-	  for (int i = 0; i < T; ++i)
-		_keyfIndex[i] = -1;
-	  clearPartialCon();
-	}
-	void setPenaltyCon(const double pc,const double pk){
-	  assert_ge(pc,0.0f);
-	  assert_ge(pk,0.0f);
-	  _penaltyCon = pc;
-	  _penaltyKey = pk;
-	}
-	void setMtl(const VectorXd &Lambda,const VectorXd &diagD){
-	  _Lambda = Lambda;
-	  _diagD = diagD;
-	  _U = MatrixXd::Identity(Lambda.size(),Lambda.size());
-	  precompute();
-	}
 	void setKD(const MatrixXd &K,const MatrixXd &D){
 
-	  assert_eq(K.rows(),reducedDim());
-	  assert_eq(K.cols(),reducedDim());
-	  assert_eq(D.rows(),reducedDim());
-	  assert_eq(D.cols(),reducedDim());
-
-	  // diag K and D
-	  SelfAdjointEigenSolver<MatrixXd> eigenK(K);
-	  _Lambda = eigenK.eigenvalues();
-	  const MatrixXd diagD = _U.transpose()*D*_U;
-	  _diagD.resize(reducedDim());
-	  for (int i = 0; i < reducedDim(); ++i)
-		_diagD[i] = diagD(i,i);
-	  if (diagD.norm() > 0.0){
-		// assert_lt( (diagD.norm()-_diagD.norm())/diagD.norm(), 1e-4 );
-	  }else{
-		// assert_lt( D.norm()-_diagD.norm(), 1e-8 );
-	  }
+	  BaseCtrlForceEnergy::setKD(K,D);
 
 	  // rotate w,z0,v0,_U
+	  SelfAdjointEigenSolver<MatrixXd> eigenK(K);
 	  const MatrixXd &U = eigenK.eigenvectors();
 	  assert_eq(_w.size(),dim());
 	  assert_gt(_w.size(),0);
@@ -74,10 +28,6 @@ namespace LSW_ANI_EDITOR{
 	  for (int i = 0; i < _keyZ.size(); ++i){
 		_keyZ[i] = U.transpose()*_keyZ[i];
 	  }
-	  _U = _U*U;
-
-	  // precompute G,S
-	  precompute();
 	}
 	void setZ0(const VectorXd &z0){
 	  assert_eq(z0.size(),_U.rows());
@@ -86,60 +36,6 @@ namespace LSW_ANI_EDITOR{
 	void setV0(const VectorXd &v0){
 	  assert_eq(v0.size(),_U.rows());
 	  _v0 = _U.transpose()*v0;
-	}
-
-	void addKeyframe(const VectorXd &unRotZk, const int f){
-
-	  assert_in(f,0,getT()-1);
-	  assert_eq(unRotZk.size(),reducedDim());
-	  if (f > 0){
-		const VectorXd zk = _U.transpose()*unRotZk;
-		if (_keyfIndex[f] >= 0){
-		  _keyZ[ _keyfIndex[f] ] = zk;
-		}else{
-		  _keyZ.push_back(zk);
-		  _keyframes.push_back(f);
-		  _keyfIndex[f] = _keyframes.size()-1;
-		}
-	  }else{
-		setZ0(unRotZk);
-	  }
-	}
-	void setKeyframes(const vector<VectorXd> &keyZ, const vector<int> &keyframes){
-
-	  clearKeyframes();
-	  assert_eq(keyZ.size(),keyframes.size());
-	  for (size_t i = 0; i < keyframes.size(); ++i)
-		addKeyframe(keyZ[i],keyframes[i]);
-	}
-	void setPartialCon(vector<int>&conF,vector<vector<int> >&conN,vector<VectorXd>&uc){
-
-	  clearPartialCon();
-	  _conFrames = conF;
-	  _conNodes = conN;
-	  _uc = uc;
-	  for (int i = 0; i < _conFrames.size(); ++i){
-		const int f = _conFrames[i];
-		assert_in(f,0,_confIndex.size()-1);
-		_confIndex[f] = i;
-	  }
-	}
-	void clearPartialCon(){
-
-	  _conFrames.clear();
-	  _conNodes.clear();
-	  _uc.clear();
-	  _confIndex.resize(_T);
-	  for (int i = 0; i < _T; ++i)
-		_confIndex[i] = -1;
-	}
-	void clearKeyframes(){
-	  _keyframes.clear();
-	  _keyZ.clear();
-	  _keyfIndex.resize(getT());
-	  for (size_t i = 0; i < _keyfIndex.size(); ++i){
-		_keyfIndex[i] = -1;
-	  }
 	}
 
 	int dim()const{
@@ -213,30 +109,6 @@ namespace LSW_ANI_EDITOR{
 	  _objValue = objValue;
 	}
 
-	int reducedDim()const{
-	  return _Lambda.size();
-	}
-	int getT()const{
-	  return _T;
-	}
-	bool isKeyframe(const int f)const{
-	  return f>=0 && f < _T && _keyfIndex[f] > 0;
-	}
-	const vector<int> &getKeyframe()const{
-	  return _keyframes;
-	}
-	const vector<VectorXd> &getKeyZ()const{
-	  return _keyZ;
-	}
-	const VectorXd &getLambda()const{
-	  return _Lambda;
-	}
-	const MatrixXd &getU()const{
-	  return _U;
-	}
-	const double getObjValue()const{
-	  return _objValue;
-	}
 	void forward(const VectorXd &w,MatrixXd &V,MatrixXd &Z){
 
 	  const int T = getT();
@@ -374,14 +246,6 @@ namespace LSW_ANI_EDITOR{
 	
   private:
 	WARPER_POINTER _warper;
-	double _h;
-	int _T;
-	double _penaltyCon;
-	double _penaltyKey;
-	VectorXd _Lambda; 
-	VectorXd _diagD;
-	MatrixXd _U; // K=U^T*Lambda*U
-	double _objValue;
 	VectorXd _w;
 	VectorXd _z0;
 	VectorXd _v0;
@@ -389,50 +253,18 @@ namespace LSW_ANI_EDITOR{
 	Matrix<double,-1,2> _G;
 	Matrix<double,-1,1> _S;
 
-	// constraints
-	vector<int> _keyframes;
-	vector<int> _keyfIndex;
-	vector<VectorXd> _keyZ;
-	vector<int> _confIndex;
-	vector<int> _conFrames;
-	vector<vector<int> > _conNodes;
-	vector<VectorXd> _uc;
-
 	// tempt data
 	MatrixXd _V, _Z, _pEpzCon, _pEpzKey, _r;
   };
 
-  typedef CtrlForceEnergyT<pRedRSWarperExt> CtrlForceEnergy;
-  typedef boost::shared_ptr<CtrlForceEnergy> pCtrlForceEnergy;
-  typedef CtrlForceEnergyT<pNoWarp> CtrlForceEnergyNoWarp;
-  typedef boost::shared_ptr<CtrlForceEnergyNoWarp> pCtrlForceEnergyNoWarp;
+  typedef CtrlForceEnergyAdjT<pRedRSWarperExt> CtrlForceEnergyAdj;
+  typedef boost::shared_ptr<CtrlForceEnergyAdj> pCtrlForceEnergyAdj;
+  typedef CtrlForceEnergyAdjT<pNoWarp> CtrlForceEnergyAdjNoWarp;
+  typedef boost::shared_ptr<CtrlForceEnergyAdjNoWarp> pCtrlForceEnergyAdjNoWarp;
 
-  class MtlOptEnergy: public BaseOptFun{
+  class MtlOptEnergyAdj: public BaseMtlOptEnergy{
 	
   public:
-	void setTotalFrames(const int T){
-	  assert_ge(T,3);
-	  _T = T;
-	}
-	void setTimestep(const double h){
-	  assert_gt(h,0.0f);
-	  _h = h;
-	}
-	void setMtl(const VectorXd &Lambda,const double ak,const double am){
-	  assert_ge(ak,0.0f);
-	  assert_ge(am,0.0f);
-	  const int r = Lambda.size();
-	  _AkAmA.resize(r*r+2);
-	  _AkAmA[0] = ak;
-	  _AkAmA[1] = am;
-	  _AkAmA.tail(r*r).setZero();
-	  int c = 0;
-	  for (int i = 0; i < r; ++i){
-		assert_ge(Lambda[i],0.0f);
-		_AkAmA[2+c] = sqrt(Lambda[i]);
-		c += (r+1);
-	  }
-	}
 	void setVZ(const MatrixXd &V, const MatrixXd &Z){
 	  assert_eq(V.rows(),Z.rows());
 	  assert_eq(V.cols(),Z.cols());
@@ -442,22 +274,6 @@ namespace LSW_ANI_EDITOR{
 	  _hV1 = V.rightCols(T-1)*_h;
 	  _hZ1 = Z.rightCols(T-1)*_h;
 	  _V1_V0 = V.rightCols(T-1)-V.leftCols(T-1);
-	}
-
-	int dim()const{
-	  const int r = reducedDim();
-	  assert_gt(r,0);
-	  return r*r+2;
-	}
-	void init(double *x,const int n){
-	  assert_eq(n,dim());
-	  assert_gt(n,0);
-	  memcpy(x,&_AkAmA[0],n*sizeof(double));
-	}
-	void bounds(double *x_l,double *x_u,const int n){
-	  BaseOptFun::bounds(x_l,x_u,n);
-	  x_l[0] = 0.0f;
-	  x_l[1] = 0.0f;
 	}
 	double fun(const double *x){
 	  computeKD(x,_K,_D);
@@ -505,51 +321,13 @@ namespace LSW_ANI_EDITOR{
 		memcpy(&g[2],&gA(0,0),sizeof(double)*r*r);
 	  }
 	}
-	void setRlst(const double *x, const double objValue){
-	  _objValue = objValue;
-	  memcpy(&_AkAmA[0],x,dim()*sizeof(double));
-	  computeKD(x,_K,_D);
-	}
-
-	const MatrixXd &getK()const{
-	  return _K;
-	}
-	const MatrixXd &getD()const{
-	  return _D;
-	}
-	int reducedDim()const{
-	  return _hZ1.rows();
-	}
-	const VectorXd &getX()const{
-	  return _AkAmA;
-	}
-	const double getObjValue()const{
-	  return _objValue;
-	}
 
   protected:
-	void computeKD(const double *x,MatrixXd &K,MatrixXd &D)const{
-	  const int r = reducedDim();
-	  const double &ak = x[0];
-	  const VectorXd &am = VectorXd::Ones(r)*x[1];
-	  const MatrixXd &A = Map<MatrixXd>(const_cast<double*>(&x[2]),r,r);
-	  K = A.transpose()*A;
-	  D = am.asDiagonal();
-	  D += ak*K;
-	}
-
-  protected:
-	double _objValue;
-	int _T;
-	double _h;
-	VectorXd _AkAmA;
 	MatrixXd _hV1;
 	MatrixXd _hZ1;
 	MatrixXd _V1_V0;
-	MatrixXd _K;
-	MatrixXd _D;
   };
-  typedef boost::shared_ptr<MtlOptEnergy> pMtlOptEnergy;
+  typedef boost::shared_ptr<MtlOptEnergyAdj> pMtlOptEnergyAdj;
 
 }//end of namespace
 

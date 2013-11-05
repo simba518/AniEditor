@@ -50,13 +50,13 @@ typedef boost::shared_ptr<TestIpoptObjfun> pTestIpoptObjfun;
 
 typedef NoWarp TemptTestWaper;
 typedef boost::shared_ptr<TemptTestWaper> pTemptTestWaper;
-typedef CtrlForceEnergyT<pTemptTestWaper> CtrlForceEnergyTempt;
-typedef boost::shared_ptr<CtrlForceEnergyTempt> pCtrlForceEnergyTempt;
+typedef CtrlForceEnergyAdjT<pTemptTestWaper> CtrlForceEnergyAdjTempt;
+typedef boost::shared_ptr<CtrlForceEnergyAdjTempt> pCtrlForceEnergyAdjTempt;
 
-class MtlOptEnergyTestDataModel{
+class MtlOptEnergyAdjTestDataModel{
   
 public:
-  MtlOptEnergyTestDataModel(){
+  MtlOptEnergyAdjTestDataModel(){
 
 	{// input data
 	  h = 0.3;
@@ -99,7 +99,7 @@ public:
 
 	{// initialize
 	  warper = pTemptTestWaper(new TemptTestWaper(MatrixXd::Random(30*3,r)));
-	  ctrlF = pCtrlForceEnergyTempt(new CtrlForceEnergyTempt());
+	  ctrlF = pCtrlForceEnergyAdjTempt(new CtrlForceEnergyAdjTempt());
 	  ctrlF->setRedWarper(warper);
 
 	  ctrlF->setTimestep(h);
@@ -122,7 +122,7 @@ public:
 	simulator.setMassDamping(SX(alpha_m));
 	simulator.setIntialStatus(v0,z0);
   }
-  void initMtlEnergy(MtlOptEnergy &mtl){
+  void initMtlEnergy(MtlOptEnergyAdj &mtl){
 	mtl.setTotalFrames(T);
 	mtl.setTimestep(h);
 	mtl.setMtl(lambda,alpha_k,alpha_m);
@@ -146,11 +146,11 @@ public:
   vector<VectorXd> uc;
 
   pTemptTestWaper warper;
-  pCtrlForceEnergyTempt ctrlF;
+  pCtrlForceEnergyAdjTempt ctrlF;
 };
 
 template<typename WARPER_POINTER>
-class CtrlForceEnergyTestADT{
+class CtrlForceEnergyAdjTestADT{
   
 public:
   void setRedWarper(WARPER_POINTER warper){
@@ -261,9 +261,9 @@ private:
   CasADi::SXFunction _gradFun;
   vector<SX> _w;
 };
-typedef CtrlForceEnergyTestADT<pTemptTestWaper> CtrlForceEnergyTestAD;
+typedef CtrlForceEnergyAdjTestADT<pTemptTestWaper> CtrlForceEnergyAdjTestAD;
 
-class MtlOptEnergyAD:public MtlOptEnergy{
+class MtlOptEnergyAdjAD:public MtlOptEnergyAdj{
   
 public:
   void precompute(){
@@ -313,7 +313,7 @@ public:
 	_gradFun.getOutput(g);
   }
   void setVZ(const MatrixXd &V,const MatrixXd &Z){
-	MtlOptEnergy::setVZ(V,Z);
+	MtlOptEnergyAdj::setVZ(V,Z);
 	EIGEN3EXT::convert(V,_V);
 	EIGEN3EXT::convert(Z,_Z);
   }
@@ -327,7 +327,7 @@ private:
   vector<VectorXd> _Z;
 };
 
-BOOST_AUTO_TEST_SUITE(MtlOptEnergyTest)
+BOOST_AUTO_TEST_SUITE(MtlOptEnergyAdjTest)
 
 BOOST_AUTO_TEST_CASE(testTemptTestWarper){
  
@@ -365,7 +365,7 @@ BOOST_AUTO_TEST_CASE(testSimpleFunOpt){
 
 BOOST_AUTO_TEST_CASE(testCtrlForward){
 
-  MtlOptEnergyTestDataModel data;
+  MtlOptEnergyAdjTestDataModel data;
  
   MatrixXd V,Z;
   data.ctrlF->forward(data.w,V,Z);
@@ -409,8 +409,8 @@ BOOST_AUTO_TEST_CASE(testCtrlForward){
 
 BOOST_AUTO_TEST_CASE(testCtrlObjValue){
 
-  MtlOptEnergyTestDataModel data;
-  CtrlForceEnergyTestAD ctrlFAD;
+  MtlOptEnergyAdjTestDataModel data;
+  CtrlForceEnergyAdjTestAD ctrlFAD;
   data.initSimulator(ctrlFAD.getSimulator());
   ctrlFAD.setPenaltyCon(data.penaltyCon,data.penaltyKey);
   ctrlFAD.setPartialCon(data.conF,data.conN,data.uc);
@@ -428,8 +428,8 @@ BOOST_AUTO_TEST_CASE(testCtrlObjValue){
 
 BOOST_AUTO_TEST_CASE(testCtrlGrad){
 
-  MtlOptEnergyTestDataModel data;
-  CtrlForceEnergyTestAD ctrlFAD;
+  MtlOptEnergyAdjTestDataModel data;
+  CtrlForceEnergyAdjTestAD ctrlFAD;
   data.initSimulator(ctrlFAD.getSimulator());
   ctrlFAD.setPenaltyCon(data.penaltyCon,data.penaltyKey);
   ctrlFAD.setPartialCon(data.conF,data.conN,data.uc);
@@ -452,7 +452,7 @@ BOOST_AUTO_TEST_CASE(testCtrlGrad){
 
 BOOST_AUTO_TEST_CASE(testCtrlOpt){
 
-  MtlOptEnergyTestDataModel data;
+  MtlOptEnergyAdjTestDataModel data;
   NoConIpoptSolver solver(data.ctrlF);
   solver.setTol(1e-8);
   solver.setMaxIt(100);
@@ -500,7 +500,7 @@ BOOST_AUTO_TEST_CASE(testCtrlOptTiming){
 	nodeWarper = pRedRSWarperExt(new RedRSWarperExt(warper,B,W,cubP,cubW));
   }
   
-  pCtrlForceEnergy ctrlF = pCtrlForceEnergy(new CtrlForceEnergy);
+  pCtrlForceEnergyAdj ctrlF = pCtrlForceEnergyAdj(new CtrlForceEnergyAdj);
   { // init ctrlF
 	double h, alpha_k, alpha_m, penaltyCon,penaltyKey;
 	VectorXd lambda;
@@ -564,17 +564,17 @@ BOOST_AUTO_TEST_CASE(testCtrlOptTiming){
 
 BOOST_AUTO_TEST_CASE(testMtlEnergyObjValue){
   
-  MtlOptEnergyTestDataModel data;
+  MtlOptEnergyAdjTestDataModel data;
   const MatrixXd V = MatrixXd::Random(data.ctrlF->reducedDim(),data.T);
   const MatrixXd Z = MatrixXd::Random(data.ctrlF->reducedDim(),data.T);
 
-  MtlOptEnergy mtl;
+  MtlOptEnergyAdj mtl;
   data.initMtlEnergy(mtl);
   mtl.setVZ(V,Z);
   const VectorXd akamA = VectorXd::Random(mtl.dim());
   const double objV1 = mtl.fun(&akamA[0]);
 
-  MtlOptEnergyAD mtlAD;
+  MtlOptEnergyAdjAD mtlAD;
   data.initMtlEnergy(mtlAD);
   mtlAD.setVZ(V,Z);
   mtlAD.precompute();
@@ -585,7 +585,7 @@ BOOST_AUTO_TEST_CASE(testMtlEnergyObjValue){
 
 BOOST_AUTO_TEST_CASE(testMtlEnergyObjValue2){
   
-  MtlOptEnergyTestDataModel data;
+  MtlOptEnergyAdjTestDataModel data;
   data.ctrlF->clearPartialCon();
   data.ctrlF->clearKeyframes();
   const VectorXd w = VectorXd::Random(data.ctrlF->dim());
@@ -594,7 +594,7 @@ BOOST_AUTO_TEST_CASE(testMtlEnergyObjValue2){
   MatrixXd V,Z;
   data.ctrlF->forward(w,V,Z);
 
-  MtlOptEnergy mtl;
+  MtlOptEnergyAdj mtl;
   data.initMtlEnergy(mtl);
   mtl.setVZ(V,Z);
   const VectorXd akamA = mtl.getX();
@@ -605,18 +605,18 @@ BOOST_AUTO_TEST_CASE(testMtlEnergyObjValue2){
 
 BOOST_AUTO_TEST_CASE(testMtlEnergyGrad){
   
-  MtlOptEnergyTestDataModel data;
+  MtlOptEnergyAdjTestDataModel data;
   const MatrixXd V = MatrixXd::Random(data.ctrlF->reducedDim(),data.T);
   const MatrixXd Z = MatrixXd::Random(data.ctrlF->reducedDim(),data.T);
 
-  MtlOptEnergy mtl;
+  MtlOptEnergyAdj mtl;
   data.initMtlEnergy(mtl);
   mtl.setVZ(V,Z);
   const VectorXd akamA = VectorXd::Random(mtl.dim());
   VectorXd g1(akamA.size());
   mtl.grad(&akamA[0],&g1[0]);
 
-  MtlOptEnergyAD mtlAD;
+  MtlOptEnergyAdjAD mtlAD;
   data.initMtlEnergy(mtlAD);
   mtlAD.setVZ(V,Z);
   mtlAD.precompute();

@@ -34,8 +34,8 @@ namespace LSW_ANI_EDITOR{
 	}
 
   private:
-	pCtrlForceEnergy ctrlF;
-	pMtlOptEnergy mtlOpt;
+	pCtrlForceEnergyAdj ctrlF;
+	pMtlOptEnergyAdj mtlOpt;
 	pNoConIpoptSolver ctrlFSolver;
 	pNoConIpoptSolver mtlOptSolver;
 	bool _optMtl;

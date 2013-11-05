@@ -11,8 +11,8 @@ using namespace LSW_ANI_EDITOR;
 
 MtlOptInterpolatorAdj::MtlOptInterpolatorAdj():WarpInterpolator(){
 
-  ctrlF = pCtrlForceEnergy(new CtrlForceEnergy());
-  mtlOpt = pMtlOptEnergy(new MtlOptEnergy());
+  ctrlF = pCtrlForceEnergyAdj(new CtrlForceEnergyAdj());
+  mtlOpt = pMtlOptEnergyAdj(new MtlOptEnergyAdj());
   ctrlFSolver = pNoConIpoptSolver(new NoConIpoptSolver(ctrlF));
   mtlOptSolver = pNoConIpoptSolver(new NoConIpoptSolver(mtlOpt));
   _optMtl = false;
