@@ -1,5 +1,5 @@
-#ifndef _MTLOPT_H_
-#define _MTLOPT_H_
+#ifndef _MTLOPTENERGYAD_H_
+#define _MTLOPTENERGYAD_H_
 
 #include <vector>
 #include <eigen3/Eigen/Dense>
@@ -15,7 +15,6 @@ class RedSpaceTimeEnergyAD{
   
 public:
   RedSpaceTimeEnergyAD(const double Zpenalty = 0.0f):_Zpenalty(Zpenalty){
-	
   }
   void setT(const int T){_T = T;}
   template<class SCALAR> 
@@ -557,4 +556,4 @@ private:
   VSX _AkAmKx;
 };
 
-#endif /* _MTLOPT_H_ */
+#endif /* _MTLOPTENERGYAD_H_ */

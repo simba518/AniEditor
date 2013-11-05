@@ -2,7 +2,7 @@
 #include <UnitTestAssert.h>
 #include <eigen3/Eigen/Dense>
 #include <DrawCurves.h>
-#include "MtlOpt.h"
+#include <MtlOptEnergyAD.h>
 #include "MtlOptModel.h"
 using namespace Eigen;
 using namespace UTILITY;

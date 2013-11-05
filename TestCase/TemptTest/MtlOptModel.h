@@ -16,7 +16,7 @@
 #include <MapMA2RS.h>
 #include <MeshVtkIO.h>
 #include <limits>
-#include "MtlOpt.h"
+#include <MtlOptEnergyAD.h>
 using namespace std;
 using namespace EIGEN3EXT;
 using namespace UTILITY;

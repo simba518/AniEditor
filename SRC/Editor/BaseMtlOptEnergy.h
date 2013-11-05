@@ -138,6 +138,9 @@ namespace LSW_ANI_EDITOR{
 	const double getObjValue()const{
 	  return _objValue;
 	}
+	int getT()const{
+	  return _T;
+	}
 
   protected:
 	void computeKD(const double *x,MatrixXd &K,MatrixXd &D)const;

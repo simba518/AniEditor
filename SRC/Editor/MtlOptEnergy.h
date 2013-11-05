@@ -32,13 +32,14 @@ namespace LSW_ANI_EDITOR{
   class MtlOptEnergy: public BaseMtlOptEnergy{
 	
   public:
-	double fun(const double *x){
-	  computeKD(x,_K,_D);
-	}
-	void grad(const double *x,double *g){}
+	void setZ(const MatrixXd &Z);
+	double fun(const double *x);
+	void grad(const double *x,double *g);
 
   protected:
-	
+	MatrixXd _Z1;
+	MatrixXd _Z2v;
+	MatrixXd _Z2a;
   };
   typedef boost::shared_ptr<MtlOptEnergy> pMtlOptEnergy;
 
