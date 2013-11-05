@@ -35,6 +35,7 @@ namespace LSW_ANI_EDITOR{
 
 	void addKeyframe(const VectorXd &unRotZk, const int f);
 	void setKeyframes(const vector<VectorXd> &keyZ, const vector<int> &keyframes);
+	void setKeyframes(const MatrixXd &keyZ, const vector<int> &keyframes);
 	void setPartialCon(vector<int>&conF,vector<vector<int> >&conN,vector<VectorXd>&uc);
 	void clearPartialCon();
 	void clearKeyframes();

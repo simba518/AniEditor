@@ -24,6 +24,10 @@ public:
 	keyframe.push_back(T-1);
 	Kz = MatrixXd::Random(r,keyframe.size())*1.5f;
   }
+  void clearKeyframes(){
+	keyframe.clear();
+	Kz.resize(0,0);
+  }
   void init(MtlOptEnergy &fun){
 	fun.setTotalFrames(T);
 	fun.setTimestep(h);
@@ -36,6 +40,14 @@ public:
 	fun.setTimestep(h);
 	fun.setDamping(ak,am,lambda);
 	fun.setK(lambda);
+	fun.setKeyframes(Kz,keyframe);
+  }
+  void init(CtrlForceEnergy &fun){
+	
+	fun.setTotalFrames(T);
+	fun.setTimestep(h);
+	fun.setMtl(lambda,ak*lambda+am*VectorXd::Ones(lambda.size()));
+	fun.setKeyframes(Kz,keyframe);
   }
   
 public:
@@ -108,9 +120,37 @@ private:
   CasADi::SXFunction _grad;
 };
 
+class MtlOptForcesADTest{
+  
+public:
+  MtlOptForcesADTest(RedSpaceTimeEnergyAD &ad){
+
+	ad.assembleEnergy();
+	_fun = CasADi::SXFunction(ad.getVarZ(),ad.getEnergy());
+	_fun.init();
+	const SXMatrix g = _fun.jac();
+	_grad = CasADi::SXFunction(ad.getVarZ(),g);
+	_grad.init();
+  }
+  double fun(const VectorXd &x){
+	VectorXd rlst;
+	CASADI::evaluate(_fun,x,rlst);
+	return rlst[0];
+  }
+  VectorXd grad(const VectorXd &x){
+	VectorXd rlst;
+	CASADI::evaluate(_grad,x,rlst);
+	return rlst;
+  }
+
+private:
+  CasADi::SXFunction _fun;
+  CasADi::SXFunction _grad;
+};
+
 BOOST_AUTO_TEST_SUITE(MtlOptEnergyTest)
 
-BOOST_AUTO_TEST_CASE(testfun){
+BOOST_AUTO_TEST_CASE(testMtlOpt){
 
   MtlOptDataModeTest data;
   MtlOptEnergy optfun;
@@ -131,6 +171,30 @@ BOOST_AUTO_TEST_CASE(testfun){
   ASSERT_EQ(obj1,obj2);
   ASSERT_EQ(g.size(),g1.size());
   ASSERT_EQ_SMALL_VEC_TOL(g,g1,g.size(),1e-12);
+}
+
+BOOST_AUTO_TEST_CASE(testZOpt){
+
+  MtlOptDataModeTest data;
+  data.clearKeyframes();
+  CtrlForceEnergy optfun;
+  RedSpaceTimeEnergyAD optfunAD;
+
+  data.init(optfun);
+  data.init(optfunAD);
+  
+  const VectorXd x = VectorXd::Random(optfun.dim());
+  const double obj1 = optfun.fun(&x[0]);
+  VectorXd g(optfun.dim());
+  optfun.grad(&x[0],&g[0]);
+  
+  MtlOptForcesADTest enAD(optfunAD);
+  const double obj2 = enAD.fun(x);
+  const VectorXd g2 = enAD.grad(x);
+  
+  ASSERT_EQ(obj1,obj2);
+  ASSERT_EQ(g.size(),g2.size());
+  ASSERT_EQ_SMALL_VEC_TOL(g,g2,g.size(),1e-12);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

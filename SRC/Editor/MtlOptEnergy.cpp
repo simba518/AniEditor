@@ -1,6 +1,56 @@
 #include <MtlOptEnergy.h>
 using namespace LSW_ANI_EDITOR;
 
+void CtrlForceEnergy::precompute(){
+
+  const int r = reducedDim();
+  if (_Z.rows() != r || _Z.cols() != getT()){
+	_Z.resize(r,getT());
+	_Z.setZero();
+  }
+
+  const double _1h = 1.0f/_h;
+  const double _1h2 = _1h*_1h;
+  _Ma = _diagD*_1h;
+  _Mb = _Lambda-_Ma;
+  for (int i = 0; i < r; ++i){
+    _Ma[i] += _1h2;
+	_Mb[i] -= 2.0f*_1h2;
+  }
+}
+
+void CtrlForceEnergy::addKeyframes(MatrixXd &Z)const{
+  
+  for (int i = 0; i < _keyframes.size(); ++i){
+	const int f = _keyframes[i];
+	Z.col(f) = _keyZ[i];
+  }
+}
+
+double CtrlForceEnergy::fun(const double *x){
+
+  const int T = getT();
+  const int r = reducedDim();
+  MatrixXd Z = Map<MatrixXd>(const_cast<double*>(x),r,T);
+  addKeyframes(Z);
+  const MatrixXd &Z0 = Z.block(0,0,r,T-2);
+  const MatrixXd &Z1 = Z.block(0,1,r,T-2);
+  const MatrixXd &Z2 = Z.block(0,2,r,T-2);
+  const double objValue = (_Ma.asDiagonal()*Z2+_Mb.asDiagonal()*Z1+Z0*(1.0f/(_h*_h))).norm();
+  return objValue*objValue*0.5f;
+}
+
+void CtrlForceEnergy::grad(const double *x,double *g){
+  
+  const int T = getT();
+  const int r = reducedDim();
+  MatrixXd Z = Map<MatrixXd>(const_cast<double*>(x),r,T);
+  addKeyframes(Z);
+
+  
+
+}
+
 void MtlOptEnergy::setZ(const MatrixXd &Z){
 
   const int T = getT();

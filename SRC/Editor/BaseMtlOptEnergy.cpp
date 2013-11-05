@@ -58,6 +58,14 @@ void BaseCtrlForceEnergy::setKeyframes(const vector<VectorXd> &keyZ, const vecto
 	addKeyframe(keyZ[i],keyframes[i]);
 }
 
+void BaseCtrlForceEnergy::setKeyframes(const MatrixXd &keyZ, const vector<int> &keyframes){
+  
+  clearKeyframes();
+  assert_eq(keyZ.cols(),keyframes.size());
+  for (size_t i = 0; i < keyframes.size(); ++i)
+	addKeyframe(keyZ.col(i),keyframes[i]);
+}
+
 void BaseCtrlForceEnergy::setPartialCon(vector<int>&conF,vector<vector<int> >&conN,vector<VectorXd>&uc){
 
   clearPartialCon();
