@@ -3,14 +3,14 @@
 
 #include <IpTNLP.hpp>
 #include <IpIpoptApplication.hpp>
-#include <MtlOptEnergy.h>
+#include <BaseOptFun.h>
 using namespace LSW_ANI_EDITOR;
 using namespace Ipopt;
 
 class FunGradNLP: public TNLP{
 	
 public:
-  FunGradNLP(pBaseFunGrad energy):_energy(energy){}
+  FunGradNLP(pBaseOptFun energy):_energy(energy){}
   ~FunGradNLP(){}
 
   bool get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
@@ -86,7 +86,7 @@ private:
   FunGradNLP& operator=(const FunGradNLP&);
 	
 private:
-  pBaseFunGrad _energy;
+  pBaseOptFun _energy;
 
 };
 
@@ -95,7 +95,7 @@ typedef boost::shared_ptr<FunGradNLP> pFunGradNLP;
 class NoConIpoptSolver{
   
 public:
-  NoConIpoptSolver(pBaseFunGrad energy){
+  NoConIpoptSolver(pBaseOptFun energy){
 	_mynlp = new FunGradNLP(energy);
 	_app = IpoptApplicationFactory();
 	_app->Options()->SetStringValue("hessian_approximation", "limited-memory");

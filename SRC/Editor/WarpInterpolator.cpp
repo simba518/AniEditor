@@ -2,26 +2,12 @@
 #include <MatrixTools.h>
 #include <ConMatrixTools.h>
 #include <JsonFilePaser.h>
-#include <AuxTools.h>
 #include <Log.h>
-#include <DrawCurves.h>
-#include "MtlOptInterpolator.h"
+#include "WarpInterpolator.h"
 using namespace UTILITY;
 using namespace LSW_ANI_EDITOR;
 
-MtlOptInterpolator::MtlOptInterpolator(){
-
-  warper = pRSWarperExt(new RSWarperExt());
-  ctrlF = pCtrlForceEnergy(new CtrlForceEnergy());
-  // ctrlF = pCtrlForceEnergyNoWarp(new CtrlForceEnergyNoWarp());
-  mtlOpt = pMtlOptEnergy(new MtlOptEnergy());
-  ctrlFSolver = pNoConIpoptSolver(new NoConIpoptSolver(ctrlF));
-  mtlOptSolver = pNoConIpoptSolver(new NoConIpoptSolver(mtlOpt));
-  use_warp = false;
-  _optMtl = false;
-}
-
-bool MtlOptInterpolator::init (const string init_filename){
+bool WarpInterpolator::init (const string init_filename){
   
   TRACE_FUN();
   JsonFilePaser json_f;
@@ -36,9 +22,10 @@ bool MtlOptInterpolator::init (const string init_filename){
 	if (json_f.read("use_sub_MA_modes",use_sub_MA_modes) && use_sub_MA_modes > 0){
 	  assert_in(use_sub_MA_modes,1,lambda.size());
 	  const MatrixXd tW = W;
-	  const VectorXd tL = lambda;
 	  W = tW.leftCols(use_sub_MA_modes);
-	  lambda = tL.head(use_sub_MA_modes);
+	  Lambda = lambda.head(use_sub_MA_modes);
+	}else{
+	  Lambda = lambda;
 	}
 	use_warp = json_f.read("use_warp",use_warp) ? use_warp:false;
 	succ &= loadUref(json_f,u_ref);
@@ -51,41 +38,14 @@ bool MtlOptInterpolator::init (const string init_filename){
 	}
   }
   if (succ){
-
-	double h, alpha_k, alpha_m, penaltyCon,penaltyKey;
-	succ &= json_f.read("h",h);
-	succ &= json_f.read("alpha_k",alpha_k);
-	succ &= json_f.read("alpha_m",alpha_m);
-	succ &= json_f.read("penaltyCon",penaltyCon);
-	succ &= json_f.read("penaltyKey",penaltyKey);
-	if (succ){
-
-	  ctrlF->setTimestep(h);
-	  ctrlF->setTotalFrames(getT());
-	  ctrlF->setPenaltyCon(penaltyCon,penaltyKey);
-	  const VectorXd D = alpha_m*VectorXd::Ones(lambda.size())+lambda*alpha_k;
-	  ctrlF->setMtl(lambda,D);
-
-	  mtlOpt->setTimestep(h);
-	  mtlOpt->setTotalFrames(getT());
-	  mtlOpt->setMtl(lambda,alpha_k,alpha_m);
-	}
-  }
-  if (succ){
 	succ = initWarper(json_f);
-	if (succ)  ctrlF->setRedWarper(nodeWarper);
-  }
-  if (succ){
-	if(!json_f.read("optimize_mtl",_optMtl)) _optMtl = false;
   }
   modalDisplayer.initialize(init_filename);
-  succ &= ctrlFSolver->initialize();
-  succ &= mtlOptSolver->initialize();
-  if (!succ) ERROR_LOG("failed to initialize MtlOptInterpolator.");
+  if (!succ) ERROR_LOG("failed to initialize WarpInterpolator.");
   return succ;
 }
 
-void MtlOptInterpolator::setUc(const int frame_id, const VectorXd &uc){
+void WarpInterpolator::setUc(const int frame_id, const VectorXd &uc){
 
   assert_in (frame_id,0,(int)u_ref.size()-1);
   assert_eq (con_nodes.size(),con_frame_id.size());
@@ -103,80 +63,7 @@ void MtlOptInterpolator::setUc(const int frame_id, const VectorXd &uc){
   ERROR_LOG_COND("failed to setUc for frame "<< frame_id, (i < (int)con_frame_id.size()));
 }
 
-void MtlOptInterpolator::removeAllPosCon(){
-  
-  con_frame_id.clear();
-  con_nodes.clear();
-  uc.clear();
-  ctrlF->clearPartialCon();
-}
-
-bool MtlOptInterpolator::interpolate (){
-
-  if (modalDisplayer.isShowModalModes()){
-	return modalDisplayer.showModalModes(ctrlF->getLambda(),delta_z);
-  }
-
-  ctrlF->setPartialCon(con_frame_id,con_nodes,uc);
-  ctrlF->setZ0(delta_z[0]);
-  ctrlF->setV0(VectorXd::Ones(reducedDim())*0.0f);
-  const int MAX_IT = 200;
-  const double TOL = 1e-3;
-  ctrlFSolver->setPrintLevel(5);
-  mtlOptSolver->setPrintLevel(5);
-  ctrlFSolver->setTol(0.01);
-  mtlOptSolver->setTol(0.01);
-  ctrlFSolver->setMaxIt(500);
-  mtlOptSolver->setMaxIt(500);
-  bool succ = ctrlFSolver->solve();
-  double objValue = ctrlF->getObjValue();
-
-  static MatrixXd V,Z;
-  for (int it = 0; (it < MAX_IT) && _optMtl; ++it){
-	ctrlF->forward(V,Z);
-	mtlOpt->setVZ(V,Z);
-	succ = mtlOptSolver->solve();
-
-	ctrlF->setKD(mtlOpt->getK(),mtlOpt->getD());
-	succ = ctrlFSolver->solve();
-	if( fabs(ctrlF->getObjValue() - objValue) <= TOL )
-	  break;
-	objValue = ctrlF->getObjValue();
-	INFO_LOG("----------------OUTTER ITERATION: "<< it);
-  }
-  ctrlF->forward(V,Z);
-  Z = ctrlF->getU()*Z;
-  assert_eq(Z.rows(),reducedDim());
-  assert_eq(Z.cols(),getT());
-  EIGEN3EXT::convert(Z,delta_z);
-
-  { // save datas
-	
-	const MatrixXd &K=mtlOpt->getK();
-	const MatrixXd &D=mtlOpt->getD();
-	cout<< "K: " << K << endl << endl;
-	cout<< "D: " << D << endl << endl;
-	
-	PythonScriptDraw2DCurves<VectorXd> curves;
-	const MatrixXd newZ = ctrlF->getU().transpose()*Z;
-	for (int i = 0; i < newZ.rows(); ++i){
-	  const VectorXd &z2 = newZ.row(i).transpose();
-	  curves.add(string("mode ")+TOSTR(i),z2,1.0f,0,"--");
-	  VectorXd kz(ctrlF->getKeyframe().size());
-	  VectorXd kid(kz.size());
-	  for (int j = 0; j < kz.size(); ++j){
-		kz[j] = ctrlF->getKeyZ()[j][i];
-		kid[j] = ctrlF->getKeyframe()[j];
-	  }
-	  curves.add(string("keyframes of mode ")+TOSTR(i),kz,kid,"o");
-	}
-	curves.write("Opt_Z_K_AkAm");
-  }
-
-  return succ;
-}
-
-const VectorXd& MtlOptInterpolator::getInterpU(const int frame_id){
+const VectorXd& WarpInterpolator::getInterpU(const int frame_id){
 
   assert_in (frame_id, 0, getT()-1);
   if (use_warp && nodeWarper != NULL){
@@ -187,7 +74,7 @@ const VectorXd& MtlOptInterpolator::getInterpU(const int frame_id){
   return full_u;
 }
 
-bool MtlOptInterpolator::initWarper(JsonFilePaser &inf){
+bool WarpInterpolator::initWarper(JsonFilePaser &inf){
 
   string vol_filename;
   bool succ = inf.readFilePath("vol_filename",vol_filename);
@@ -212,7 +99,7 @@ bool MtlOptInterpolator::initWarper(JsonFilePaser &inf){
   return succ;
 }
 
-const VectorXd &MtlOptInterpolator::getWarpU(const int frame_id,
+const VectorXd &WarpInterpolator::getWarpU(const int frame_id,
 											 const vector<set<int> > &c_nodes,
 											 const VectorXd &bcen_uc){
   assert_in (frame_id, 0, getT()-1);
@@ -225,7 +112,7 @@ const VectorXd &MtlOptInterpolator::getWarpU(const int frame_id,
   return full_u;
 }
 
-void MtlOptInterpolator::setAllConGroups(const set<pConNodesOfFrame> &newCons){
+void WarpInterpolator::setAllConGroups(const set<pConNodesOfFrame> &newCons){
   
   removeAllPosCon();
   BOOST_FOREACH(pConNodesOfFrame con, newCons){
@@ -235,7 +122,7 @@ void MtlOptInterpolator::setAllConGroups(const set<pConNodesOfFrame> &newCons){
   }
 }
 
-void MtlOptInterpolator::addConGroups(const int frame_id,const vector<set<int> >&group,const VectorXd&uc){
+void WarpInterpolator::addConGroups(const int frame_id,const vector<set<int> >&group,const VectorXd&uc){
 
   if(!validConstraints(frame_id)){
 	ERROR_LOG("frame "<<frame_id<<" can not be constrained.");
@@ -278,7 +165,7 @@ void MtlOptInterpolator::addConGroups(const int frame_id,const vector<set<int> >
   }
 }
 
-void MtlOptInterpolator::removeConOfFrame(const int frame_id){
+void WarpInterpolator::removeConOfFrame(const int frame_id){
   
   assert_in(frame_id,0,getT()-1);
   assert_eq(con_frame_id.size(), con_nodes.size());
@@ -300,7 +187,7 @@ void MtlOptInterpolator::removeConOfFrame(const int frame_id){
   }
 }
 
-bool MtlOptInterpolator::loadUref(JsonFilePaser &json_f,vector<VectorXd> &u_ref)const{
+bool WarpInterpolator::loadUref(JsonFilePaser &json_f,vector<VectorXd> &u_ref)const{
   
   int zero_input_animation = 0;
   bool succ = true;
@@ -322,12 +209,12 @@ bool MtlOptInterpolator::loadUref(JsonFilePaser &json_f,vector<VectorXd> &u_ref)
   return succ;
 }
 
-VectorXd MtlOptInterpolator::adjustToSubdim(const VectorXd &z)const{
+VectorXd WarpInterpolator::adjustToSubdim(const VectorXd &z)const{
   assert_ge(z.size(),reducedDim());
   return z.head(reducedDim());
 }
 
-vector<VectorXd> MtlOptInterpolator::adjustToSubdim(const vector<VectorXd> &vz)const{
+vector<VectorXd> WarpInterpolator::adjustToSubdim(const vector<VectorXd> &vz)const{
   vector<VectorXd> z = vz;
   for (int i = 0; i < z.size(); ++i)
 	z[i] = adjustToSubdim(vz[i]);

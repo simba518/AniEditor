@@ -3,7 +3,7 @@
 #include <IEDSInterpolator.h>
 #include <IMWInterpolator.h>
 #include <RedRSInterpolator.h>
-#include <MtlOptInterpolator.h>
+#include <MtlOptInterpolatorAdj.h>
 #include "InterpolatorFactory.h"
 using namespace LSW_ANI_EDITOR;
 
@@ -45,7 +45,7 @@ pBaseInterpolator InterpolatorFactory::createMethod(const string in_method){
   }else if(string("REDRS") == in_method){
   	interpolator = pBaseInterpolator(new RedRSInterpolator());
   }else if(string("MTLOPT") == in_method){
-  	interpolator = pBaseInterpolator(new MtlOptInterpolator());
+  	interpolator = pBaseInterpolator(new MtlOptInterpolatorAdj());
   }else{
   	interpolator = pIMWInterpolator(new IMWInterpolator());
   }

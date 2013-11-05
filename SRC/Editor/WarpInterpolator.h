@@ -1,5 +1,5 @@
-#ifndef _MTLOPTINTERPOLATOR_H_
-#define _MTLOPTINTERPOLATOR_H_
+#ifndef _WARPINTERPOLATOR_H_
+#define _WARPINTERPOLATOR_H_
 
 #include <set>
 #include <boost/shared_ptr.hpp>
@@ -8,8 +8,6 @@
 #include <RedRSWarperExt.h>
 #include <ConNodesOfFrame.h>
 #include <ModalModeDisplayer.h>
-#include <MtlOptEnergy.h>
-#include <MtlOptIpopt.h>
 using namespace std;
 using namespace IEDS;
 using namespace LSW_WARPING;
@@ -18,16 +16,18 @@ using namespace LSW_SIM;
 namespace LSW_ANI_EDITOR{
   
   /**
-   * @class MtlOptInterpolator Interpolator using reduced RS method and elastic
-   * material optimization.
+   * @class WarpInterpolator base class for interpolation algorithm using warping.
    * 
    */
-  class MtlOptInterpolator: public BaseInterpolator{
+  class WarpInterpolator:public BaseInterpolator{
 	
   public:
-	MtlOptInterpolator();
+	WarpInterpolator(){
+	  warper = pRSWarperExt(new RSWarperExt());
+	  use_warp = false;
+	}
 
-	bool init (const string init_filename);
+	virtual bool init (const string init_filename);
 
 	void useWarp(const bool use_warp){
 	  this->use_warp = use_warp;
@@ -37,26 +37,19 @@ namespace LSW_ANI_EDITOR{
 	  return use_warp;
 	}
 
-	bool editable(const int frame_id)const{
-	  return !(ctrlF->isKeyframe(frame_id));
-	}
+	virtual void setAllConGroups(const set<pConNodesOfFrame> &newCons);
 
-	void setKeyframe(const vector<VectorXd> &keyZ, 
-					 const vector<int>& keyframes){
-	  ctrlF->setKeyframes(adjustToSubdim(keyZ),keyframes);
-	}
-
-	void setAllConGroups(const set<pConNodesOfFrame> &newCons);
-
-	void setConGroups(const int f,const vector<set<int> >&g,const VectorXd&uc){
+	virtual void setConGroups(const int f,const vector<set<int> >&g,const VectorXd&uc){
 	  addConGroups(f,g,uc);
 	}
 
-	void setUc(const int frame_id,const VectorXd &uc);
+	virtual void setUc(const int frame_id,const VectorXd &uc);
 
-	void removeAllPosCon();
-
-	bool interpolate ();
+	virtual void removeAllPosCon(){
+	  con_frame_id.clear();
+	  con_nodes.clear();
+	  uc.clear();
+	}
 
 	void setReducedEdits(const int frame_id, const VectorXd &z_i){
 	  assert_in(frame_id,0,getT());
@@ -73,7 +66,7 @@ namespace LSW_ANI_EDITOR{
 	  return getRefSeq();
 	}
 	const vector<VectorXd>& getDeltaInterpSeq()const{
-	   return delta_z;
+	  return delta_z;
 	}
 	const vector<VectorXd>& getRefSeq()const{
 	  return u_ref;
@@ -116,9 +109,6 @@ namespace LSW_ANI_EDITOR{
 	const VectorXd &getWarpU(const int frame_id,
 							 const vector<set<int> > &c_nodes,
 							 const VectorXd &bcen_uc);
-	string getName()const{
-	  return string("Reduced RS and Mtl Opt.");
-	}
 
   protected:
 	bool initWarper(JsonFilePaser &inf);
@@ -128,32 +118,25 @@ namespace LSW_ANI_EDITOR{
 	  return valid;
 	}
 	void addConGroups(const int f,const vector<set<int> >&g,const VectorXd&uc);
-	void sortConstraints();
 	void removeConOfFrame(const int frame_id);
 	bool loadUref(JsonFilePaser &json_f,vector<VectorXd> &u_ref)const;
 	VectorXd adjustToSubdim(const VectorXd &z)const;
 	vector<VectorXd> adjustToSubdim(const vector<VectorXd> &vz)const;
 	
-  private:
-	// pCtrlForceEnergyNoWarp ctrlF;
-	pCtrlForceEnergy ctrlF;
-	pMtlOptEnergy mtlOpt;
-	pNoConIpoptSolver ctrlFSolver;
-	pNoConIpoptSolver mtlOptSolver;
-	bool _optMtl;
-
-	vector<VectorXd> u_ref; // reference sequence in fullspace.
-	vector<VectorXd> delta_z; // increamental displacements in linear subspace.
-
-	MatrixXd W; // linear basis of MA	
-	MatrixXd B; // nonlinear bais
-  	VectorXd full_u; // displacements in full space.
-  	VectorXd unwarped_full_u; // unwarped displacements in full space.
+  protected:
 	pRSWarperExt warper;
 	pRedRSWarperExt nodeWarper;
 	bool use_warp;
 
-	// partial control
+	vector<VectorXd> u_ref; // reference sequence in fullspace.
+	vector<VectorXd> delta_z; // increamental displacements in linear subspace.
+
+	VectorXd Lambda; // eigen values
+	MatrixXd W; // linear basis of MA
+	MatrixXd B; // nonlinear bais
+  	VectorXd full_u; // displacements in full space.
+  	VectorXd unwarped_full_u; // unwarped displacements in full space.
+
 	vector<int> con_frame_id;   // frames that has position constraints.
 	vector<vector<int> > con_nodes;   // con nodes of each con frames.
 	vector<VectorXd> uc; // target displacements with respect to the rest.
@@ -161,8 +144,6 @@ namespace LSW_ANI_EDITOR{
 	ModalModeDisplayer modalDisplayer;
   };
   
-  typedef boost::shared_ptr<MtlOptInterpolator> pMtlOptInterpolator;
-  
 }//end of namespace
 
-#endif /* _MTLOPTINTERPOLATOR_H_ */
+#endif /*_WARPINTERPOLATOR_H_*/

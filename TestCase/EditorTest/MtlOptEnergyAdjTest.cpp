@@ -1,7 +1,7 @@
 #include <boost/test/unit_test.hpp>
 #include <UnitTestAssert.h>
 #include <eigen3/Eigen/Dense>
-#include <MtlOptEnergy.h>
+#include <MtlOptEnergyAdj.h>
 #include <MtlOptIpopt.h>
 #include <CASADITools.h>
 #include <MatrixTools.h>
@@ -12,7 +12,7 @@ using namespace Eigen;
 using namespace UTILITY;
 using namespace LSW_ANI_EDITOR;
 
-class TestIpoptObjfun:public BaseFunGrad{
+class TestIpoptObjfun:public BaseOptFun{
   // (x0-2)^2 + (x1-1)^2
 public:
   int dim()const{
