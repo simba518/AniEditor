@@ -16,7 +16,7 @@ public:
 	am = 0.2f;
 	penC = 220;
 	penK = 1220;
-	T = 10;
+	T = 5;
 	h = 0.15f;
 	Z = MatrixXd::Random(r,T);
 	keyframe.push_back(0);
@@ -168,12 +168,35 @@ BOOST_AUTO_TEST_CASE(testMtlOpt){
   const double obj2 = enAD.fun(x);
   const VectorXd g1 = enAD.grad(x);
   
-  ASSERT_EQ(obj1,obj2);
+  ASSERT_EQ_TOL(obj1,obj2,1e-10);
   ASSERT_EQ(g.size(),g1.size());
   ASSERT_EQ_SMALL_VEC_TOL(g,g1,g.size(),1e-12);
 }
 
 BOOST_AUTO_TEST_CASE(testZOpt){
+
+  MtlOptDataModeTest data;
+  CtrlForceEnergy optfun;
+  RedSpaceTimeEnergyAD optfunAD;
+
+  data.init(optfun);
+  data.init(optfunAD);
+  
+  const VectorXd x = VectorXd::Random(optfun.dim());
+  const double obj1 = optfun.fun(&x[0]);
+  VectorXd g(optfun.dim());
+  optfun.grad(&x[0],&g[0]);
+  
+  MtlOptForcesADTest enAD(optfunAD);
+  const double obj2 = enAD.fun(x);
+  const VectorXd g2 = enAD.grad(x);
+  
+  ASSERT_EQ_TOL(obj1,obj2,1e-10);
+  ASSERT_EQ(g.size(),g2.size());
+  ASSERT_EQ_SMALL_VEC_TOL(g,g2,g.size(),1e-10);
+}
+
+BOOST_AUTO_TEST_CASE(testZOptNoKey){
 
   MtlOptDataModeTest data;
   data.clearKeyframes();
@@ -192,9 +215,9 @@ BOOST_AUTO_TEST_CASE(testZOpt){
   const double obj2 = enAD.fun(x);
   const VectorXd g2 = enAD.grad(x);
   
-  ASSERT_EQ(obj1,obj2);
+  ASSERT_EQ_TOL(obj1,obj2,1e-10);
   ASSERT_EQ(g.size(),g2.size());
-  ASSERT_EQ_SMALL_VEC_TOL(g,g2,g.size(),1e-12);
+  ASSERT_EQ_SMALL_VEC_TOL(g,g2,g.size(),1e-10);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

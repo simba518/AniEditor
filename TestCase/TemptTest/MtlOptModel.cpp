@@ -1,7 +1,9 @@
 #include "MtlOptModel.h"
 #include "HarmonicOscillator.h"
+#include <ConNodesOfFrame.h>
 #include <JsonFilePaser.h>
 using namespace UTILITY;
+using namespace LSW_SIM;
 
 MtlOptModel::_MtlOptModel(const string initf){
 
@@ -11,9 +13,35 @@ MtlOptModel::_MtlOptModel(const string initf){
   TEST_ASSERT ( jsonf.read("h",h) );
   TEST_ASSERT ( jsonf.read("alphaK",alphaK) );
   TEST_ASSERT ( jsonf.read("alphaM",alphaM) );
+
   vector<int> keyid, modes;
   TEST_ASSERT ( jsonf.read("keyId", keyid) );
   TEST_ASSERT ( jsonf.read("modes", modes) );
+  TEST_ASSERT ( jsonf.read("penaltyCon",penaltyCon) );
+
+  { // partial constraints
+	string partial_con_str;
+	TEST_ASSERT ( jsonf.readFilePath("partial_constraints",partial_con_str) );
+	ConNodesOfFrameSet AllConNodes;
+	TEST_ASSERT ( AllConNodes.load(partial_con_str) );
+
+	const set<pConNodesOfFrame> &con_groups=AllConNodes.getConNodeGroups();
+	BOOST_FOREACH(pConNodesOfFrame pc, con_groups){
+	  if ( pc != NULL && !pc->isEmpty() ) {
+		const int frame_id = pc->getFrameId();
+		const VectorXd bary_uc = pc->getBarycenterUc();
+		const vector<set<int> > &groups = pc->getConNodesSet();
+		vector<int> v;
+		for (int i = 0; i < groups.size(); ++i)
+		  v.push_back(*(groups[i].begin()));
+		assert_eq (v.size()*3,bary_uc.size());
+
+		conFrames.push_back(frame_id);
+		uc.push_back(bary_uc);
+		conNodes.push_back(v);
+	  }
+	}
+  }
 
   vector<double> initZ;
   TEST_ASSERT ( jsonf.read("z0", initZ) );
@@ -43,6 +71,7 @@ MtlOptModel::_MtlOptModel(const string initf){
   Kz = kz.topLeftCorner(redDim(),Kid.size());
 
   initVolObj(initf);
+  initWarper(jsonf);
 }
 bool MtlOptModel::loadLambda(const string initf){
 
@@ -121,6 +150,9 @@ void MtlOptModel::initMtlOpt(RedSpaceTimeEnergyAD &ad)const{
   ad.setDamping(alphaK,alphaM,lambda);
   ad.setK(lambda);
   ad.setKeyframes(Kz,Kid);
+  ad.setPartialCon(conFrames,conNodes,uc);
+  ad.setPenaltyCon(penaltyCon);
+  ad.setWarper(warper);
 }
 void MtlOptModel::initMtlData(MtlDataModel &model){
 
@@ -130,6 +162,11 @@ void MtlOptModel::initMtlData(MtlDataModel &model){
   model.setLambda(lambda);
   model.setKeyframes(Kz,Kid);
   model.setSubZ(CorrectZ);
+
+  model.setPartialCon(conFrames,conNodes,uc);
+  model.setPenaltyCon(penaltyCon);
+  model.setWarper(warper);
+
 }
 void MtlOptModel::initSolver(const SXMatrix &E, const VSX &x){
 
@@ -210,6 +247,30 @@ void MtlOptModel::computeEnergy(const VectorXd &X){
   CASADI::evaluate(fun,X,rlst);
   cout<< "E(X) = " << rlst.transpose() << endl;
 }
+void MtlOptModel::saveUc(const string fname,const VectorXd &uc,const vector<int> &nid)const{
+
+  VVec3d v(uc.size()/3);
+  const VVec3d &nodes = volobj.getTetMesh()->nodes();
+  for (size_t i = 0; i < v.size(); ++i){
+	v[i][0] = uc[i*3+0];
+	v[i][1] = uc[i*3+1];
+	v[i][2] = uc[i*3+2];
+	v[i] += nodes[nid[i]];
+  }
+	  
+  COMMON::VTKWriter<double> writer("point",fname,true);
+  writer.appendPoints(v.begin(),v.end());
+  COMMON::VTKWriter<double>::IteratorIndex<COMMON::Vec3i> beg(0,0,1);
+  COMMON::VTKWriter<double>::IteratorIndex<COMMON::Vec3i> end(v.size(),0,1);
+  writer.appendCells(beg,end,COMMON::VTKWriter<double>::POINT);
+}
+void MtlOptModel::saveUc(const string fname)const{
+  
+  for (int i = 0; i < uc.size(); ++i){
+	const string ffname=fname+TOSTR(i)+".vtk";
+	saveUc(ffname,uc[i],conNodes[i]);
+  }
+}
 int MtlOptModel::redDim()const{
   return lambda.size();
 }
@@ -234,4 +295,14 @@ MatrixXd MtlOptModel::assembleFullZ(const VectorXd&subZ,const VectorXd&keyZ,cons
   }
 
   return Z;
+}
+void MtlOptModel::initWarper(JsonFilePaser &inf){
+
+  MatrixXd B;
+  vector<int> cubP;
+  vector<double> cubW;
+  TEST_ASSERT(inf.readMatFile("nonlinear_basis",B));
+  TEST_ASSERT(inf.readVecFile("cubaturePoints",cubP,UTILITY::TEXT));
+  TEST_ASSERT(inf.readVecFile("cubatureWeights",cubW));
+  warper = pRedRSWarperAD( new RedRSWarperAD(rs2euler,B,W,cubP,cubW) );
 }

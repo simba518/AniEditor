@@ -30,26 +30,46 @@ void RedSpaceTimeEnergyAD::assembleEnergy(){
   const VSX vz = makeSymbolic(T*r,"z");
   VMatSX z(T);
   _varZ.clear();
-  for (int i = 0; i < T; ++i){
-	const int k = isKeyframe(_keyId,i);
-	if(k >= 0){
-	  CASADI::convert((VectorXd)(_keyZ.col(k)),z[i]);
-	}else{
-	  const VSX zi(vz.begin()+r*i,vz.begin()+r*(i+1));
-	  assert_eq(zi.size(),r);
-	  z[i] = zi;
-	  _varZ.insert(_varZ.end(),zi.begin(),zi.end());
+
+  { // keyframe constraints
+	for (int i = 0; i < T; ++i){
+	  const int k = isKeyframe(_keyId,i);
+	  if(k >= 0){
+		CASADI::convert((VectorXd)(_keyZ.col(k)),z[i]);
+	  }else{
+		const VSX zi(vz.begin()+r*i,vz.begin()+r*(i+1));
+		assert_eq(zi.size(),r);
+		z[i] = zi;
+		_varZ.insert(_varZ.end(),zi.begin(),zi.end());
+	  }
 	}
   }
 
-  _energy = 0;
-  for (int i = 1; i < T-1; ++i){
-	const SXMatrix za = (z[i+1]-z[i]*2.0f+z[i-1])/(_h*_h);
-	const SXMatrix zv = _D.mul(z[i+1]-z[i])/(_h);
-	const SXMatrix diff = za+zv+_K.mul(z[i]);
-	for (int j = 0; j < r; ++j)
-	  _energy += diff.elem(j,0)*diff.elem(j,0);
+  { // control forces
+	_energy = 0;
+	for (int i = 1; i < T-1; ++i){
+	  const SXMatrix za = (z[i+1]-z[i]*2.0f+z[i-1])/(_h*_h);
+	  const SXMatrix zv = _D.mul(z[i+1]-z[i])/(_h);
+	  const SXMatrix diff = za+zv+_K.mul(z[i]);
+	  for (int j = 0; j < r; ++j)
+		_energy += diff.elem(j,0)*diff.elem(j,0);
+	}
   }
+
+  { // partial constraints
+	if (_usePartialCon){
+	  assert(_warper);
+	  for (size_t i = 0; i < _conFrames.size(); ++i){
+		const int f = _conFrames[i];
+		SXMatrix u;
+		_warper->warp(z[f],u,_conNodes[i]);
+		assert_eq(u.size1(),_uc[i].size());
+		for (int j = 0; j < _uc[i].size(); ++j)
+		  _energy += _penaltyCon*(u.elem(j,0)-_uc[i][j])*(u.elem(j,0)-_uc[i][j]);
+	  }
+	}
+  }
+
   _energy = _energy/2;
 }
 
@@ -97,6 +117,10 @@ void MtlOptimizer::resetEnergy(const bool useAllZ){
   _energy.setDamping(_model.D);
   _energy.setK(_model.K);
   _energy.setKeyframes(_model.keyZ,_model.keyId);
+  _energy.setPartialCon(_model.conFrames,_model.conNodes,_model.uc);
+  _energy.setPenaltyCon(_model.penaltyCon);
+  _energy.setWarper(_model.warper);
+
   if(useAllZ){
 	assert_eq(_model.Z.cols(), T);
 	assert_eq(_model.Z.rows(), _energy.reducedDim());

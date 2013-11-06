@@ -17,6 +17,8 @@
 #include <MeshVtkIO.h>
 #include <limits>
 #include <MtlOptEnergyAD.h>
+#include <JsonFilePaser.h>
+using namespace UTILITY;
 using namespace std;
 using namespace EIGEN3EXT;
 using namespace UTILITY;
@@ -39,8 +41,11 @@ typedef struct _MtlOptModel{
   void saveMesh(const MatrixXd &Z,const string dir,const string fname);
   void saveMeshOneZ(const VectorXd &z,const string fname);
   void computeEnergy(const VectorXd &X);
+  void saveUc(const string fname)const;
+  void saveUc(const string fname,const VectorXd &uc,const vector<int> &nid)const;
   int redDim()const;
   static MatrixXd assembleFullZ(const VectorXd&subZ,const VectorXd&keyZ,const VectorXi&Kid, const int r);
+  void initWarper(JsonFilePaser &jsonf);
 
   MatrixXd W;
   SparseMatrix<double> G;
@@ -57,8 +62,14 @@ typedef struct _MtlOptModel{
   VectorXd z0;
   MatrixXd Z;
   MatrixXd CorrectZ;
+
   MatrixXd Kz;
   VectorXi Kid;
+  vector<int> conFrames;
+  vector<vector<int> > conNodes;
+  vector<VectorXd> uc;
+  double penaltyCon;
+  pRedRSWarperAD warper;
 
   CasADi::SXFunction fun;
   CasADi::IpoptSolver solver;

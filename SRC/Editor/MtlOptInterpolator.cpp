@@ -46,11 +46,7 @@ bool MtlOptInterpolator::init(const string init_filename){
 	}
   }
   if (succ){
-	///@todo
-	// succ = initWarper(json_f);
-	// if (succ)  _ctrlF->setRedWarper(nodeWarper);
-  }
-  if (succ){
+	_ctrlF->setRedWarper(nodeWarper);	
 	if(!json_f.read("optimize_mtl",_optMtl)) _optMtl = false;
   }
   succ &= _ctrlFSolver->initialize();
@@ -65,5 +61,33 @@ bool MtlOptInterpolator::interpolate(){
 	return modalDisplayer.showModalModes(_ctrlF->getLambda(),delta_z);
   }
 
-  return false;
+  _ctrlF->setPartialCon(con_frame_id,con_nodes,uc);
+
+  const int MAX_IT = 100;
+  const double TOL = 1e-3;
+  _ctrlFSolver->setPrintLevel(5);
+  _mtlOptSolver->setPrintLevel(5);
+  _ctrlFSolver->setTol(0.01);
+  _mtlOptSolver->setTol(0.01);
+  _ctrlFSolver->setMaxIt(60000);
+  _mtlOptSolver->setMaxIt(60000);
+
+  bool succ = _ctrlFSolver->solve();
+  double objValue = _ctrlF->getObjValue();
+
+  for (int it = 0; (it < MAX_IT) && _optMtl; ++it){
+
+	_mtlOpt->setZ( _ctrlF->getZ() );
+	succ = _mtlOptSolver->solve();
+	_ctrlF->setKD(_mtlOpt->getK(),_mtlOpt->getD());
+	succ = _ctrlFSolver->solve();
+	if( fabs(_ctrlF->getObjValue() - objValue) <= TOL )
+	  break;
+	objValue = _ctrlF->getObjValue();
+	INFO_LOG("----------------OUTTER ITERATION: "<< it);
+  }
+
+  EIGEN3EXT::convert(_ctrlF->getU()*_ctrlF->getZ(),delta_z);
+
+  return succ;
 }

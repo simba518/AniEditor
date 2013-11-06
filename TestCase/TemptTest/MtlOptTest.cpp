@@ -11,8 +11,8 @@ BOOST_AUTO_TEST_SUITE(MtlOptTest)
 
 BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
 
-  const string data = "/home/simba/Workspace/AnimationEditor/Data/mushroom/";
-  MtlOptModel model(data+"mtlopt.ini");
+  const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
+  MtlOptModel model(data+"mtlopt_cen.ini");
   model.produceSimRlst(false);
   // model.extrangeKeyframes();
   // model.lambda *= 0.25f;
@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
   AtAAkAmOptimizer optAtAkAm(dataM);
   AtAakamOptimizer optAtakam(dataM);
 
-  for (int i = 0; i < 100; ++i){
+  for (int i = 0; i < 500; ++i){
 
 	const MatrixXd oldZ = dataM.Z;
   	optZ.optimize();
@@ -56,6 +56,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
 
   model.saveMesh(dataM.Z,data+"/tempt/mesh/","Opt_Z_A_AmAm");
   model.saveMesh(model.Z,"/tempt/mesh/","input");
+  model.saveUc(data+"/tempt/mesh/uc_z_k_akam");
 
   PythonScriptDraw2DCurves<VectorXd> curves;
   const MatrixXd newZ = dataM.getRotZ();
@@ -80,11 +81,11 @@ BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
 BOOST_AUTO_TEST_CASE(Opt_Z){
 
   const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
-  MtlOptModel model(data+"mtlopt.ini");
-  model.produceSimRlst();
+  MtlOptModel model(data+"mtlopt_cen.ini");
+  model.produceSimRlst(false);
   // model.extrangeKeyframes();
   // model.lambda *= 0.25f;
-  model.Kz.col(model.Kz.cols()-1).setZero();
+  // model.Kz.col(model.Kz.cols()-1).setZero();
 
   MtlDataModel dataM;
   model.initMtlData(dataM);
@@ -106,6 +107,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z){
 
   model.saveMesh(dataM.Z,data+"/tempt/mesh/","Opt_Z");
   model.saveMesh(model.Z,data+"/tempt/mesh/","input");
+  model.saveUc(data+"/tempt/mesh/uc_z.vtk");
 
   PythonScriptDraw2DCurves<VectorXd> curves;
   for (int i = 0; i < model.Z.rows(); ++i){

@@ -5,16 +5,24 @@
 #include <eigen3/Eigen/Dense>
 #include <interfaces/ipopt/ipopt_solver.hpp>
 #include <CASADITools.h>
+#include <RedRSWarperAD.h>
 using namespace std;
 using namespace Eigen;
 using namespace CASADI;
+using namespace LSW_WARPING;
 using CasADi::SX;
 using CasADi::SXMatrix;
 
 class RedSpaceTimeEnergyAD{
   
 public:
-  RedSpaceTimeEnergyAD(const double Zpenalty = 0.0f):_Zpenalty(Zpenalty){
+  RedSpaceTimeEnergyAD(){
+	_penaltyCon = 1.0f;
+	_usePartialCon = true;
+  }
+  RedSpaceTimeEnergyAD(pRedRSWarperAD warper):_warper(warper){
+	_penaltyCon = 1.0f;
+	_usePartialCon = true;
   }
   void setT(const int T){_T = T;}
   template<class SCALAR> 
@@ -59,6 +67,24 @@ public:
   	  _keyId[i] = fid[i];
   }
 
+  void setWarper(pRedRSWarperAD warper){
+	_warper = warper;
+  }
+  void usePartialCon(const bool use){
+	_usePartialCon = use;
+  }
+  void setPenaltyCon(const double penalty){
+	assert_gt(penalty,0.0f);
+	_penaltyCon = penalty;
+  }
+  void setPartialCon(const vector<int>&conF,
+					 const vector<vector<int> >&conN,
+					 const vector<VectorXd>&uc){
+	_conFrames = conF;
+	_conNodes = conN;
+	_uc = uc;
+  }
+
   void assembleEnergy();
 
   const SXMatrix &getEnergy()const{return _energy;}
@@ -86,15 +112,21 @@ public:
   }
   
 private:
-  const double _Zpenalty;
+  double _penaltyCon;
+  bool _usePartialCon;
   int _T;
   SX _h;
   SXMatrix _D;
   SXMatrix _K;
-  MatrixXd _keyZ;
-  VectorXi _keyId;
   SXMatrix _energy;
   VSX _varZ;
+
+  pRedRSWarperAD _warper;
+  MatrixXd _keyZ;
+  VectorXi _keyId;
+  vector<int> _conFrames;
+  vector<vector<int> > _conNodes;
+  vector<VectorXd> _uc;
 };
 
 class MtlDataModel{
@@ -140,6 +172,21 @@ public:
 	return eigenK.eigenvectors().transpose();
   }
 
+  void setPenaltyCon(const double penalty){
+	assert_gt(penalty,0.0f);
+	penaltyCon = penalty;
+  }
+  void setPartialCon(const vector<int>&conF,
+					 const vector<vector<int> >&conN,
+					 const vector<VectorXd>&uc){
+	conFrames = conF;
+	conNodes = conN;
+	this->uc = uc;
+  }
+  void setWarper(pRedRSWarperAD w){
+	warper = w;
+  }
+
 public:
   int T;
   double h;
@@ -152,6 +199,12 @@ public:
   MatrixXd D;
   VectorXd Ak;
   VectorXd Am;
+
+  pRedRSWarperAD warper;
+  double penaltyCon;
+  vector<int> conFrames;
+  vector<vector<int> > conNodes;
+  vector<VectorXd> uc;
 };
 
 class MtlOptimizer{
@@ -197,6 +250,7 @@ public:
 
 protected:
   void optimizationBegin(){
+	_energy.usePartialCon(true);
 	resetEnergy(false);
   }
   void optimizationEnd(){
@@ -254,6 +308,7 @@ protected:
   }
   void optimizationBegin(){
 
+	_energy.usePartialCon(false);
 	resetEnergy();
 	const SXMatrix &K = _K;
 	_energy.setK(K);
@@ -336,6 +391,7 @@ protected:
   }
   void optimizationBegin(){
 
+	_energy.usePartialCon(false);
 	resetEnergy();
 	const SXMatrix &K = _K;
 	_energy.setK(K);
@@ -398,6 +454,7 @@ protected:
   }
   void optimizationBegin(){
 
+	_energy.usePartialCon(false);
 	resetEnergy();
 	const SXMatrix &K = _K;
 	_energy.setK(K);
@@ -458,6 +515,7 @@ protected:
   }
   virtual void optimizationBegin(){
 
+	_energy.usePartialCon(false);
 	resetEnergy();
 	const int r = _energy.reducedDim();
 	const SXMatrix K = convert(_model.K);
@@ -516,6 +574,7 @@ protected:
   }
   void optimizationBegin(){
 
+	_energy.usePartialCon(false);
 	resetEnergy();
 	const SXMatrix &K = _K;
 	_energy.setK(K);

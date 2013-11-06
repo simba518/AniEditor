@@ -69,6 +69,9 @@ namespace LSW_ANI_EDITOR{
 	virtual void precompute(){
 	
 	}
+	virtual void keyframeChanged(){
+	  
+	}
 	
   protected:
 	double _h;

@@ -1,6 +1,7 @@
 #ifndef _REDRSWARPERAD_H_
 #define _REDRSWARPERAD_H_
 
+#include <set>
 #include <boost/shared_ptr.hpp>
 #include <symbolic/fx/sx_function.hpp>
 #include <algorithm>
@@ -10,6 +11,7 @@
 #include <CASADITools.h>
 #include <MapMA2RS.h>
 #include <RS2Euler.h>
+using namespace std;
 using CasADi::SX;
 using CasADi::SXMatrix;
 
@@ -22,8 +24,8 @@ namespace LSW_WARPING{
   class RedRSWarperAD{
 	
   public:
-	RedRSWarperAD(const RS2Euler &rs2euler,const MatrixXd &NLBasis,const MatrixXd &LBasis){
-	  init(rs2euler,NLBasis,LBasis);
+	RedRSWarperAD(const RS2Euler &rs2euler,const MatrixXd &NLBasis,const MatrixXd &LB){
+	  init(rs2euler,NLBasis,LB);
 	  convert2Symbols();
 	}
 	RedRSWarperAD(const RS2Euler &rs2euler,const MatrixXd &NLBasis,const MatrixXd &LBasis,
@@ -36,6 +38,18 @@ namespace LSW_WARPING{
 	void warp(const VectorXd &z,VectorXd &u){
 	  const VectorXd input_y = VectorXd::Zero(hatW.rows());
 	  warp(input_y,z,u);
+	}
+	void warp(const SXMatrix &z,SXMatrix &u,const vector<int> &nodes){
+	  SXMatrix q;
+	  computeQ(z,q);
+	  set<int> s;
+	  for (int i = 0; i < nodes.size(); ++i) s.insert(nodes[i]);
+	  Eigen::SparseMatrix<double> P;
+	  EIGEN3EXT::genReshapeMatrix(B.rows(),3,s,P,false);
+	  const SXMatrix subB = CASADI::convert((MatrixXd)(P*B));
+	  assert_eq(subB.size1(),nodes.size()*3);
+	  assert_eq(subB.size2(),q.size1());
+	  u = subB.mul(q);
 	}
 	void warp(const VectorXd &input_y,const SXMatrix &z,SXMatrix &u){
 	  SXMatrix q;

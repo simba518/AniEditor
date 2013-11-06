@@ -48,6 +48,7 @@ void BaseCtrlForceEnergy::addKeyframe(const VectorXd &unRotZk, const int f){
 	_keyframes.push_back(f);
 	_keyfIndex[f] = _keyframes.size()-1;
   }
+  this->keyframeChanged();
 }
 
 void BaseCtrlForceEnergy::setKeyframes(const vector<VectorXd> &keyZ, const vector<int> &keyframes){
