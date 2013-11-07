@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
   AtAAkAmOptimizer optAtAkAm(dataM);
   AtAakamOptimizer optAtakam(dataM);
 
-  for (int i = 0; i < 500; ++i){
+  for (int i = 0; i < 30; ++i){
 
 	const MatrixXd oldZ = dataM.Z;
   	optZ.optimize();
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
 	}
   }
 
-  model.saveMesh(dataM.Z,data+"/tempt/mesh/","Opt_Z_A_AmAm");
+  model.saveMesh(dataM.Z,data+"/tempt/mesh/","Opt_Z_A_akam_30It");
   model.saveMesh(model.Z,"/tempt/mesh/","input");
   model.saveUc(data+"/tempt/mesh/uc_z_k_akam");
 
@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
 	  kid[j] = model.Kid[j];
 	curves.add(string("keyframes of mode ")+TOSTR(i),kz,kid,"o");
   }
-  TEST_ASSERT( curves.write("Opt_Z_K_AkAm") );
+  TEST_ASSERT( curves.write("Opt_Z_K_akam30") );
 }
 
 BOOST_AUTO_TEST_CASE(Opt_Z){
@@ -91,8 +91,11 @@ BOOST_AUTO_TEST_CASE(Opt_Z){
   model.initMtlData(dataM);
 
   ZOptimizer optZ(dataM);
+  optZ.setUseHessian(true);
+  optZ.setMaxIt(3);
+  optZ.setTol(1e-3);
 
-  for (int i = 0; i < 50; ++i){
+  for (int i = 0; i < 1; ++i){
 
 	const MatrixXd oldZ = dataM.Z;
   	optZ.optimize();
@@ -101,12 +104,12 @@ BOOST_AUTO_TEST_CASE(Opt_Z){
 	if(oldZ.size() == dataM.Z.size()){
 	  const double err = (oldZ-dataM.Z).norm()/dataM.Z.norm();
 	  cout << "err: " << err << endl;
-	  if(err < 1e-3) break;
+	  if(err < 1e-4) break;
 	}
   }
 
-  model.saveMesh(dataM.Z,data+"/tempt/mesh/","Opt_Z");
-  model.saveMesh(model.Z,data+"/tempt/mesh/","input");
+  model.saveMesh(dataM.Z,data+"/tempt/mesh/","Opt_Z_GN");
+  // model.saveMesh(model.Z,data+"/tempt/mesh/","input");
   model.saveUc(data+"/tempt/mesh/uc_z.vtk");
 
   PythonScriptDraw2DCurves<VectorXd> curves;

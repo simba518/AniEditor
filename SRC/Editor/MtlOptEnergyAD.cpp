@@ -83,7 +83,9 @@ void MtlOptimizer::optimize(){
 
   _fun = CasADi::SXFunction(x,E);
   _solver = CasADi::IpoptSolver(_fun);
-  _solver.setOption("generate_hessian",true);
+  _solver.setOption("generate_hessian",useHessian);
+  _solver.setOption("tol",tol);
+  _solver.setOption("max_iter",maxIt);
   _solver.init();
 
   VectorXd x0;

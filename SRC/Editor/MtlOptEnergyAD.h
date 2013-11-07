@@ -210,9 +210,23 @@ public:
 class MtlOptimizer{
   
  public:
-  MtlOptimizer(MtlDataModel &m):_model(m){}
+  MtlOptimizer(MtlDataModel &m):_model(m){
+	useHessian = true;
+	tol = 1e-3;
+	maxIt = 500;
+  }
   void setInitialValue(const VectorXd &x0){
 	_rlst = x0;
+  }
+  void setUseHessian(const bool useH){
+	useHessian = useH;
+  }
+  void setTol(const double t){
+	assert_gt(t,0.0f);
+	tol = t;
+  }
+  void setMaxIt(const int mit){
+	maxIt = mit;
   }
   virtual void optimize();
   
@@ -235,6 +249,10 @@ class MtlOptimizer{
   CasADi::SXFunction _fun;
   CasADi::IpoptSolver _solver;
   VectorXd _rlst;
+  
+  bool useHessian;
+  double tol;
+  int maxIt;
 };
 
 class ZOptimizer:public MtlOptimizer{
@@ -391,7 +409,7 @@ protected:
   }
   void optimizationBegin(){
 
-	_energy.usePartialCon(false);
+	_energy.usePartialCon(true);
 	resetEnergy();
 	const SXMatrix &K = _K;
 	_energy.setK(K);
