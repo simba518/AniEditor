@@ -1,0 +1,27 @@
+SET(APPNAME Cubature)
+
+AUX_SOURCE_DIRECTORY(. src)
+AUX_SOURCE_DIRECTORY(./cubacode src_2)
+
+ADD_EXECUTABLE(${APPNAME} 
+  ${src_2}
+  ${src})
+
+LINK_PROJECT(${APPNAME}
+  
+  ieds
+  stvksim
+  basesim
+  utility
+  barbiclib
+)
+
+TARGET_LINK_LIBRARIES(${APPNAME}
+
+  ${Boost_LIBRARIES}
+  ${JSONCPP_LIBRARIES}
+  ${LOG4CPLUS_LIBRARIES}
+  ${CASADI_LIBRARIES}
+  ${SUITESPARSE_LIBRARIES}
+  ${LAPACK_LIBRARIES}
+)
