@@ -7,127 +7,154 @@
 using namespace Eigen;
 using namespace UTILITY;
 
-BOOST_AUTO_TEST_SUITE(MtlOptTest)
+class MtlOptADTestSuite{
+  
+public:
+  MtlOptADTestSuite(){
+	dataDir = "/home/simba/Workspace/AnimationEditor/Data/";
+	maxOurterIt = 30;
+	dataM = pMtlDataModel(new MtlDataModel);
+  }
+  MtlOptADTestSuite(const string d,
+					const string initf, 
+					const string name,
+					const int outIt = 30,
+					const string saveInputM = ""
+					){
 
-BOOST_AUTO_TEST_CASE(Opt_Z_K_AkAm){
+	dataDir = "/home/simba/Workspace/AnimationEditor/Data/";
+	data = dataDir+d+"/";
+	initFile = data+initf;
+	maxOurterIt = outIt;
+	
+	outputMesh = data+"/tempt/mesh/"+initf+"_"+"_"+name+"_outPutMesh";
+	curveZName = data+"/tempt/mesh/"+initf+"_"+name+"_curveZ";
+	savePartialCon = data+"/tempt/mesh/"+initf+"_"+name+"_parcon";
+	saveKeyframes = data+"/tempt/mesh/"+initf+"_"+name+"_keyf";
+	saveModes = data+"/tempt/mesh/"+initf+"_"+name+"_modes";
 
-  const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
-  MtlOptModel model(data+"mtlopt_cen.ini");
-  model.produceSimRlst(false);
-  // model.extrangeKeyframes();
-  // model.lambda *= 0.25f;
-  // model.Kz.col(model.Kz.cols()-1).setZero();
+	if (saveInputM.size() > 0) inputMesh = data+saveInputM;
 
-  MtlDataModel dataM;
-  model.initMtlData(dataM);
+	model= pMtlOptModel(new MtlOptModel(initFile));
+	model->produceSimRlst(false);
 
-  // dataM.subZ.setZero();
-  // dataM.K.setZero();
-  // dataM.D.setZero();
-  // dataM.Ak.setZero();
-  // dataM.Am.setZero();
+	dataM = pMtlDataModel(new MtlDataModel);
+	model->initMtlData(*dataM);
+  }
+  void addOptimizer(pMtlOptimizer opt){
+	optimizer.push_back(opt);
+  }
+  void solve(){	
 
-  ZOptimizer optZ(dataM);
-  KOptimizer optK(dataM);
-  KAtAmOptimizer optKAtAm(dataM);
-  AkAmOptimizer optAkAm(dataM);
-  AtAAkAmOptimizer optAtAkAm(dataM);
-  AtAakamOptimizer optAtakam(dataM);
+	for (int i = 0; i < maxOurterIt; ++i){
 
-  for (int i = 0; i < 30; ++i){
+	  const MatrixXd oldZ = dataM->Z;
+	  for (int p = 0; p < optimizer.size(); ++p){
+		optimizer[p]->optimize();;
+	  }
 
-	const MatrixXd oldZ = dataM.Z;
-  	optZ.optimize();
-	optAtakam.optimize();
-	// optAtAkAm.optimize();
-  	// optKAtAm.optimize();
-  	// optk.optimize();
-  	// optAkAm.optimize();
+	  cout << "ITERATION " << i << "------------------------------------" << endl;
+	  dataM->print();
+	  if(oldZ.size() == dataM->Z.size()){
+		const double err = (oldZ-dataM->Z).norm()/dataM->Z.norm();
+		cout << "err: " << err << endl;
+		if(err < 1e-3) break;
+	  }
+	}
 
-  	cout << "ITERATION " << i << "------------------------------------" << endl;
-  	dataM.print();
+	if (outputMesh.size() > 0) model->saveMesh(dataM->Z,outputMesh);
+	if (inputMesh.size() > 0) model->saveMesh(model->Z,inputMesh);
+	if (saveKeyframes.size() > 0 && model->Kz.size()>0) 
+	  model->saveMesh(model->Kz,saveKeyframes);
+	if (savePartialCon.size() > 0) model->saveUc(savePartialCon);
 
-	if(oldZ.size() == dataM.Z.size()){
-	  const double err = (oldZ-dataM.Z).norm()/dataM.Z.norm();
-	  cout << "err: " << err << endl;
-	  if(err < 1e-3) break;
+	PythonScriptDraw2DCurves<VectorXd> curves;
+	const MatrixXd newZ = dataM->getRotZ();
+	const MatrixXd newKZ = dataM->getUt()*model->Kz;
+	for (int i = 0; i < model->Z.rows(); ++i){
+	  const VectorXd &z2 = newZ.row(i).transpose();
+	  curves.add(string("mode ")+TOSTR(i),z2,1.0f,0,"--");
+	  const VectorXd &kz = newKZ.row(i).transpose();
+	  VectorXd kid(model->Kid.size());
+	  for (int j = 0; j < kid.size(); ++j)
+		kid[j] = model->Kid[j];
+	  curves.add(string("keyframes of mode ")+TOSTR(i),kz,kid,"o");
+	}
+	if (curveZName.size() > 0)
+	  TEST_ASSERT( curves.write(curveZName) );
+
+	const MatrixXd newW = model->W*(dataM->getUt().transpose());
+	model->W = newW;
+	MatrixXd zi = newZ;
+	for (int i = 0; i < newZ.rows() && i < 4; ++i){
+	  zi.setZero();
+	  zi.row(i) = newZ.row(i);
+	  model->saveMesh(zi,saveModes+TOSTR(i)+"_f");
 	}
   }
-
-  model.saveMesh(dataM.Z,data+"/tempt/mesh/","Opt_Z_A_akam_30It");
-  model.saveMesh(model.Z,"/tempt/mesh/","input");
-  model.saveUc(data+"/tempt/mesh/uc_z_k_akam");
-
-  PythonScriptDraw2DCurves<VectorXd> curves;
-  const MatrixXd newZ = dataM.getRotZ();
-  const MatrixXd newKZ = dataM.getUt()*model.Kz;
-  for (int i = 0; i < model.Z.rows(); ++i){
-
-	// const VectorXd &z = model.Z.row(i).transpose();
-	// curves.add("z_input",z,1.0f,0);
-
-	const VectorXd &z2 = newZ.row(i).transpose();
-	curves.add(string("mode ")+TOSTR(i),z2,1.0f,0,"--");
-
-	const VectorXd &kz = newKZ.row(i).transpose();
-	VectorXd kid(model.Kid.size());
-	for (int j = 0; j < kid.size(); ++j)
-	  kid[j] = model.Kid[j];
-	curves.add(string("keyframes of mode ")+TOSTR(i),kz,kid,"o");
+  pMtlDataModel getDataModel(){
+	return dataM;
   }
-  TEST_ASSERT( curves.write("Opt_Z_K_akam30") );
-}
+
+private:
+  string dataDir;
+  string data;
+  string initFile;
+  int maxOurterIt;
+  string outputMesh;
+  string curveZName;
+  string inputMesh;
+  string savePartialCon;
+  string saveKeyframes;
+  string saveModes;
+  vector<pMtlOptimizer> optimizer;
+
+  pMtlOptModel model;
+  pMtlDataModel dataM;
+};
+
+const string model_name = "beam";
+const string inf = "mtlopt_cen_keyf_swing_one_end.ini";
+
+BOOST_AUTO_TEST_SUITE(MtlOptTest)
 
 BOOST_AUTO_TEST_CASE(Opt_Z){
 
-  const string data = "/home/simba/Workspace/AnimationEditor/Data/beam/";
-  MtlOptModel model(data+"mtlopt_cen.ini");
-  model.produceSimRlst(false);
-  // model.extrangeKeyframes();
-  // model.lambda *= 0.25f;
-  // model.Kz.col(model.Kz.cols()-1).setZero();
+  MtlOptADTestSuite mtlOpt(model_name,inf,"Opt_Z",1);
+  mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
+  mtlOpt.solve();
+}
 
-  MtlDataModel dataM;
-  model.initMtlData(dataM);
+BOOST_AUTO_TEST_CASE(Opt_Z_Lambda){
 
-  ZOptimizer optZ(dataM);
-  optZ.setUseHessian(true);
-  optZ.setMaxIt(3);
-  optZ.setTol(1e-3);
+  MtlOptADTestSuite mtlOpt(model_name,inf,"Opt_Z_Lambda",500);
+  mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
+  mtlOpt.addOptimizer(pMtlOptimizer(new LambdaOptimizer(mtlOpt.getDataModel())));
+  mtlOpt.solve();
+}
 
-  for (int i = 0; i < 1; ++i){
+BOOST_AUTO_TEST_CASE(Opt_Z_AtA){
 
-	const MatrixXd oldZ = dataM.Z;
-  	optZ.optimize();
-  	cout << "ITERATION " << i << "------------------------------------" << endl;
-  	dataM.print();
-	if(oldZ.size() == dataM.Z.size()){
-	  const double err = (oldZ-dataM.Z).norm()/dataM.Z.norm();
-	  cout << "err: " << err << endl;
-	  if(err < 1e-4) break;
-	}
-  }
+  MtlOptADTestSuite mtlOpt(model_name,inf,"Opt_Z_AtA",50);
+  mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
+  mtlOpt.addOptimizer(pMtlOptimizer(new AtAOptimizer(mtlOpt.getDataModel())));
+  mtlOpt.solve();
+}
 
-  model.saveMesh(dataM.Z,data+"/tempt/mesh/","Opt_Z_GN");
-  // model.saveMesh(model.Z,data+"/tempt/mesh/","input");
-  model.saveUc(data+"/tempt/mesh/uc_z.vtk");
+BOOST_AUTO_TEST_CASE(Opt_Z_akam){
 
-  PythonScriptDraw2DCurves<VectorXd> curves;
-  for (int i = 0; i < model.Z.rows(); ++i){
+  MtlOptADTestSuite mtlOpt(model_name,inf,"Opt_Z_akam",50);
+  mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
+  mtlOpt.addOptimizer(pMtlOptimizer(new akamOptimizer(mtlOpt.getDataModel())));
+  mtlOpt.solve();
+}
 
-	// const VectorXd &z = model.Z.row(i).transpose();
-	// curves.add("z_input",z,1.0f,0);
+BOOST_AUTO_TEST_CASE(Opt_Z_AtA_akam){
 
-	const VectorXd &z2 = dataM.Z.row(i).transpose();
-	curves.add(string("mode ")+TOSTR(i),z2,1.0f,0,"--");
-
-	const VectorXd &kz = model.Kz.row(i).transpose();
-	VectorXd kid(model.Kid.size());
-	for (int j = 0; j < kid.size(); ++j)
-	  kid[j] = model.Kid[j];
-	curves.add(string("keyframes of mode ")+TOSTR(i),kz,kid,"o");
-  }
-  TEST_ASSERT( curves.write("Opt_Z") );
+  MtlOptADTestSuite mtlOpt(model_name,inf,"Opt_Z_AtA_akam",50);
+  mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
+  mtlOpt.addOptimizer(pMtlOptimizer(new AtAakamOptimizer(mtlOpt.getDataModel())));
+  mtlOpt.solve();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

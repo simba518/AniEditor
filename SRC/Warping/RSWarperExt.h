@@ -35,7 +35,7 @@ namespace IEDS{
 	void warp(const VectorXd &p,int frame_id, VectorXd &u);
 
 	// compute T(u): compute the RS coordinates of u.
-	void computeRSCoord(const VectorXd &u, VectorXd &RS_u, const bool linear_disp = false)const;
+	void computeRSCoord(const VectorXd &u, VectorXd &RS_u,const bool linear_disp=false)const;
 
 	// get G: deformation gradient operator.
 	const SparseMatrix<double> &get_G()const{

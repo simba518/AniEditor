@@ -206,11 +206,12 @@ public:
   vector<vector<int> > conNodes;
   vector<VectorXd> uc;
 };
+typedef boost::shared_ptr<MtlDataModel> pMtlDataModel;
 
 class MtlOptimizer{
   
  public:
-  MtlOptimizer(MtlDataModel &m):_model(m){
+  MtlOptimizer(pMtlDataModel m):_model(m){
 	useHessian = true;
 	tol = 1e-3;
 	maxIt = 500;
@@ -244,7 +245,7 @@ class MtlOptimizer{
   }
 
  protected:
-  MtlDataModel &_model;
+  pMtlDataModel _model;
   RedSpaceTimeEnergyAD _energy;
   CasADi::SXFunction _fun;
   CasADi::IpoptSolver _solver;
@@ -254,13 +255,15 @@ class MtlOptimizer{
   double tol;
   int maxIt;
 };
+typedef boost::shared_ptr<MtlOptimizer> pMtlOptimizer;
 
+// optimize reduced coordinates
 class ZOptimizer:public MtlOptimizer{
   
 public:
-  ZOptimizer(MtlDataModel &m):MtlOptimizer(m){
+  ZOptimizer(pMtlDataModel m):MtlOptimizer(m){
 
-	const MatrixXd &Z = m.subZ;
+	const MatrixXd &Z = m->subZ;
 	assert_gt(Z.size(),0);
 	MatrixXd zz = Z;
 	_rlst = Map<VectorXd>( &(zz(0,0)),zz.size() );
@@ -273,11 +276,11 @@ protected:
   }
   void optimizationEnd(){
 	const int r = _energy.reducedDim();
-	const int subT = _model.T - _model.keyId.size();
+	const int subT = _model->T - _model->keyId.size();
 	assert_eq(r*subT, _rlst.size());
-	_model.subZ = Map<MatrixXd>(&_rlst[0],r,subT);
-	_model.Z = _model.subZ;
-	_energy.insertKeyframes(_model.Z);
+	_model->subZ = Map<MatrixXd>(&_rlst[0],r,subT);
+	_model->Z = _model->subZ;
+	_energy.insertKeyframes(_model->Z);
   }
   const VSX &getVariable()const{
 	return _energy.getVarZ();
@@ -285,177 +288,120 @@ protected:
 
 };
 
-class AtAAkAmOptimizer:public MtlOptimizer{
+// optimize K
+class LambdaOptimizer:public MtlOptimizer{
 
-public:
-  AtAAkAmOptimizer(MtlDataModel &m):MtlOptimizer(m){
-	
-	const int r = _model.K.rows();
-	const VSX a = makeSymbolic(r*r,"a");
-	const VSX ak = makeSymbolic(r,"ak");
-	const VSX am = makeSymbolic(r,"am");
-	_a_ak_am.clear();
-	_a_ak_am.insert( _a_ak_am.end(),a.begin(),a.end() );
-	_a_ak_am.insert( _a_ak_am.end(),ak.begin(),ak.end() );
-	_a_ak_am.insert( _a_ak_am.end(),am.begin(),am.end() );
-
-	_Ak = makeEyeMatrix( ak );
-	_Am = makeEyeMatrix( am );
-	const SXMatrix A = convert( a,r );
-	_K = CasADi::trans(A).mul(A);
-	setInitVal(m.K,m.Ak,m.Am);
+public: 
+  LambdaOptimizer(pMtlDataModel m,const bool useAkAm = true):
+	MtlOptimizer(m),_useAkAm(useAkAm){
+	const int r = m->K.rows();
+	setInitK(m->K);
+	_lambda = makeSymbolic(r,"la");
+	_K = makeEyeMatrix(_lambda);
   }
-
+  
 protected:
-  void setInitVal(const MatrixXd &K,const VectorXd &Ak,const VectorXd &Am){
-
-	const int r = Ak.size();
-	assert_gt(r,0);
-	assert_eq(Am.size(), r);
-	assert_eq(K.rows(),r);
-	assert_eq(K.cols(),r);
-
-	_rlst.resize(r*r+r*2);
-	MatrixXd KK(r,r);
-	KK.setZero();
+  void setInitK(const MatrixXd &K){
+	assert_eq(K.rows(),K.cols());
+	const int r = K.rows();
+	_rlst.resize(r);
 	for (int i = 0; i < r; ++i)
-	  KK(i,i) = sqrt( K(i,i) );
-	_rlst.head(r*r) = Map<VectorXd>(&KK(0,0),r*r);
-	_rlst.segment(r*r,r) = Ak;
-	_rlst.tail(r) = Am;
+	  _rlst[i] = K(i,i);
   }
   void optimizationBegin(){
-
 	_energy.usePartialCon(false);
 	resetEnergy();
 	const SXMatrix &K = _K;
 	_energy.setK(K);
-	const SXMatrix D = _Am + _Ak.mul(K);
-	_energy.setDamping(D);
+	if(_useAkAm){
+	  const SXMatrix Ak = makeEyeMatrix(convert(_model->Ak));
+	  const SXMatrix Am = makeEyeMatrix(convert(_model->Am));
+	  const SXMatrix D = Am + Ak.mul(K);
+	  _energy.setDamping(D);
+	}else{
+	  _energy.setDamping(_model->D);
+	}
   }
   void optimizationEnd(){
-
 	const int r = _energy.reducedDim();
-	assert_eq(_rlst.size(),r*r+r*2);
-	const MatrixXd A = Map<MatrixXd>(&_rlst[0],r,r);
-	_model.K = A.transpose()*A;
-	_model.Ak = Map<VectorXd>(&_rlst[r*r],r);
-	_model.Am = Map<VectorXd>(&_rlst[r*r+r],r);
-	_model.D = _model.Am.asDiagonal();
-	_model.D += _model.Ak.asDiagonal()*_model.K;
+	MatrixXd &K = _model->K;
+	K.resize(r,r);
+	K.setZero();
+	for (int i = 0; i < r; ++i)
+	  K(i,i) = _rlst[i];
   }
   const VSX &getVariable()const{
-	return _a_ak_am;
-  }
-  bool getLowBound(vector<double> &lower)const{
-	const int r = _energy.reducedDim();
-	lower = vector<double>(r*r+2*r,-std::numeric_limits<double>::infinity());
-	for (int i = r*r; i < lower.size(); ++i)
-	  lower[i] = 0.0f;
-	return true;
+	return _lambda;
   }
 
 private:
-  VSX _a_ak_am;
+  const bool _useAkAm;
+  VSX _lambda;
   SXMatrix _K;
-  SXMatrix _Ak;
-  SXMatrix _Am;
 };
 
-class AtAakamOptimizer:public MtlOptimizer{
+class AtAOptimizer:public MtlOptimizer{
 
 public:
-  AtAakamOptimizer(MtlDataModel &m):MtlOptimizer(m){
-	
-	const int r = _model.K.rows();
-	const VSX a = makeSymbolic(r*r,"a");
-	const SX ak("ak");
-	const SX am("am");
-	_a_ak_am.clear();
-	_a_ak_am.insert( _a_ak_am.end(),a.begin(),a.end() );
-	_a_ak_am.push_back(ak);
-	_a_ak_am.push_back(am);
+  AtAOptimizer(pMtlDataModel m,const bool useAkAm = true):
+	MtlOptimizer(m),_useAkAm(useAkAm){
 
-	VSX Ak,Am;
-	for (int i = 0; i < r; ++i){
-	  Ak.push_back(ak);
-	  Am.push_back(am);
-	}
-	
-	_Ak = CASADI::makeEyeMatrix(Ak);
-	_Am = CASADI::makeEyeMatrix(Am);
-	const SXMatrix A = convert( a,r );
+	const int r = _model->K.rows();
+	_A = makeSymbolic(r*r,"a");
+	const SXMatrix A = convert(_A,r);
 	_K = CasADi::trans(A).mul(A);
-
-	setInitVal(m.K,m.Ak[0],m.Am[0]);
+	setInitVal(m->K);
   }
 
 protected:
-  void setInitVal(const MatrixXd &K,const double ak,const double &am){
-
+  void setInitVal(const MatrixXd &K){
 	const int r = K.rows();
 	assert_gt(r,0);
-	assert_eq(K.rows(),r);
 	assert_eq(K.cols(),r);
-
-	_rlst.resize(r*r+2);
 	MatrixXd KK(r,r);
 	KK.setZero();
 	for (int i = 0; i < r; ++i)
 	  KK(i,i) = sqrt( K(i,i) );
-	_rlst.head(r*r) = Map<VectorXd>(&KK(0,0),r*r);
-	_rlst[r*r] = ak;
-	_rlst[r*r+1] = am;
+	_rlst = Map<VectorXd>(&KK(0,0),r*r);
   }
   void optimizationBegin(){
-
-	_energy.usePartialCon(true);
+	_energy.usePartialCon(false);
 	resetEnergy();
 	const SXMatrix &K = _K;
 	_energy.setK(K);
-	const SXMatrix D = _Am + _Ak.mul(K);
-	_energy.setDamping(D);
+	if(_useAkAm){
+	  const SXMatrix Ak = makeEyeMatrix(convert(_model->Ak));
+	  const SXMatrix Am = makeEyeMatrix(convert(_model->Am));
+	  const SXMatrix D = Am + Ak.mul(K);
+	  _energy.setDamping(D);
+	}else{
+	  _energy.setDamping(_model->D);
+	}
   }
   void optimizationEnd(){
 
 	const int r = _energy.reducedDim();
-	assert_eq(_rlst.size(),r*r+2);
+	assert_eq(_rlst.size(),r*r);
 	const MatrixXd A = Map<MatrixXd>(&_rlst[0],r,r);
-	_model.K = A.transpose()*A;
-	_model.Ak.resize(r);
-	_model.Am.resize(r);
-	for (int i = 0; i < r; ++i){
-	  _model.Ak[i] = _rlst[r*r];
-	  _model.Am[i] = _rlst[r*r+1];
-	}
-	_model.D = _model.Am.asDiagonal();
-	_model.D += _model.Ak.asDiagonal()*_model.K;
+	_model->K = A.transpose()*A;
   }
   const VSX &getVariable()const{
-	return _a_ak_am;
-  }
-  bool getLowBound(vector<double> &lower)const{
-	const int r = _energy.reducedDim();
-	lower = vector<double>(r*r+2,-std::numeric_limits<double>::infinity());
-	for (int i = r*r; i < lower.size(); ++i)
-	  lower[i] = 0.0f;
-	return true;
+	return _A;
   }
 
 private:
-  VSX _a_ak_am;
+  const bool _useAkAm;
+  VSX _A;
   SXMatrix _K;
-  SXMatrix _Ak;
-  SXMatrix _Am;
 };
 
 class KOptimizer:public MtlOptimizer{
 
 public: 
-  KOptimizer(MtlDataModel &m,const bool useAkAm = true):MtlOptimizer(m),_useAkAm(useAkAm){
+  KOptimizer(pMtlDataModel m,const bool useAkAm = true):MtlOptimizer(m),_useAkAm(useAkAm){
 
-	setInitK(m.K);
-	produceSymetricMat("k",_model.K.rows(),_kx,_K);
+	setInitK(m->K);
+	produceSymetricMat("k",_model->K.rows(),_kx,_K);
   }
   
 protected:
@@ -477,12 +423,12 @@ protected:
 	const SXMatrix &K = _K;
 	_energy.setK(K);
 	if(_useAkAm){
-	  const SXMatrix Ak = makeEyeMatrix(convert(_model.Ak));
-	  const SXMatrix Am = makeEyeMatrix(convert(_model.Am));
+	  const SXMatrix Ak = makeEyeMatrix(convert(_model->Ak));
+	  const SXMatrix Am = makeEyeMatrix(convert(_model->Am));
 	  const SXMatrix D = Am + Ak.mul(K);
 	  _energy.setDamping(D);
 	}else{
-	  _energy.setDamping(_model.D);
+	  _energy.setDamping(_model->D);
 	}
   }
   void optimizationEnd(){
@@ -491,7 +437,7 @@ protected:
 	const int n = r*(r+1)/2;
 	assert_eq(_rlst.size(),n);
 
-	MatrixXd &K = _model.K;
+	MatrixXd &K = _model->K;
 	K.resize(r,r);
 	for (int i = 0; i < r; ++i)
 	  for (int j = 0; j < r; ++j)
@@ -507,13 +453,75 @@ private:
   SXMatrix _K;
 };
 
+// optimize damping
+class akamOptimizer:public MtlOptimizer{
+
+public:
+  akamOptimizer(pMtlDataModel m):MtlOptimizer(m){
+
+	setInitAkAm(m->Ak[0], m->Am[0]);
+	const int r = _model->K.rows();
+	assert_gt(r,0);
+	const SX ak("ak"), am("am");
+	for (int i = 0; i < r; ++i){
+	  _Ak.push_back(ak);
+	  _Am.push_back(am);
+	}
+	_akam.push_back(ak);
+	_akam.push_back(am);
+  }
+  
+protected:
+  virtual void setInitAkAm(const double &Ak,const double &Am){
+	_rlst.resize(2);
+	_rlst[0] = Ak;
+	_rlst[1] = Am;
+  }
+  virtual void optimizationBegin(){
+
+	_energy.usePartialCon(false);
+	resetEnergy();
+	const int r = _energy.reducedDim();
+	const SXMatrix K = convert(_model->K);
+	const SXMatrix Ak = makeEyeMatrix(_Ak);
+	const SXMatrix Am = makeEyeMatrix(_Am);
+	const SXMatrix D = Am + Ak.mul(K);
+	_energy.setDamping(D);
+  }
+  virtual void optimizationEnd(){
+
+	const int r = _energy.reducedDim();
+	const MatrixXd &K = _model->K;
+	assert_eq(_rlst.size(), 2);
+	const double ak = _rlst[0];
+	const double am = _rlst[1];
+	_model->D = am*MatrixXd::Identity(r,r)+ak*K;
+	_model->Ak = VectorXd::Ones(r)*ak;
+	_model->Am = VectorXd::Ones(r)*am;
+  }
+  const VSX &getVariable()const{
+	return _akam;
+  }
+  bool getLowBound(vector<double> &lower)const{
+	lower.resize(2);
+	lower[0] = 0.0f;
+	lower[1] = 0.0f;
+	return true;
+  }
+
+protected:
+  VSX _Ak;
+  VSX _Am;
+  VSX _akam;
+};
+
 class AkAmOptimizer:public MtlOptimizer{
 
 public:
-  AkAmOptimizer(MtlDataModel &m):MtlOptimizer(m){
+  AkAmOptimizer(pMtlDataModel m):MtlOptimizer(m){
 	
-	setInitAkAm(m.Ak, m.Am);
-	const int r = _model.K.rows();
+	setInitAkAm(m->Ak, m->Am);
+	const int r = _model->K.rows();
 	assert_gt(r,0);
 	_Ak = makeSymbolic(r,"ak");
 	_Am = makeSymbolic(r,"am");
@@ -536,7 +544,7 @@ protected:
 	_energy.usePartialCon(false);
 	resetEnergy();
 	const int r = _energy.reducedDim();
-	const SXMatrix K = convert(_model.K);
+	const SXMatrix K = convert(_model->K);
 	const SXMatrix Ak = makeEyeMatrix(_Ak);
 	const SXMatrix Am = makeEyeMatrix(_Am);
 	const SXMatrix D = Am + Ak.mul(K);
@@ -545,15 +553,15 @@ protected:
   virtual void optimizationEnd(){
 
 	const int r = _energy.reducedDim();
-	const MatrixXd &K = _model.K;
+	const MatrixXd &K = _model->K;
 	assert_ge(_rlst.size(), r*2);
 	const VectorXd &Ak = _rlst.head(r);
 	const VectorXd &Am = _rlst.segment(r,r);
 	MatrixXd D = Am.asDiagonal();
 	D = D + Ak.asDiagonal()*K;
-	_model.D = D;
-	_model.Ak = Ak;
-	_model.Am = Am;
+	_model->D = D;
+	_model->Ak = Ak;
+	_model->Am = Am;
   }
   const VSX &getVariable()const{
 	return _AkAm;
@@ -565,13 +573,14 @@ protected:
   VSX _AkAm;
 };
 
+// optimize both K+damping
 class KAtAmOptimizer:public AkAmOptimizer{
 
 public: 
-  KAtAmOptimizer(MtlDataModel &m):AkAmOptimizer(m){
+  KAtAmOptimizer(pMtlDataModel m):AkAmOptimizer(m){
 
-	setInitK(m.K);
-	produceSymetricMat("k",_model.K.rows(),_kx,_K);
+	setInitK(m->K);
+	produceSymetricMat("k",_model->K.rows(),_kx,_K);
 	_AkAmKx = _AkAm;
 	_AkAmKx.insert(_AkAmKx.end(), _kx.begin(), _kx.end());
   }
@@ -607,7 +616,7 @@ protected:
 	const int n = r*(r+1)/2;
 	assert_eq(_rlst.size(),n+2*r);
 
-	MatrixXd &K = _model.K;
+	MatrixXd &K = _model->K;
 	K.resize(r,r);
 	for (int i = 0; i < r; ++i)
 	  for (int j = 0; j < r; ++j)
@@ -631,6 +640,170 @@ private:
   VSX _kx;
   SXMatrix _K;
   VSX _AkAmKx;
+};
+
+class AtAAkAmOptimizer:public MtlOptimizer{
+
+public:
+  AtAAkAmOptimizer(pMtlDataModel m):MtlOptimizer(m){
+	
+	const int r = _model->K.rows();
+	const VSX a = makeSymbolic(r*r,"a");
+	const VSX ak = makeSymbolic(r,"ak");
+	const VSX am = makeSymbolic(r,"am");
+	_a_ak_am.clear();
+	_a_ak_am.insert( _a_ak_am.end(),a.begin(),a.end() );
+	_a_ak_am.insert( _a_ak_am.end(),ak.begin(),ak.end() );
+	_a_ak_am.insert( _a_ak_am.end(),am.begin(),am.end() );
+
+	_Ak = makeEyeMatrix( ak );
+	_Am = makeEyeMatrix( am );
+	const SXMatrix A = convert( a,r );
+	_K = CasADi::trans(A).mul(A);
+	setInitVal(m->K,m->Ak,m->Am);
+  }
+
+protected:
+  void setInitVal(const MatrixXd &K,const VectorXd &Ak,const VectorXd &Am){
+
+	const int r = Ak.size();
+	assert_gt(r,0);
+	assert_eq(Am.size(), r);
+	assert_eq(K.rows(),r);
+	assert_eq(K.cols(),r);
+
+	_rlst.resize(r*r+r*2);
+	MatrixXd KK(r,r);
+	KK.setZero();
+	for (int i = 0; i < r; ++i)
+	  KK(i,i) = sqrt( K(i,i) );
+	_rlst.head(r*r) = Map<VectorXd>(&KK(0,0),r*r);
+	_rlst.segment(r*r,r) = Ak;
+	_rlst.tail(r) = Am;
+  }
+  void optimizationBegin(){
+
+	_energy.usePartialCon(false);
+	resetEnergy();
+	const SXMatrix &K = _K;
+	_energy.setK(K);
+	const SXMatrix D = _Am + _Ak.mul(K);
+	_energy.setDamping(D);
+  }
+  void optimizationEnd(){
+
+	const int r = _energy.reducedDim();
+	assert_eq(_rlst.size(),r*r+r*2);
+	const MatrixXd A = Map<MatrixXd>(&_rlst[0],r,r);
+	_model->K = A.transpose()*A;
+	_model->Ak = Map<VectorXd>(&_rlst[r*r],r);
+	_model->Am = Map<VectorXd>(&_rlst[r*r+r],r);
+	_model->D = _model->Am.asDiagonal();
+	_model->D += _model->Ak.asDiagonal()*_model->K;
+  }
+  const VSX &getVariable()const{
+	return _a_ak_am;
+  }
+  bool getLowBound(vector<double> &lower)const{
+	const int r = _energy.reducedDim();
+	lower = vector<double>(r*r+2*r,-std::numeric_limits<double>::infinity());
+	for (int i = r*r; i < lower.size(); ++i)
+	  lower[i] = 0.0f;
+	return true;
+  }
+
+private:
+  VSX _a_ak_am;
+  SXMatrix _K;
+  SXMatrix _Ak;
+  SXMatrix _Am;
+};
+
+class AtAakamOptimizer:public MtlOptimizer{
+
+public:
+  AtAakamOptimizer(pMtlDataModel m):MtlOptimizer(m){
+	
+	const int r = _model->K.rows();
+	const VSX a = makeSymbolic(r*r,"a");
+	const SX ak("ak");
+	const SX am("am");
+	_a_ak_am.clear();
+	_a_ak_am.insert( _a_ak_am.end(),a.begin(),a.end() );
+	_a_ak_am.push_back(ak);
+	_a_ak_am.push_back(am);
+
+	VSX Ak,Am;
+	for (int i = 0; i < r; ++i){
+	  Ak.push_back(ak);
+	  Am.push_back(am);
+	}
+	
+	_Ak = CASADI::makeEyeMatrix(Ak);
+	_Am = CASADI::makeEyeMatrix(Am);
+	const SXMatrix A = convert( a,r );
+	_K = CasADi::trans(A).mul(A);
+
+	setInitVal(m->K,m->Ak[0],m->Am[0]);
+  }
+
+protected:
+  void setInitVal(const MatrixXd &K,const double ak,const double &am){
+
+	const int r = K.rows();
+	assert_gt(r,0);
+	assert_eq(K.rows(),r);
+	assert_eq(K.cols(),r);
+
+	_rlst.resize(r*r+2);
+	MatrixXd KK(r,r);
+	KK.setZero();
+	for (int i = 0; i < r; ++i)
+	  KK(i,i) = sqrt( K(i,i) );
+	_rlst.head(r*r) = Map<VectorXd>(&KK(0,0),r*r);
+	_rlst[r*r] = ak;
+	_rlst[r*r+1] = am;
+  }
+  void optimizationBegin(){
+
+	_energy.usePartialCon(true);
+	resetEnergy();
+	const SXMatrix &K = _K;
+	_energy.setK(K);
+	const SXMatrix D = _Am + _Ak.mul(K);
+	_energy.setDamping(D);
+  }
+  void optimizationEnd(){
+
+	const int r = _energy.reducedDim();
+	assert_eq(_rlst.size(),r*r+2);
+	const MatrixXd A = Map<MatrixXd>(&_rlst[0],r,r);
+	_model->K = A.transpose()*A;
+	_model->Ak.resize(r);
+	_model->Am.resize(r);
+	for (int i = 0; i < r; ++i){
+	  _model->Ak[i] = _rlst[r*r];
+	  _model->Am[i] = _rlst[r*r+1];
+	}
+	_model->D = _model->Am.asDiagonal();
+	_model->D += _model->Ak.asDiagonal()*_model->K;
+  }
+  const VSX &getVariable()const{
+	return _a_ak_am;
+  }
+  bool getLowBound(vector<double> &lower)const{
+	const int r = _energy.reducedDim();
+	lower = vector<double>(r*r+2,-std::numeric_limits<double>::infinity());
+	for (int i = r*r; i < lower.size(); ++i)
+	  lower[i] = 0.0f;
+	return true;
+  }
+
+private:
+  VSX _a_ak_am;
+  SXMatrix _K;
+  SXMatrix _Ak;
+  SXMatrix _Am;
 };
 
 #endif /* _MTLOPTENERGYAD_H_ */

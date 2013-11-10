@@ -14,7 +14,6 @@
 #include <RSCoordComp.h>
 #include <DefGradOperator.h>
 #include <MapMA2RS.h>
-#include <MeshVtkIO.h>
 #include <limits>
 #include <MtlOptEnergyAD.h>
 #include <JsonFilePaser.h>
@@ -38,7 +37,7 @@ typedef struct _MtlOptModel{
   VectorXd getOutput();
   void getZfromSolver(MatrixXd &Z);
   void saveRlst(const string dir);
-  void saveMesh(const MatrixXd &Z,const string dir,const string fname);
+  void saveMesh(const MatrixXd &Z,const string fname);
   void saveMeshOneZ(const VectorXd &z,const string fname);
   void computeEnergy(const VectorXd &X);
   void saveUc(const string fname)const;
@@ -76,5 +75,6 @@ typedef struct _MtlOptModel{
   VSX allVars;
 
 }MtlOptModel;
+typedef boost::shared_ptr<MtlOptModel> pMtlOptModel;
 
 #endif /* _MTLOPTMODEL_H_ */

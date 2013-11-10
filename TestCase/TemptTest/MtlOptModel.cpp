@@ -1,6 +1,7 @@
 #include "MtlOptModel.h"
 #include "HarmonicOscillator.h"
 #include <ConNodesOfFrame.h>
+#include <VTKWriter.h>
 #include <JsonFilePaser.h>
 using namespace UTILITY;
 using namespace LSW_SIM;
@@ -17,14 +18,24 @@ MtlOptModel::_MtlOptModel(const string initf){
   vector<int> keyid, modes;
   TEST_ASSERT ( jsonf.read("keyId", keyid) );
   TEST_ASSERT ( jsonf.read("modes", modes) );
-  TEST_ASSERT ( jsonf.read("penaltyCon",penaltyCon) );
+  if(modes.size() <= 0){
+	int number_modes = 0;
+	TEST_ASSERT ( jsonf.read("number_modes", number_modes) );
+	assert_gt(number_modes,0);
+	modes.resize(number_modes);
+	for (int i = 0; i < number_modes; ++i){
+	  modes[i] = i;
+	}
+  }
 
-  { // partial constraints
-	string partial_con_str;
-	TEST_ASSERT ( jsonf.readFilePath("partial_constraints",partial_con_str) );
+  // partial constraints
+  penaltyCon = 10.0f;
+  string partial_con_str;
+  if (jsonf.readFilePath("partial_constraints",partial_con_str)){ 
+	
+	TEST_ASSERT ( jsonf.read("penaltyCon",penaltyCon) );
 	ConNodesOfFrameSet AllConNodes;
 	TEST_ASSERT ( AllConNodes.load(partial_con_str) );
-
 	const set<pConNodesOfFrame> &con_groups=AllConNodes.getConNodeGroups();
 	BOOST_FOREACH(pConNodesOfFrame pc, con_groups){
 	  if ( pc != NULL && !pc->isEmpty() ) {
@@ -45,6 +56,13 @@ MtlOptModel::_MtlOptModel(const string initf){
 
   vector<double> initZ;
   TEST_ASSERT ( jsonf.read("z0", initZ) );
+  assert_gt(initZ.size(),0);
+  if(initZ.size() != modes.size()){
+	initZ.resize(modes.size());
+	for (int i = 1; i< modes.size(); ++i){
+	  initZ[i] = initZ[0];
+	}
+  }
   assert_eq (initZ.size(), modes.size());
 
   Kid.resize(keyid.size());
@@ -226,10 +244,10 @@ void MtlOptModel::saveRlst(const string dir){
   // getZfromSolver(newZ);
   // saveMesh(newZ,dir+"/new");
 }
-void MtlOptModel::saveMesh(const MatrixXd &Z,const string dir,const string fname){
+void MtlOptModel::saveMesh(const MatrixXd &Z,const string fname){
 
   for (int i = 0; i < Z.cols(); ++i){
-	const string ffname=dir+fname+TOSTR(i)+".vtk";
+	const string ffname=fname+TOSTR(i)+".vtk";
 	saveMeshOneZ(Z.col(i),ffname);
   }
 }
@@ -240,7 +258,7 @@ void MtlOptModel::saveMeshOneZ(const VectorXd &z,const string fname){
   RSCoordComp::constructWithWarp(G,p,y);
   TEST_ASSERT ( rs2euler.reconstruct(y,u) );
   volobj.interpolate(u);
-  TEST_ASSERT (LSW_SIM::MeshVtkIO::write(volobj.getObjMesh(),fname));
+  TEST_ASSERT (volobj.getObjMesh()->writeVTK(fname));
 }
 void MtlOptModel::computeEnergy(const VectorXd &X){
   VectorXd rlst;
@@ -257,12 +275,9 @@ void MtlOptModel::saveUc(const string fname,const VectorXd &uc,const vector<int>
 	v[i][2] = uc[i*3+2];
 	v[i] += nodes[nid[i]];
   }
-	  
-  COMMON::VTKWriter<double> writer("point",fname,true);
-  writer.appendPoints(v.begin(),v.end());
-  COMMON::VTKWriter<double>::IteratorIndex<COMMON::Vec3i> beg(0,0,1);
-  COMMON::VTKWriter<double>::IteratorIndex<COMMON::Vec3i> end(v.size(),0,1);
-  writer.appendCells(beg,end,COMMON::VTKWriter<double>::POINT);
+  VTKWriter writer;
+  writer.addPoints(v);
+  TEST_ASSERT( writer.write(fname) );
 }
 void MtlOptModel::saveUc(const string fname)const{
   

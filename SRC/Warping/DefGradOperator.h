@@ -2,8 +2,10 @@
 #define _DEFGRADOPERATOR_H_
 
 #include <eigen3/Eigen/Sparse>
-#include "ComputeGeAutoDiff.h"
 #include <TetMesh.h>
+#include <stdlib.h>
+#include <Log.h>
+#include "ComputeGeAutoDiff.h"
 using namespace Eigen;
 using namespace UTILITY;
 
@@ -32,7 +34,39 @@ namespace LSW_WARPING{
 	typedef Eigen::Triplet<double> T;
 	
   public:
-	static bool compute(pTetMesh_const tet_mesh,SparseMatrix<double> &G);
+	static bool compute(const TetMesh &tet_mesh,SparseMatrix<double> &G){
+
+	  const int elem_num = tet_mesh.tets().size();
+	  const int node_num = tet_mesh.nodes().size();
+	  const int nonzeros = 9*12*elem_num;
+
+	  vector<T> G_triplets;
+	  G_triplets.reserve(nonzeros);
+
+	  double V[4][3];
+	  double Ge[9][12];
+	  memset(&V[0][0],0,4*3*sizeof(double));
+	  memset(&Ge[0][0],0,9*12*sizeof(double));
+
+	  for (int e = 0; e < elem_num; ++e){
+		vertexOfTetEle(tet_mesh,e,V);
+		ComputeGeAutoDiff::getInstance()->compute(V,Ge);
+		const int *elem_v = &(tet_mesh.tets()[e][0]);
+		assembleGe2G(elem_v,e,Ge,G_triplets);
+	  }
+
+	  G.resize( elem_num*9, node_num*3 );
+	  G.reserve( nonzeros );
+	  G.setFromTriplets( G_triplets.begin(),G_triplets.end() );
+	  G.makeCompressed();
+
+	  return true;
+	}
+	static bool compute(pTetMesh_const tet_mesh,SparseMatrix<double> &G){
+	  if (tet_mesh)
+		return compute(*tet_mesh,G);
+	  return false;
+	}
 
 	// assemble the gradient operator Ge of one tetrahedron to the tripletlist
 	// of the full operator G.
@@ -57,9 +91,9 @@ namespace LSW_WARPING{
 	}
 
   protected:
-	static inline void vertexOfTetEle(pTetMesh_const tet_mesh,int e,double V[4][3]){
-	  const Vector4i &tet = tet_mesh->tets()[e];
-	  const VVec3d &nodes = tet_mesh->nodes();
+	static inline void vertexOfTetEle(const TetMesh &tet_mesh,int e,double V[4][3]){
+	  const Vector4i &tet = tet_mesh.tets()[e];
+	  const VVec3d &nodes = tet_mesh.nodes();
 	  for (int i = 0; i < 4; ++i){
 		const Vector3d &v = nodes[tet[i]];
 		V[i][0] = v[0];

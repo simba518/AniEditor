@@ -113,23 +113,23 @@ void MtlOptimizer::optimize(){
   
 void MtlOptimizer::resetEnergy(const bool useAllZ){
 
-  const int T = _model.T;
+  const int T = _model->T;
   _energy.setT(T);
-  _energy.setTimestep(_model.h);
-  _energy.setDamping(_model.D);
-  _energy.setK(_model.K);
-  _energy.setKeyframes(_model.keyZ,_model.keyId);
-  _energy.setPartialCon(_model.conFrames,_model.conNodes,_model.uc);
-  _energy.setPenaltyCon(_model.penaltyCon);
-  _energy.setWarper(_model.warper);
+  _energy.setTimestep(_model->h);
+  _energy.setDamping(_model->D);
+  _energy.setK(_model->K);
+  _energy.setKeyframes(_model->keyZ,_model->keyId);
+  _energy.setPartialCon(_model->conFrames,_model->conNodes,_model->uc);
+  _energy.setPenaltyCon(_model->penaltyCon);
+  _energy.setWarper(_model->warper);
 
   if(useAllZ){
-	assert_eq(_model.Z.cols(), T);
-	assert_eq(_model.Z.rows(), _energy.reducedDim());
+	assert_eq(_model->Z.cols(), T);
+	assert_eq(_model->Z.rows(), _energy.reducedDim());
 	vector<int> kfid(T);
 	for (int i = 0; i < T; ++i)
 	  kfid[i] = i;
-	_energy.setKeyframes(_model.Z,kfid);
+	_energy.setKeyframes(_model->Z,kfid);
   }
 }
 

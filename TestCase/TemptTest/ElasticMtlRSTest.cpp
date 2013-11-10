@@ -4,14 +4,12 @@
 #include <DrawCurves.h>
 #include <AuxTools.h>
 #include <MapMA2RS.h>
-#include <MeshVtkIO.h>
 #include <TetMeshEmbeding.h>
 #include <MASimulatorAD.h>
 #include "ElasticMtlOpt.h"
 #include "HarmonicOscillator.h"
 #include "DFT.h"
 using namespace Eigen;
-using namespace LSW_SIM;
 using namespace ANI_EDIT;
 using namespace UTILITY;
 
@@ -102,7 +100,7 @@ BOOST_AUTO_TEST_CASE(produceUrs){
   	TEST_ASSERT ( rs2euler.reconstruct(y,u) );
   	volobj.interpolate(u);
   	const string fname=data+"tempt/meshes/objnocon_"+TOSTR(i)+".vtk";
-  	TEST_ASSERT (MeshVtkIO::write(volobj.getObjMesh(),fname));
+  	TEST_ASSERT (volobj.getObjMesh()->writeVTK(fname));
 	U.push_back(u);
   }
   
