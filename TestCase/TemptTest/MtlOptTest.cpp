@@ -66,7 +66,7 @@ public:
 	  if(oldZ.size() == dataM->Z.size()){
 		const double err = (oldZ-dataM->Z).norm()/dataM->Z.norm();
 		cout << "err: " << err << endl;
-		if(err < 1e-3) break;
+		if(err < 1e-6) break;
 	  }
 	}
 
@@ -76,7 +76,7 @@ public:
 	  model->saveMesh(model->Kz,saveKeyframes);
 	if (savePartialCon.size() > 0) model->saveUc(savePartialCon);
 
-	PythonScriptDraw2DCurves<VectorXd> curves;
+	PythonScriptDraw2DCurves<VectorXd> curves(false);
 	const MatrixXd newZ = dataM->getRotZ();
 	const MatrixXd newKZ = dataM->getUt()*model->Kz;
 	for (int i = 0; i < newZ.rows(); ++i){
@@ -125,14 +125,14 @@ BOOST_AUTO_TEST_SUITE(MtlOptTest)
 
 BOOST_AUTO_TEST_CASE(Opt_Z){
 
-  MtlOptADTestSuite mtlOpt("Opt_Z",1);
+  MtlOptADTestSuite mtlOpt("Opt_Z",2);
   mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
   mtlOpt.solve();
 }
 
 BOOST_AUTO_TEST_CASE(Opt_Z_Lambda){
 
-  MtlOptADTestSuite mtlOpt("Opt_Z_Lambda",500);
+  MtlOptADTestSuite mtlOpt("Opt_Z_Lambda",1000);
   mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
   mtlOpt.addOptimizer(pMtlOptimizer(new LambdaOptimizer(mtlOpt.getDataModel())));
   mtlOpt.solve();
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_Lambda){
 
 BOOST_AUTO_TEST_CASE(Opt_Z_AtA){
 
-  MtlOptADTestSuite mtlOpt("Opt_Z_AtA",50);
+  MtlOptADTestSuite mtlOpt("Opt_Z_AtA",1000);
   mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
   mtlOpt.addOptimizer(pMtlOptimizer(new AtAOptimizer(mtlOpt.getDataModel())));
   mtlOpt.solve();
@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_AtA){
 
 BOOST_AUTO_TEST_CASE(Opt_Z_akam){
 
-  MtlOptADTestSuite mtlOpt("Opt_Z_akam",50);
+  MtlOptADTestSuite mtlOpt("Opt_Z_akam",100);
   mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
   mtlOpt.addOptimizer(pMtlOptimizer(new akamOptimizer(mtlOpt.getDataModel())));
   mtlOpt.solve();
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_akam){
 
 BOOST_AUTO_TEST_CASE(Opt_Z_AtA_akam){
 
-  MtlOptADTestSuite mtlOpt("Opt_Z_AtA_akam",50);
+  MtlOptADTestSuite mtlOpt("Opt_Z_AtA_akam",100);
   mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
   mtlOpt.addOptimizer(pMtlOptimizer(new AtAakamOptimizer(mtlOpt.getDataModel())));
   mtlOpt.solve();
