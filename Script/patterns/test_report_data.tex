@@ -1,0 +1,29 @@
+
+
+\begin{figure}
+  \centering
+  \subfigure[z curves] { \label{fig:b}
+    \includegraphics[width=0.4\textwidth]{#curve_z#}
+  }
+  \subfigure[inner iterations] { \label{fig:a}
+    \includegraphics[width=0.4\textwidth]{#inner_it#}
+  }
+  \subfigure[outer iterations] { \label{fig:b}
+    \includegraphics[width=0.4\textwidth]{#outer_it#}
+  }
+  \caption{z curves and energy functions. #init_file_name#, #method#.}
+  \label{en_f}
+\end{figure}
+
+\begin{center}
+  \begin{tabular}{|l*{8}{|l}}
+    \hline
+	file & #init_file_name# \\ \hline
+	method & #method# \\ \hline
+	nodes & #number_of_nodes# \\ \hline
+	tets & #number_of_tets# \\ \hline
+	modes & #number_of_modes# \\ \hline
+    outer its & #number_of_outer_its# \\ \hline
+	$\Lambda$ &  #lambda_diag_d# 
+  \end{tabular}
+\end{center}

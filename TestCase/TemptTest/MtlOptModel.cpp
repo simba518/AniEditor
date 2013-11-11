@@ -1,5 +1,5 @@
 #include "MtlOptModel.h"
-#include "HarmonicOscillator.h"
+#include <HarmonicOscillator.h>
 #include <ConNodesOfFrame.h>
 #include <VTKWriter.h>
 #include <JsonFilePaser.h>
@@ -87,6 +87,8 @@ MtlOptModel::_MtlOptModel(const string initf){
   MatrixXd kz;
   TEST_ASSERT( jsonf.readMatFile("keyZ",kz) );
   Kz = kz.topLeftCorner(redDim(),Kid.size());
+  CorrectZ = MatrixXd(redDim(),T);
+  CorrectZ.setZero();
 
   initVolObj(initf);
   initWarper(jsonf);
@@ -130,48 +132,6 @@ void MtlOptModel::initVolObj(const string initf){
   TEST_ASSERT( DefGradOperator::compute(volobj.getTetMesh(),G) );
   MapMA2RS::computeMapMatPGW(G,W,PGW);	
 }
-void MtlOptModel::produceSimRlst(const bool genKeyZ){
-
-  const int r = redDim();
-  const VectorXd zero = VectorXd::Zero(r);
-  HarmonicOscillatorSet<double> sim(lambda,alphaK,alphaM,z0,zero);
-  Z = sim.generateSequence<MatrixXd>(0,h,T);
-  assert_eq(Z.rows(),r);
-  assert_eq(Z.cols(),T);
-  
-  CorrectZ.resize(r,(T-Kid.size()));
-  int ci = 0;
-  for (int i = 0; i < T; ++i){
-	if( RedSpaceTimeEnergyAD::isKeyframe(Kid,i) < 0){
-	  CorrectZ.col(ci) = Z.col(i);
-	  ci ++;
-	}
-  }
-
-  if (genKeyZ){
-	Kz.resize(r,Kid.size());
-	for (int i = 0; i < Kid.size(); ++i){
-	  const int f = Kid[i];
-	  assert_in( f,0,Z.cols() );
-	  Kz.col(i) = Z.col(f);
-	}
-  }
-}
-void MtlOptModel::extrangeKeyframes(){
-  ASSERT_EQ(Kid.size(),9);
-  Kid << 0,50,20,30,40,12,85,140,199;
-}
-void MtlOptModel::initMtlOpt(RedSpaceTimeEnergyAD &ad)const{
-
-  ad.setT(T);
-  ad.setTimestep(h);
-  ad.setDamping(alphaK,alphaM,lambda);
-  ad.setK(lambda);
-  ad.setKeyframes(Kz,Kid);
-  ad.setPartialCon(conFrames,conNodes,uc);
-  ad.setPenaltyCon(penaltyCon);
-  ad.setWarper(warper);
-}
 void MtlOptModel::initMtlData(MtlDataModel &model){
 
   model.setT(T);
@@ -185,64 +145,6 @@ void MtlOptModel::initMtlData(MtlDataModel &model){
   model.setPenaltyCon(penaltyCon);
   model.setWarper(warper);
 
-}
-void MtlOptModel::initSolver(const SXMatrix &E, const VSX &x){
-
-  allVars = x;
-  fun = CasADi::SXFunction(x,E);
-  solver = CasADi::IpoptSolver(fun);
-  solver.setOption("generate_hessian",true);
-  solver.init();
-	
-  const int r = redDim();
-  const int lenZ = (T-Kid.size())*r;
-  vector<double> x0(x.size(),0);
-  vector<double> lowerB(x0.size(),-std::numeric_limits<double>::infinity());
-  for (int i = lenZ; i < x0.size(); ++i){
-	x0[i] = 0.01f;
-	lowerB[i] = 0.0f;
-  }
-  solver.setInput(x0,CasADi::NLP_X_INIT);
-  solver.setInput(lowerB,CasADi::NLP_LBX);
-}
-void MtlOptModel::solve(){
-
-  solver.solve();
-  double cost;
-  solver.getOutput(cost,CasADi::NLP_COST);
-  cout<<"input data: " << endl;
-  cout<<"lambda: " << lambda.transpose() << endl << endl;
-  cout<< endl << "optimal cost: " << cost << endl << endl;
-  const VectorXd xx = getOutput();
-  const int lenZ = redDim()*(T-Kid.size());
-  cout<< "opt mtl: " << xx.tail(xx.size()-lenZ).transpose() << endl << endl;
-}
-VectorXd MtlOptModel::getOutput(){
-
-  VectorXd x;
-  const int r = redDim();
-  vector<double> vx(allVars.size());
-  solver.getOutput(vx,CasADi::NLP_X_OPT);
-  x.resize(vx.size());
-  for (size_t i = 0; i < vx.size(); ++i)
-	x[i] = vx[i];
-  ASSERT_GE(x.size(),r*(T-Kid.size()));
-  return x;
-}
-void MtlOptModel::getZfromSolver(MatrixXd &Z){
-
-  const VectorXd x = getOutput();
-  const VectorXd kz = Map<VectorXd>(&Kz(0,0),Kz.size());
-  Z = assembleFullZ(x,kz,Kid,redDim());
-}
-void MtlOptModel::saveRlst(const string dir){
-  
-  assert(false);
-  // saveMesh(Z,dir+"/input");
-  // saveMesh(Kz,dir+"/key");
-  // MatrixXd newZ;
-  // getZfromSolver(newZ);
-  // saveMesh(newZ,dir+"/new");
 }
 void MtlOptModel::saveMesh(const MatrixXd &Z,const string fname){
 
@@ -259,11 +161,6 @@ void MtlOptModel::saveMeshOneZ(const VectorXd &z,const string fname){
   TEST_ASSERT ( rs2euler.reconstruct(y,u) );
   volobj.interpolate(u);
   TEST_ASSERT (volobj.getObjMesh()->writeVTK(fname));
-}
-void MtlOptModel::computeEnergy(const VectorXd &X){
-  VectorXd rlst;
-  CASADI::evaluate(fun,X,rlst);
-  cout<< "E(X) = " << rlst.transpose() << endl;
 }
 void MtlOptModel::saveUc(const string fname,const VectorXd &uc,const vector<int> &nid)const{
 
@@ -320,4 +217,12 @@ void MtlOptModel::initWarper(JsonFilePaser &inf){
   TEST_ASSERT(inf.readVecFile("cubaturePoints",cubP,UTILITY::TEXT));
   TEST_ASSERT(inf.readVecFile("cubatureWeights",cubW));
   warper = pRedRSWarperAD( new RedRSWarperAD(rs2euler,B,W,cubP,cubW) );
+}
+
+void MtlOptModel::print()const{
+  
+  cout << "initial values: " << lambda.transpose() << endl;
+  cout << "number of modes: " << lambda.size() << endl;
+  cout << "number of nodes: " << volobj.getTetMesh()->nodes().size() << endl;
+  cout << "number of tetrahedrons: " << volobj.getTetMesh()->tets().size() << endl;
 }

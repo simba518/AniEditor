@@ -7,6 +7,9 @@
 using namespace Eigen;
 using namespace UTILITY;
 
+string model_name = "beam";
+string inf = "mtlopt_test";
+
 class MtlOptADTestSuite{
   
 public:
@@ -15,31 +18,36 @@ public:
 	maxOurterIt = 30;
 	dataM = pMtlDataModel(new MtlDataModel);
   }
-  MtlOptADTestSuite(const string d,
-					const string initf, 
-					const string name,
+  MtlOptADTestSuite(const string name,
 					const int outIt = 30,
 					const string saveInputM = ""
 					){
 
+	if(boost::unit_test::framework::master_test_suite().argc >= 3){
+	  model_name = boost::unit_test::framework::master_test_suite().argv[1];
+	  inf = boost::unit_test::framework::master_test_suite().argv[2];
+	}
+	cout << model_name << endl;
+	cout << inf << endl;
+
 	dataDir = "/home/simba/Workspace/AnimationEditor/Data/";
-	data = dataDir+d+"/";
-	initFile = data+initf;
+	data = dataDir+model_name+"/";
+	initFile = data+inf+".ini";
 	maxOurterIt = outIt;
 	
-	outputMesh = data+"/tempt/mesh/"+initf+"_"+"_"+name+"_outPutMesh";
-	curveZName = data+"/tempt/mesh/"+initf+"_"+name+"_curveZ";
-	savePartialCon = data+"/tempt/mesh/"+initf+"_"+name+"_parcon";
-	saveKeyframes = data+"/tempt/mesh/"+initf+"_"+name+"_keyf";
-	saveModes = data+"/tempt/mesh/"+initf+"_"+name+"_modes";
-
+	outputMesh = data+"/tempt/mesh/"+inf+"_"+"_"+name+"_outPutMesh";
+	curveZName = data+"/tempt/mesh/"+inf+"_"+name+"_curveZ";
+	savePartialCon = data+"/tempt/mesh/"+inf+"_"+name+"_parcon";
+	saveKeyframes = data+"/tempt/mesh/"+inf+"_"+name+"_keyf";
+	saveModes = data+"/tempt/mesh/"+inf+"_"+name+"_modes";
 	if (saveInputM.size() > 0) inputMesh = data+saveInputM;
 
 	model= pMtlOptModel(new MtlOptModel(initFile));
-	model->produceSimRlst(false);
-
 	dataM = pMtlDataModel(new MtlDataModel);
 	model->initMtlData(*dataM);
+
+	cout <<"save_z_to: "<< curveZName+".py" << endl;
+	model->print();
   }
   void addOptimizer(pMtlOptimizer opt){
 	optimizer.push_back(opt);
@@ -53,7 +61,7 @@ public:
 		optimizer[p]->optimize();;
 	  }
 
-	  cout << "ITERATION " << i << "------------------------------------" << endl;
+	  cout << "OUTTER ITERATION " << i << " ------------------------------------" << endl;
 	  dataM->print();
 	  if(oldZ.size() == dataM->Z.size()){
 		const double err = (oldZ-dataM->Z).norm()/dataM->Z.norm();
@@ -71,7 +79,7 @@ public:
 	PythonScriptDraw2DCurves<VectorXd> curves;
 	const MatrixXd newZ = dataM->getRotZ();
 	const MatrixXd newKZ = dataM->getUt()*model->Kz;
-	for (int i = 0; i < model->Z.rows(); ++i){
+	for (int i = 0; i < newZ.rows(); ++i){
 	  const VectorXd &z2 = newZ.row(i).transpose();
 	  curves.add(string("mode ")+TOSTR(i),z2,1.0f,0,"--");
 	  const VectorXd &kz = newKZ.row(i).transpose();
@@ -113,21 +121,18 @@ private:
   pMtlDataModel dataM;
 };
 
-const string model_name = "beam";
-const string inf = "mtlopt_cen_keyf_swing_one_end.ini";
-
 BOOST_AUTO_TEST_SUITE(MtlOptTest)
 
 BOOST_AUTO_TEST_CASE(Opt_Z){
 
-  MtlOptADTestSuite mtlOpt(model_name,inf,"Opt_Z",1);
+  MtlOptADTestSuite mtlOpt("Opt_Z",1);
   mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
   mtlOpt.solve();
 }
 
 BOOST_AUTO_TEST_CASE(Opt_Z_Lambda){
 
-  MtlOptADTestSuite mtlOpt(model_name,inf,"Opt_Z_Lambda",500);
+  MtlOptADTestSuite mtlOpt("Opt_Z_Lambda",500);
   mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
   mtlOpt.addOptimizer(pMtlOptimizer(new LambdaOptimizer(mtlOpt.getDataModel())));
   mtlOpt.solve();
@@ -135,7 +140,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_Lambda){
 
 BOOST_AUTO_TEST_CASE(Opt_Z_AtA){
 
-  MtlOptADTestSuite mtlOpt(model_name,inf,"Opt_Z_AtA",50);
+  MtlOptADTestSuite mtlOpt("Opt_Z_AtA",50);
   mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
   mtlOpt.addOptimizer(pMtlOptimizer(new AtAOptimizer(mtlOpt.getDataModel())));
   mtlOpt.solve();
@@ -143,7 +148,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_AtA){
 
 BOOST_AUTO_TEST_CASE(Opt_Z_akam){
 
-  MtlOptADTestSuite mtlOpt(model_name,inf,"Opt_Z_akam",50);
+  MtlOptADTestSuite mtlOpt("Opt_Z_akam",50);
   mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
   mtlOpt.addOptimizer(pMtlOptimizer(new akamOptimizer(mtlOpt.getDataModel())));
   mtlOpt.solve();
@@ -151,7 +156,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_akam){
 
 BOOST_AUTO_TEST_CASE(Opt_Z_AtA_akam){
 
-  MtlOptADTestSuite mtlOpt(model_name,inf,"Opt_Z_AtA_akam",50);
+  MtlOptADTestSuite mtlOpt("Opt_Z_AtA_akam",50);
   mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
   mtlOpt.addOptimizer(pMtlOptimizer(new AtAakamOptimizer(mtlOpt.getDataModel())));
   mtlOpt.solve();

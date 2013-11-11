@@ -12,3 +12,4 @@ octave-core
 */*/octave-core
 *.py
 ng.ini
+*.aux

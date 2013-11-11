@@ -29,22 +29,15 @@ typedef struct _MtlOptModel{
   bool loadLambda(const string initf);
   void initVolObj(const string initf);
   void produceSimRlst(const bool genKeyZ=true);
-  void extrangeKeyframes();
-  void initMtlOpt(RedSpaceTimeEnergyAD &ad)const;
   void initMtlData(MtlDataModel &model);
-  void initSolver(const SXMatrix &E, const VSX &x);
-  void solve();
-  VectorXd getOutput();
-  void getZfromSolver(MatrixXd &Z);
-  void saveRlst(const string dir);
   void saveMesh(const MatrixXd &Z,const string fname);
   void saveMeshOneZ(const VectorXd &z,const string fname);
-  void computeEnergy(const VectorXd &X);
   void saveUc(const string fname)const;
   void saveUc(const string fname,const VectorXd &uc,const vector<int> &nid)const;
   int redDim()const;
   static MatrixXd assembleFullZ(const VectorXd&subZ,const VectorXd&keyZ,const VectorXi&Kid, const int r);
   void initWarper(JsonFilePaser &jsonf);
+  void print()const;
 
   MatrixXd W;
   SparseMatrix<double> G;
@@ -69,10 +62,6 @@ typedef struct _MtlOptModel{
   vector<VectorXd> uc;
   double penaltyCon;
   pRedRSWarperAD warper;
-
-  CasADi::SXFunction fun;
-  CasADi::IpoptSolver solver;
-  VSX allVars;
 
 }MtlOptModel;
 typedef boost::shared_ptr<MtlOptModel> pMtlOptModel;
