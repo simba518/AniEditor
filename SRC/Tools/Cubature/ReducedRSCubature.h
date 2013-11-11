@@ -3,7 +3,7 @@
 
 #include "WarpingCubature.h"
 
-namespace LSW_UTILITY{
+namespace CUBATURE{
 
   /**
    * @class ReducedRSCubature use cubature method to reduce the RS method. Use
@@ -13,7 +13,7 @@ namespace LSW_UTILITY{
 	
   public:
 	ReducedRSCubature(const MatrixXd &W,const MatrixXd &B,
-					  pVolumetricMesh_const tetmesh):WarpingCubature(W,B,tetmesh){}
+					  pTetMesh_const tetmesh):WarpingCubature(W,B,tetmesh){}
 	void initTrainingData(const MatrixXd &Z,TrainingSet &trZ,VECTOR &trQ){
 
 	  MatrixXd Q(P.rows(),Z.cols());

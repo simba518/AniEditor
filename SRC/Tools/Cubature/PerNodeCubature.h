@@ -3,7 +3,7 @@
 
 #include "WarpingCubature.h"
 
-namespace LSW_UTILITY{
+namespace CUBATURE{
 
   /**
    * @class PerNodeCubature use cubature to compute the sample points and
@@ -14,7 +14,7 @@ namespace LSW_UTILITY{
 
   public:	
 	PerNodeCubature(const MatrixXd &W, const MatrixXd &B, 
-					pVolumetricMesh_const tetmesh):
+					pTetMesh_const tetmesh):
 	  WarpingCubature(W,B,tetmesh){
 	  node_to_cubature = 0;
 	}

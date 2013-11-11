@@ -8,16 +8,18 @@ ADD_EXECUTABLE(${APPNAME}
   ${src})
 
 LINK_PROJECT(${APPNAME}
-  
-  ieds
-  stvksim
+
+  editor
+  warping
   basesim
-  utility
-  barbiclib
+  externallib
 )
 
 TARGET_LINK_LIBRARIES(${APPNAME}
 
+  /usr/local/lib/libutility_ui.a
+  /usr/local/lib/libutility_math.a
+  /usr/local/lib/libutility_common.a
   ${Boost_LIBRARIES}
   ${JSONCPP_LIBRARIES}
   ${LOG4CPLUS_LIBRARIES}

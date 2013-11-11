@@ -1,18 +1,12 @@
-#include <iostream>
-#include <eigen3/Eigen/Dense>
-#include <LogConfig.h>
-#include <JsonIniFReader.h>
-#include <MatrixIO.h>
-#include <volumetricMeshLoader.h>
-#include "PerNodeCubature.h"
+#include <JsonFilePaser.h>
 #include "ReducedRSCubature.h"
-using namespace std;
-using namespace Eigen;
-using namespace LSW_UTILITY;
+#include "PerNodeCubature.h"
+using namespace UTILITY;
+using namespace CUBATURE;
 
 MatrixXd W,B;
 VectorXd eigenvalues;
-pVolumetricMesh tetmesh;
+pTetMesh tetmesh;
 MatrixXd training_z;
 MatrixXd training_u; // q(z) = B^t*u(z)
 TrainingSet trainingZ;
@@ -24,11 +18,10 @@ double iters_per_fullnnls;
 double num_samples_per_subtrain;
 string save_selpoints;
 string save_weights;
-JsonIniFReader json_f;
+JsonFilePaser json_f;
 
 bool loadInitData(int argc, char *argv[]){
   
-  LogConfig::getInstance()->config();
   if(argc < 2){
 	cout << "usage: ./Cubature init_filename" <<endl;
 	return false;
@@ -44,12 +37,13 @@ bool loadInitData(int argc, char *argv[]){
 	json_f.readFilePath("save_selpoints",save_selpoints,false);
 	json_f.readFilePath("save_weights",save_weights,false);
 
-	json_f.read("eigen_vectors",W);
-	json_f.read("eigen_values",eigenvalues);
-	json_f.read("nonlinear_basis",B);
+	json_f.readMatFile("eigen_vectors",W);
+	json_f.readVecFile("eigen_values",eigenvalues);
+	json_f.readMatFile("nonlinear_basis",B);
 	string tetfile;
 	if(json_f.readFilePath("vol_filename",tetfile)){
-	  tetmesh = pVolumetricMesh(VolumetricMeshLoader::load(tetfile.c_str()));
+	  tetmesh = pTetMesh(new TetMesh());
+	  tetmesh->load("vol_filename");
 	}else{
 	  return false;
 	}
@@ -59,7 +53,7 @@ bool loadInitData(int argc, char *argv[]){
 
 void initTrainingSet(){
   
-  if(!json_f.read("training_z",training_z)){
+  if(!json_f.readMatFile("training_z",training_z)){
 
 	// gen training set for each mode
 	const int trainingPerMode = 20;
@@ -95,8 +89,8 @@ void runAndSave(WarpingCubature *pcubature){
 				 num_samples_per_subtrain);
 
   // save results
-  LSW_UTILITY::save(pcubature->getSelPoints(), save_selpoints,LSW_UTILITY::TEXT);
-  LSW_UTILITY::save(pcubature->getWeights(), save_weights);
+  UTILITY::writeVec(save_selpoints,pcubature->getSelPoints(),UTILITY::TEXT);
+  UTILITY::writeVec(save_weights,pcubature->getWeights());
 
   // save as vtk format
   pcubature->saveAsVTK(save_selpoints+string(".vtk"));
@@ -107,7 +101,7 @@ int RunReducedRSCubature(){
   ReducedRSCubature cubature(W,B,tetmesh);
   initTrainingSet();
 
-  if(!json_f.read("training_u",training_u)){
+  if(!json_f.readMatFile("training_u",training_u)){
 	cubature.initTrainingData(training_z,trainingZ, trainingQ);
   }else{
 	const MatrixXd training_q = B.transpose()*training_u;
@@ -117,23 +111,21 @@ int RunReducedRSCubature(){
   runAndSave(&cubature);
 
   // check the difference
-  vector<VectorXd> z_for_check;
-  string fixed_nodes_str;
-  vector<int> fixed_nodes;
-  const double vol = tetmesh->getTotalVolume();
-  if (json_f.read("z_for_check",z_for_check) && 
-	  json_f.readFilePath("con_nodes",fixed_nodes_str) &&
-	  LSW_UTILITY::read(fixed_nodes,fixed_nodes_str,LSW_UTILITY::TEXT) ){
+  // vector<VectorXd> z_for_check;
+  // vector<int> fixed_nodes;
+  // const double vol = tetmesh->getTotalVolume();
+  // if (json_f.read("z_for_check",z_for_check) && 
+  // 	  json_f.readVecFile("con_nodes",fixed_nodes,UTILITY::TEXT)){
 
-	cubature.setFixedNodes(fixed_nodes);
-	for (size_t i = 0; i < z_for_check.size(); ++i){
+  // 	cubature.setFixedNodes(fixed_nodes);
+  // 	for (size_t i = 0; i < z_for_check.size(); ++i){
 
-	  const VectorXd &z = z_for_check[i];
-	  const VectorXd rs_u = cubature.computeRSDisp(z);
-	  const VectorXd u = B*(cubature.computeCubDisp(z));
-	  cout << "RS diff REDUCED-RS: " << (u-rs_u).norm()/vol << endl;
-	}
-  }
+  // 	  const VectorXd &z = z_for_check[i];
+  // 	  const VectorXd rs_u = cubature.computeRSDisp(z);
+  // 	  const VectorXd u = B*(cubature.computeCubDisp(z));
+  // 	  cout << "RS diff REDUCED-RS: " << (u-rs_u).norm()/vol << endl;
+  // 	}
+  // }
   return 1;
 }
 

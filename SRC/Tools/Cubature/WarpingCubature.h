@@ -5,14 +5,11 @@
 #include <RS2Euler.h>
 #include <ComputeBj.h>
 #include <MapMA2RS.h>
-#include <IO.h>
 #include "./cubacode/GreedyCubop.h"
 using namespace LSW_WARPING;
 
-namespace LSW_UTILITY{
+namespace CUBATURE{
 
-  typedef std::vector<COMMON::Vec3,Eigen::aligned_allocator<COMMON::Vec3> > VectorV3;
-  
   /**
    * @class WarpingCubature base class for warping cubature.
    * 
@@ -22,15 +19,15 @@ namespace LSW_UTILITY{
   public:
 	WarpingCubature(const MatrixXd &W, /*linearBasis*/
 					const MatrixXd &B, /*nonlinearBasis*/
-					pVolumetricMesh_const tetmesh){
+					pTetMesh_const tetmesh){
 
 	  assert(tetmesh != NULL);
 	  rs2euler.setTetMesh(tetmesh);
 
-	  const SparseMatrixD &G = rs2euler.get_G();
+	  const SparseMatrix<double> &G = rs2euler.get_G();
 	  MapMA2RS::computeMapMatPGW(G, W, hatW);
 
-	  const SparseMatrixD &A = rs2euler.get_L();
+	  const SparseMatrix<double> &A = rs2euler.get_L();
 	  assert_eq(A.cols(),A.rows());
 	  assert_eq(A.cols(),B.rows());
 	  const MatrixXd T = (B.transpose()*(A*B));
@@ -58,29 +55,13 @@ namespace LSW_UTILITY{
 	}
 	bool saveAsVTK(const string filename)const{
 	  
-	  VectorV3 points(selectedPoints.size());
-	  const pVolumetricMesh_const tetmesh = rs2euler.getTetMesh();
-	  for (size_t i = 0; i < selectedPoints.size(); ++i){
-	  	const Vec3d v = tetmesh->elementCenter(selectedPoints[i]);
-	  	points[i][0] = v[0];
-	  	points[i][1] = v[1];
-	  	points[i][2] = v[2];
-	  }
-
-	  COMMON::VTKWriter<double> writer("point",filename,true);
-	  //append point
-	  writer.appendPoints(points.begin(),points.end());
-
-	  //append cell
-	  COMMON::VTKWriter<double>::IteratorIndex<COMMON::Vec3i> beg(0,0,1);
-	  COMMON::VTKWriter<double>::IteratorIndex<COMMON::Vec3i> end(points.size(),0,1);
-	  writer.appendCells(beg,end,COMMON::VTKWriter<double>::POINT);
-
-	  std::vector<double> color(points.size());
-	  for(size_t i=0;i<points.size();i++)
-	  	color[i]=weights[i];
-	  writer.appendCustomData("color",color.begin(),color.end());
-	  return true;
+	  VVec3d points(selectedPoints.size());
+	  const pTetMesh_const tetmesh = rs2euler.getTetMesh();
+	  for (size_t i = 0; i < selectedPoints.size(); ++i)
+		points[i] = tetmesh->getTet(i).center();
+	  VTKWriter writer;
+	  writer.addPoints(points);
+	  return writer.write(filename);
 	}
 	void convertTrainingData(const MatrixXd &Z,const MatrixXd &Q,
 							 TrainingSet &trZ,VECTOR &trQ){
@@ -109,15 +90,13 @@ namespace LSW_UTILITY{
 	
   protected:
 	int numTotalPoints(){
-	  pVolumetricMesh_const vol = rs2euler.getTetMesh();
-	  if (vol)
-		return vol->numElements();
+	  pTetMesh_const vol = rs2euler.getTetMesh();
+	  if (vol) return vol->tets().size();
 	  return 0;
 	}
 	int numTotalPoints()const{
-	  pVolumetricMesh_const vol = rs2euler.getTetMesh();
-	  if (vol)
-		return vol->numElements();
+	  pTetMesh_const vol = rs2euler.getTetMesh();
+	  if (vol) return vol->tets().size();
 	  return 0;
 	}
 	void handleCubature( std::vector<int>& selPoints,VECTOR& ws,Real relErr){
