@@ -36,9 +36,8 @@ void AniEditDMConNodeDrag::drawWithNames ()const{
 void AniEditDMConNodeDrag::render(){
   
   const double radius = data_model->getMaxRadius()/78.0f;
-  if (radius > 0.0f){
-	  con_node_render.setSphereRadius(radius);
-	}
+  if (radius > 0.0f)
+	con_node_render.setSphereRadius(radius);
   this->draw();
 }
 

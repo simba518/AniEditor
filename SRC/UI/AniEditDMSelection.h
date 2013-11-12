@@ -82,7 +82,6 @@ namespace ANI_EDIT_UI{
 	pSelectCtrl sel_ctrl;
 	pAniEditDMVolVertexSel vol_vert_sel;
   };
-  
   typedef boost::shared_ptr<AniEditDMSelCtrl> pAniEditDMSelCtrl;
   
 }//end of namespace
