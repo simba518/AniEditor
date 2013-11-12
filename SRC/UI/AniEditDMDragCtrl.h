@@ -7,19 +7,14 @@
 #include "AniEditDMConNodeDrag.h"
 using namespace QGLVEXT;
 
-namespace LSW_ANI_EDIT_UI{
+namespace ANI_EDIT_UI{
   
-  /**
-   * @class AniEditDMDragCtrl
-   * 
-   */
   class AniEditDMDragCtrl:public QObject{
 
 	Q_OBJECT
 	
   public: 
 	AniEditDMDragCtrl(pQGLViewerExt view,pAniEditDM dm,bool show_circle=false){
-
 	  con_nodes_drag = pAniEditDMConNodeDrag(new AniEditDMConNodeDrag(view,dm));
 	  drag_ctrl = pDragCtrl( new DragCtrl(view,con_nodes_drag) );
 	  drag_ctrl->setObserver(con_nodes_drag);

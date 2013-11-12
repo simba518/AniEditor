@@ -3,7 +3,7 @@
 #include <JsonFilePaser.h>
 #include "AniEditMainWin.h"
 using namespace UTILITY;
-using namespace LSW_ANI_EDIT_UI;
+using namespace ANI_EDIT_UI;
 
 AniEditMainWin::AniEditMainWin(const string w_inif,QWidget *p,Qt::WFlags flags):
   QMainWindow(p,flags),main_win_initfile(w_inif){
@@ -21,7 +21,7 @@ void AniEditMainWin::initComponents(QWidget *parent,Qt::WFlags flags){
 
   p_animation = pAniDataModel(new AniDataModel());
   p_VolObjMesh = pTetMeshEmbeding(new TetMeshEmbeding());
-  p_VolObjMeshCtrl = pVolObjMeshCtrl(new VolObjMeshCtrl(this, p_VolObjMesh));
+  p_VolObjCtrl = pVolObjCtrl(new VolObjCtrl(this, p_VolObjMesh));
   p_AniEditDM = pAniEditDM(new AniEditDM(p_VolObjMesh,p_animation));
   p_AniEditDM_UI = pAniEditDM_UI(new AniEditDM_UI(this, p_AniEditDM));
   p_AniEditDMRenderCtrl = pAniEditDMRenderCtrl(new AniEditDMRenderCtrl(viewer, p_AniEditDM));
@@ -61,15 +61,15 @@ void AniEditMainWin::createConnections(){
   connect(m_mainwindow.actionSaveStateFile, SIGNAL(triggered()), viewer, SLOT(saveStateFile()));
 
   // update viewer
-  connect(p_VolObjMeshCtrl.get(), SIGNAL(resetSceneMsg(double ,double ,double ,double ,double ,double )),
+  connect(p_VolObjCtrl.get(), SIGNAL(resetSceneMsg(double ,double ,double ,double ,double ,double )),
   		  viewer, SLOT(resetSceneBoundBox(double ,double ,double ,double ,double ,double )));
-  connect(p_VolObjMeshCtrl.get(), SIGNAL(resetSceneMsg(double ,double ,double ,double ,double ,double )),
+  connect(p_VolObjCtrl.get(), SIGNAL(resetSceneMsg(double ,double ,double ,double ,double ,double )),
   		  preview_viewer, SLOT(resetSceneBoundBox(double ,double ,double ,double ,double ,double )));
-  connect(m_mainwindow.actionResetViewer, SIGNAL(triggered()), p_VolObjMeshCtrl.get(), SLOT(sendMsgResetScene()));
-  // connect(m_mainwindow.actionPhoneShading, SIGNAL(triggered()), p_VolObjMeshCtrl.get(), SLOT(togglePhoneShading()));
+  connect(m_mainwindow.actionResetViewer, SIGNAL(triggered()), p_VolObjCtrl.get(), SLOT(sendMsgResetScene()));
+  // connect(m_mainwindow.actionPhoneShading, SIGNAL(triggered()), p_VolObjCtrl.get(), SLOT(togglePhoneShading()));
   
-  connect(p_VolObjMeshCtrl.get(), SIGNAL(update()), viewer, SLOT(update()));
-  connect(p_VolObjMeshCtrl.get(), SIGNAL(update()), preview_viewer, SLOT(update()));
+  connect(p_VolObjCtrl.get(), SIGNAL(update()), viewer, SLOT(update()));
+  connect(p_VolObjCtrl.get(), SIGNAL(update()), preview_viewer, SLOT(update()));
 
   // viewer: animation 
   connect(m_mainwindow.actionPlay, SIGNAL(triggered()), viewer, SLOT(startAnimation()));
@@ -171,8 +171,8 @@ bool AniEditMainWin::loadInitFile(const string init_filename){
   TRACE_FUN();
   
   bool succ = false;
-  if (p_VolObjMeshCtrl != NULL){
-	succ = p_VolObjMeshCtrl->initialize(init_filename);
+  if (p_VolObjCtrl != NULL){
+	succ = p_VolObjCtrl->initialize(init_filename);
   }
   if (succ && p_AniEditDM != NULL){
 	succ = p_AniEditDM->initialize(init_filename);

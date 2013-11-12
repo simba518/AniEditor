@@ -11,11 +11,11 @@
 #include "VolNodeGroupRender.h"
 #include "AniEditDM.h"
 using namespace Eigen;
-using namespace LSW_SIM;
-using namespace LSW_BASE_UI;
+using namespace UTILITY;
 using namespace QGLVEXT;
+using namespace LSW_SIM;
 
-namespace LSW_ANI_EDIT_UI{
+namespace ANI_EDIT_UI{
 
   /**
    * @class AniEditDMConNodeDrag provide interfaces for draging the constrained

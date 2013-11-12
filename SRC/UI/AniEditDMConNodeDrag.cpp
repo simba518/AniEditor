@@ -1,8 +1,9 @@
 #include <GL/glew.h>
 #include <GL/gl.h>
-#include "DragGroupSelDraw.h"
+#include <DragGroupSelDraw.h>
 #include "AniEditDMConNodeDrag.h"
-using namespace LSW_ANI_EDIT_UI;
+using namespace ANI_EDIT_UI;
+using namespace UTILITY;
 
 AniEditDMConNodeDrag::AniEditDMConNodeDrag(pQGLViewerExt viewer, pAniEditDM dm):
   viewer(viewer),data_model(dm){
@@ -27,7 +28,7 @@ void AniEditDMConNodeDrag::drawWithNames ()const{
 	const double radius = data_model->getMaxRadius()/78.0f;
 	assert_gt (radius,0.0f);
 	if (vol_u.size() > 0){
-	  LSW_SIM_UI::DragGroupSelDraw::drawAllGroupsWithShpere(vol_mesh,con_groups,&vol_u[0], radius);
+	  DragGroupSelDraw::drawAllGroupsWithShpere(vol_mesh,con_groups,&vol_u[0], radius);
 	}
   }
 }

@@ -8,7 +8,7 @@
 #include "AniEditDM.h"
 using namespace std;
 using namespace UTILITY;
-using namespace LSW_ANI_EDIT_UI;
+using namespace ANI_EDIT_UI;
 
 AniEditDM::AniEditDM(pTetMeshEmbeding vol_obj, pAniDataModel animation):
   _animation(animation), vol_obj(vol_obj){

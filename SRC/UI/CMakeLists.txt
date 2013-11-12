@@ -5,30 +5,25 @@ SET(LIBRARY_NAME anieditui) # compile as library for testing
 SET(NONE_QT_CPP
   
   AniEditDM.cpp
-  VolNodeGroupRender.cpp
-  AniEditDMRender.cpp
   AniEditDMConNodeDrag.cpp
-  AniEditDMVolVertexSel.cpp
   DragTrajectoryRecord.cpp
-  DragGroupSelDraw.cpp
-  VolMeshDrawer.cpp
 )
 
 #####################################QT#####################################
 SET(UI_SOURCES
 
   AniEditMainWin.cpp  
+  AniEditDMRender.cpp
 )
 
 SET(UI_HEADERS 
 
   AniEditDM_UI.h
   AniEditMainWin.h
-  AniEditDMRenderCtrl.h
-  AniEditDMSelCtrl.h
+  AniEditDMRender.h
   AniEditDMDragCtrl.h
-  PreviewAniDMRenderCtrl.h
-  VolObjMeshCtrl.h
+  PreviewAniDMRender.h
+  AniEditDMSelection.h
 )
 
 SET(UI_FORMS 

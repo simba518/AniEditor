@@ -10,15 +10,14 @@ using namespace QGLVEXT;
 
 #include <SRC/UI/ui_aniedit.h>
 #include <SRC/UI/ui_about.h>
-#include "VolObjMeshCtrl.h"
+#include "VolObjCtrl.h"
 #include "AniEditDM_UI.h"
-#include "AniEditDMSelCtrl.h"
-#include "AniEditDMRenderCtrl.h"
+#include "AniEditDMSelection.h"
+#include "AniEditDMRender.h"
 #include "AniEditDMDragCtrl.h"
-#include "PreviewAniDMRenderCtrl.h"
-using namespace LSW_BASE_UI;
+#include "PreviewAniDMRender.h"
 
-namespace LSW_ANI_EDIT_UI{
+namespace ANI_EDIT_UI{
   
   /**
    * @class AniEditMainWin main window for animation edit.
@@ -58,7 +57,7 @@ namespace LSW_ANI_EDIT_UI{
 
 	// data model and operations
 	pTetMeshEmbeding p_VolObjMesh;
-	pVolObjMeshCtrl p_VolObjMeshCtrl;
+	UTILITY::pVolObjCtrl p_VolObjCtrl;
 	pAniEditDM p_AniEditDM;
 	pAniDataModel p_animation;
 	pAniEditDM_UI p_AniEditDM_UI;

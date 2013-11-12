@@ -5,7 +5,7 @@
 #include <AniDataModel.h>
 #include "AniEditDM.h"
 
-namespace LSW_ANI_EDIT_UI{
+namespace ANI_EDIT_UI{
   
   /**
    * @class PreviewAniDM animation data model for preview of the edited
@@ -17,12 +17,10 @@ namespace LSW_ANI_EDIT_UI{
   public:
 	PreviewAniDM(pAniEditDM data_model):data_model(data_model){}
 	int totalFrameNum()const{
-	  if (data_model != NULL){
+	  if (data_model != NULL)
 		return data_model->totalFrameNum();
-	  }
 	  return 0;
 	}
-
 	pObjmesh_const getInputObjMesh()const{
 	  assert (data_model != NULL);
 	  return data_model->getInputObjMesh(this->currentFrameNum());
@@ -35,7 +33,6 @@ namespace LSW_ANI_EDIT_UI{
   private:
 	pAniEditDM data_model;
   };
-  
   typedef boost::shared_ptr<PreviewAniDM> pPreviewAniDM;
   
 }//end of namespace

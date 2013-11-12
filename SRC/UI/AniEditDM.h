@@ -11,7 +11,7 @@ using namespace QGLVEXT;
 using namespace LSW_ANI_EDITOR;
 using namespace LSW_SIM;
 
-namespace LSW_ANI_EDIT_UI{
+namespace ANI_EDIT_UI{
   
   /**
    * @class AniEditDM animation edit data model.
@@ -21,9 +21,9 @@ namespace LSW_ANI_EDIT_UI{
 	
   public: 
 	AniEditDM(pTetMeshEmbeding vol_obj, pAniDataModel animation);
-	AniEditDM(pTetMeshEmbeding vol_obj, pAniDataModel animation, pBaseInterpolator interpolator);
+	AniEditDM(pTetMeshEmbeding vol_obj,pAniDataModel animation,pBaseInterpolator interp);
 
-	bool initialize(const string filename, const bool create_interpolator = true);
+	bool initialize(const string filename,const bool create_interpolator=true);
 
 	int totalFrameNum()const;
 	int reducedDim()const;

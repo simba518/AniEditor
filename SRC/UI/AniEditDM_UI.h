@@ -7,7 +7,7 @@
 #include "AniEditDM.h"
 using namespace QGLVEXT;
 
-namespace LSW_ANI_EDIT_UI{
+namespace ANI_EDIT_UI{
 
 #define ANIEDITDM_SAVE(functionName)									\
   const string fname = file_dialog->save();								\
