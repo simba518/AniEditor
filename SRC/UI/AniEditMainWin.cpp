@@ -7,7 +7,6 @@ using namespace ANI_EDIT_UI;
 
 AniEditMainWin::AniEditMainWin(const string w_inif,QWidget *p,Qt::WFlags flags):
   QMainWindow(p,flags),main_win_initfile(w_inif){
-  
   initComponents(p,flags);
   createConnections();
   paserCommandLine();
