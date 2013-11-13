@@ -57,7 +57,7 @@ void RedSpaceTimeEnergyAD::assembleEnergy(){
   }
 
   { // partial constraints
-	if (_usePartialCon){
+	if (_usePartialCon && _conFrames.size() > 0){
 	  assert(_warper);
 	  for (size_t i = 0; i < _conFrames.size(); ++i){
 		const int f = _conFrames[i];

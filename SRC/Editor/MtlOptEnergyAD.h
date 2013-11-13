@@ -147,9 +147,13 @@ public:
   void setLambda(const VectorXd &lambda){
 	K = lambda.asDiagonal();
   }
-  void setKeyframes(const MatrixXd &Z, const VectorXi &kid){
+  template<class VECTOR>
+  void setKeyframes(const MatrixXd &Z, const VECTOR &kid){
+	assert_eq(kid.size(),Z.cols());
 	this->keyZ = Z;
-	this->keyId = kid;
+	this->keyId.resize(kid.size());
+	for (int i = 0; i < kid.size(); ++i)
+	  this->keyId[i] = kid[i];
   }
   void setSubZ(const MatrixXd &Z){
 	subZ = Z;
@@ -332,6 +336,10 @@ protected:
   }
   const VSX &getVariable()const{
 	return _lambda;
+  }
+  bool getLowBound(vector<double> &lower)const{
+	lower = vector<double>(this->getVariable().size(),0.0f);
+	return true;
   }
 
 private:

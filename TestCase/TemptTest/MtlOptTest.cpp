@@ -8,7 +8,9 @@ using namespace Eigen;
 using namespace UTILITY;
 
 string model_name = "beam";
-string inf = "mtlopt_test";
+string inf = "mtlopt_cen_keyW";
+const int max_outter_it = 1000;
+const double outer_tol = 1e-5;
 
 class MtlOptADTestSuite{
   
@@ -66,13 +68,12 @@ public:
 	  if(oldZ.size() == dataM->Z.size()){
 		const double err = (oldZ-dataM->Z).norm()/dataM->Z.norm();
 		cout << "err: " << err << endl;
-		if(err < 1e-6) break;
+		if(err < outer_tol) break;
 	  }
 	}
 
 	if (outputMesh.size() > 0) model->saveMesh(dataM->Z,outputMesh);
-	if (inputMesh.size() > 0) model->saveMesh(model->Z,inputMesh);
-	if (saveKeyframes.size() > 0 && model->Kz.size()>0) 
+	if (saveKeyframes.size() > 0 && model->Kz.size()>0)
 	  model->saveMesh(model->Kz,saveKeyframes);
 	if (savePartialCon.size() > 0) model->saveUc(savePartialCon);
 
@@ -90,9 +91,6 @@ public:
 	}
 	if (curveZName.size() > 0)
 	  TEST_ASSERT( curves.write(curveZName) );
-
-	const MatrixXd newW = model->W*(dataM->getUt().transpose());
-	model->W = newW;
 	MatrixXd zi = newZ;
 	for (int i = 0; i < newZ.rows() && i < 4; ++i){
 	  zi.setZero();
@@ -132,7 +130,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z){
 
 BOOST_AUTO_TEST_CASE(Opt_Z_Lambda){
 
-  MtlOptADTestSuite mtlOpt("Opt_Z_Lambda",1000);
+  MtlOptADTestSuite mtlOpt("Opt_Z_Lambda",max_outter_it);
   mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
   mtlOpt.addOptimizer(pMtlOptimizer(new LambdaOptimizer(mtlOpt.getDataModel())));
   mtlOpt.solve();
@@ -140,7 +138,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_Lambda){
 
 BOOST_AUTO_TEST_CASE(Opt_Z_AtA){
 
-  MtlOptADTestSuite mtlOpt("Opt_Z_AtA",1000);
+  MtlOptADTestSuite mtlOpt("Opt_Z_AtA",max_outter_it);
   mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
   mtlOpt.addOptimizer(pMtlOptimizer(new AtAOptimizer(mtlOpt.getDataModel())));
   mtlOpt.solve();
@@ -148,7 +146,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_AtA){
 
 BOOST_AUTO_TEST_CASE(Opt_Z_akam){
 
-  MtlOptADTestSuite mtlOpt("Opt_Z_akam",100);
+  MtlOptADTestSuite mtlOpt("Opt_Z_akam",max_outter_it);
   mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
   mtlOpt.addOptimizer(pMtlOptimizer(new akamOptimizer(mtlOpt.getDataModel())));
   mtlOpt.solve();
@@ -156,7 +154,7 @@ BOOST_AUTO_TEST_CASE(Opt_Z_akam){
 
 BOOST_AUTO_TEST_CASE(Opt_Z_AtA_akam){
 
-  MtlOptADTestSuite mtlOpt("Opt_Z_AtA_akam",100);
+  MtlOptADTestSuite mtlOpt("Opt_Z_AtA_akam",max_outter_it);
   mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
   mtlOpt.addOptimizer(pMtlOptimizer(new AtAakamOptimizer(mtlOpt.getDataModel())));
   mtlOpt.solve();
