@@ -10,6 +10,6 @@ Build
 octave-core
 */octave-core
 */*/octave-core
-*.py
+./*.py
 ng.ini
 *.aux

@@ -168,14 +168,6 @@ public:
 	SelfAdjointEigenSolver<MatrixXd> eigenD(D);
 	cout<< "eigen(D): " << eigenD.eigenvalues().transpose() << endl;
   }
-  MatrixXd getRotZ()const{
-	return getUt()*Z;
-  }
-  MatrixXd getUt()const{
-	SelfAdjointEigenSolver<MatrixXd> eigenK(K);
-	return eigenK.eigenvectors().transpose();
-  }
-
   void setPenaltyCon(const double penalty){
 	assert_gt(penalty,0.0f);
 	penaltyCon = penalty;

@@ -22,6 +22,15 @@ def grepFloatNumbers(data_filename):
             data.append(float(ele))
     return data
 
+def grepStrWithKey(data_filename,key):
+    data_file = open(data_filename)
+    data_lines = data_file.readlines()
+    data = []
+    for line in data_lines:
+        if line.find(key) >= 0:
+            data.append(line[len(key):-1])
+    return data
+
 # search each line of the file, return the float number related to the key
 # words.
 # example of the file exp.txt:

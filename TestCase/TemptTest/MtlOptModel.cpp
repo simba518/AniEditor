@@ -147,6 +147,7 @@ void MtlOptModel::initWarper(JsonFilePaser &inf){
 }
 
 void MtlOptModel::print()const{
+  
   cout << "initial values: " << lambda.transpose() << endl;
   cout << "number of modes: " << lambda.size() << endl;
   cout << "number of nodes: " << tetmesh->nodes().size() << endl;
@@ -154,4 +155,8 @@ void MtlOptModel::print()const{
   cout << "time step: " << h << endl;
   cout << "alphak: " << alphaK << endl;
   cout << "alpham: " << alphaM << endl;
+
+  cout << "keyframe id: " << Kid;
+  for (int i = 0; i < Kid.size(); ++i) cout << Kid[i] << " ";
+  cout << endl;
 }
