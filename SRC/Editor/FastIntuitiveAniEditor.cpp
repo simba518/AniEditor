@@ -57,7 +57,7 @@ void FastIntuitiveAniEditor::precompute(){
 
   // cout << "(H*invH).norm = " << (H*invH).norm() << endl << endl;
   cout << "condition(H): "<< H.norm()*invH.norm() << endl;
-  const SparseMatrix<double> I = eye(H.rows(),1.0f);
+  const SparseMatrix<double> I = eye(H.rows(),(double)1.0f);
   cout << "(H*invH-I).norm(): " << (H*invH-I).norm() << endl;
 }
 

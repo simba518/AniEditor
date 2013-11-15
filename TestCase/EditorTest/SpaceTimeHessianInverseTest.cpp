@@ -54,7 +54,7 @@ BOOST_FIXTURE_TEST_CASE(testInverse, SpaceTimeHessianInverseTestInit){
   SpaceTimeHessianInverse::inverse(H,r,Hinv);
 
   const SparseMatrix<double> sparseHxHinv = (H*Hinv);
-  const SparseMatrix<double> I = eye(H.rows(),1.0f);
+  const SparseMatrix<double> I = eye(H.rows(),(double)1.0f);
   ASSERT_EQ_TOL(I.norm(),sparseHxHinv.norm(),1e-8);
   ASSERT_EQ_TOL(I.norm(),sparseHxHinv.norm(),1e-8);
   ASSERT_EQ_TOL((I-sparseHxHinv).norm(),0,1e-8);
