@@ -44,9 +44,10 @@ BOOST_AUTO_TEST_CASE(saveAll){
 
   model.saveMesh(Z,mesh_dir_f+"output_mesh_");
   
-  const MatrixXd newZ = U*Z;
+  const MatrixXd newZ = U.transpose()*Z;
   MatrixXd zi = newZ;
-  for (int i = 0; i < newZ.rows() && i < 4; ++i){
+  model.hatW = model.hatW*U;
+  for (int i = 0; i < newZ.rows() && i < 7; ++i){
     zi.setZero();
     zi.row(i) = newZ.row(i);
     model.saveMesh(zi,mesh_dir_f+"mode_"+TOSTR(i)+"_f");

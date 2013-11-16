@@ -1,0 +1,14 @@
+#include <boost/test/unit_test.hpp>
+#include <UnitTestAssert.h>
+#include <eigen3/Eigen/Dense>
+#include <FEMSim.h>
+using namespace Eigen;
+using namespace sim;
+
+BOOST_AUTO_TEST_SUITE(FEMSimTest)
+
+BOOST_AUTO_TEST_CASE(testfun){
+  
+}
+
+BOOST_AUTO_TEST_SUITE_END()

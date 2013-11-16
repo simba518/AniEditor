@@ -29,13 +29,14 @@ def model_info(log_file):
     data += grepNumberWithKey(log_file,"alpham:")
     data += grepStrWithKey(log_file,"init file:")
     data += grepStrWithKey(log_file,"test opt method:")
-    data += grepNumberWithKey(log_file,"keyframe id:")
+    data.append(map(int,grepNumberWithKey(log_file,"keyframe id:")))
+    data.append(str('%.5g'%(grepNumberWithKey(log_file,"Objective...............:")[-1])))
     return data
 
 def mtl_info(log_file):
     lambda_diag_d = ""
     ek0 = grepNumberWithKey(log_file,"initial values:")
-    lambda_diag_d += str(ek0)[1:-2]+"\\\ \hline\n&"
+    lambda_diag_d += str(map(lambda n: float('%.5g'%n), ek0))[1:-2]+"\\\ \hline\n&"
 
     ek = grepNumberWithKey(log_file,"eigen(K):")
     for i in range(0,len(ek)):
@@ -93,8 +94,8 @@ def z_fig(log_file):
 #-----------------------------main-------------------------------------------------
 os.system("cd /home/simba/Workspace/AnimationEditor/")
 tex_str = open("./Script/patterns/test_report_head.tex").read()
-
-for log_f in os.listdir("./tempt"):
+log_fs = os.listdir("./tempt")
+for log_f in log_fs:
     if not log_f.endswith(".mtllog"): continue
     log_f = "./tempt/"+log_f
     mode_data = model_info(log_f)
@@ -112,7 +113,8 @@ for log_f in os.listdir("./tempt"):
     changeElements(tempt,"#alpham#",str(str(mode_data[6])))
     changeElements(tempt,"#init_file_name#",str(str(mode_data[7])).replace("_","\\_"))
     changeElements(tempt,"#method#",str(str(mode_data[8])).replace("_","\\_"))
-    changeElements(tempt,"#keyframes#",str(str(mode_data[9])))
+    changeElements(tempt,"#keyframes#",str(mode_data[9]))
+    changeElements(tempt,"#optimal fun#",str(mode_data[10]))
 
     changeElements(tempt,"#lambda_diag_d#",mtl_data)
     changeElements(tempt,"#inner_it#",energy_f[0].replace("_","\\string_"))
