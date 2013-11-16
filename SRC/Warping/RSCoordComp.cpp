@@ -84,16 +84,19 @@ void RSCoordComp::constructWithoutWarp_OneTet(const double *m, double *y){
 
   const double t = Q(0,0)+Q(1,1)+Q(2,2); assert_ge(1.0f+t,0.0f);
   const double r = sqrt(1.0f+t);
-  const double qw= 0.5*r;
+  double qw= 0.5*r;
+  qw = (qw > 1.0) ? 1.0:qw; /// @todo need more elegant method to compute the Quaternion.
+  qw = (qw < -1.0) ? -1.0:qw;
   const double qx= COPYSIGN(0.5*sqrt(fabs(1+Q(0,0)-Q(1,1)-Q(2,2))),Q(2,1)-Q(1,2));
   const double qy= COPYSIGN(0.5*sqrt(fabs(1-Q(0,0)+Q(1,1)-Q(2,2))),Q(0,2)-Q(2,0));
   const double qz= COPYSIGN(0.5*sqrt(fabs(1-Q(0,0)-Q(1,1)+Q(2,2))),Q(1,0)-Q(0,1));
-  assert_in((qw*qw+qx*qx+qy*qy+qz*qz),1.0f-1e-13,1.0f+1e-13);
+  assert_in((qw*qw+qx*qx+qy*qy+qz*qz),1.0f-1e-10,1.0f+1e-10);
 
-// http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToAngle/
+  // http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToAngle/
   const double temp = sqrt(1.0-qw*qw);
   const double theta = 2.0f*acos(qw);
-  if (temp > 1e-13){
+  assert_eq(theta,theta);
+  if (temp > 1e-10){ /// @todo need more elegant method to compute the Quaternion.
   	y[0] = theta*qx/temp;
   	y[1] = theta*qy/temp;
   	y[2] = theta*qz/temp;
