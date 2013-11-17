@@ -1,4 +1,4 @@
-SET(APPNAME tempt)
+SET(APPNAME TemptTest)
 
 AUX_SOURCE_DIRECTORY(. test_src)
 

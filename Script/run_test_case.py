@@ -9,7 +9,7 @@ init_files = ["mtlopt_cen_keyW.ini"]
 test_cases = ["Opt_Z","Opt_Z_Lambda","Opt_Z_AtA"]
 
 data_dir = "./Data/beam/"
-app = "./Bin/Release/tempt --run_test=MtlOptTest/"
+app = "./Bin/Release/TemptTest --run_test=MtlOptTest/"
 
 #-----------------------------main-------------------------------------------------
 os.system("cd /home/simba/Workspace/AnimationEditor/")
