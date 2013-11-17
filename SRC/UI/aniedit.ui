@@ -150,6 +150,7 @@
     <addaction name="actionFastforward"/>
     <addaction name="actionFastbackward"/>
     <addaction name="separator"/>
+    <addaction name="actionSaveOutputVolMeshesVTK"/>
     <addaction name="actionSaveOutputMeshes"/>
     <addaction name="actionSaveInputMeshes"/>
     <addaction name="actionLoadMeshSeq"/>
@@ -334,7 +335,7 @@
   </action>
   <action name="actionLoadMeshSeq">
    <property name="text">
-    <string>LoadMeshSequence</string>
+    <string>loadMeshSeq</string>
    </property>
   </action>
   <action name="actionStepByStep">
@@ -342,7 +343,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>StepByStep</string>
+    <string>stepByStep</string>
    </property>
    <property name="shortcut">
     <string>S</string>
@@ -626,7 +627,7 @@
   </action>
   <action name="actionSaveOutputMeshes">
    <property name="text">
-    <string>SaveOutputMeshes</string>
+    <string>saveOutputMeshes</string>
    </property>
    <property name="whatsThis">
     <string comment="save output obj meshes' sequence" extracomment="save output obj meshes' sequence">save output obj meshes' sequence</string>
@@ -663,7 +664,7 @@
   </action>
   <action name="actionSaveInputMeshes">
    <property name="text">
-    <string>SaveInputMeshes</string>
+    <string>saveInputMeshes</string>
    </property>
   </action>
   <action name="actionSaveKeyframeMeshes">
@@ -1039,6 +1040,11 @@
   <action name="actionLoadAllReducedEdit">
    <property name="text">
     <string>LoadAllReducedEdit</string>
+   </property>
+  </action>
+  <action name="actionSaveOutputVolMeshesVTK">
+   <property name="text">
+    <string>saveOutputVolMeshesVTK</string>
    </property>
   </action>
  </widget>

@@ -62,6 +62,7 @@ namespace ANI_EDIT_UI{
 	}
 
 	void saveParitalCon()const{ANIEDITDM_SAVE(saveParitalCon);}
+	void saveOutputVolMeshesVTK()const{ANIEDITDM_SAVE(saveOutputVolMeshesVTK);}
 	void saveOutputMeshes()const{ANIEDITDM_SAVE(saveOutputMeshes);}
 	void saveInputMeshes()const{ANIEDITDM_SAVE(saveInputMeshes);}
 	void saveCurrentOutputMesh()const{ANIEDITDM_SAVE(saveCurrentOutputMesh);}

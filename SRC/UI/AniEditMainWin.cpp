@@ -95,6 +95,7 @@ void AniEditMainWin::createConnections(){
   connect(m_mainwindow.actionSavePartialCon, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveParitalCon()));
   connect(m_mainwindow.actionLoadPartialCon, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(loadParitalCon()));
   connect(m_mainwindow.actionLoadConPath, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(loadConPath()));
+  connect(m_mainwindow.actionSaveOutputVolMeshesVTK, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveOutputVolMeshesVTK()));
   connect(m_mainwindow.actionSaveOutputMeshes, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveOutputMeshes()));
   connect(m_mainwindow.actionSaveInputMeshes, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveInputMeshes()));
   connect(m_mainwindow.actionSaveCurrentOutputMesh, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveCurrentOutputMesh()));

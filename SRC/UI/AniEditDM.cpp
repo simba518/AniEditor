@@ -2,6 +2,7 @@
 #include <Timer.h>
 #include <boost/foreach.hpp>
 #include <MatrixIO.h>
+#include <AuxTools.h>
 #include <JsonFilePaser.h>
 #include <InterpolatorFactory.h>
 #include <MatrixTools.h>
@@ -332,6 +333,18 @@ bool AniEditDM::saveInputMeshes(const string filename)const{
   	  ERROR_LOG("failed to save frame " << f << " to " << frame);
   	  break;
   	}
+  }
+  return succ;
+}
+
+bool AniEditDM::saveOutputVolMeshesVTK(const string filename)const{
+
+  pTetMesh_const vol_mesh = getVolMesh();
+  bool succ = false;
+  if (vol_mesh){
+	succ = true;
+	for (int i = 0; i < totalFrameNum() && succ; ++i)
+	  succ = vol_mesh->writeVTK(filename+TOSTR(i)+".vtk",getVolFullU(i));
   }
   return succ;
 }

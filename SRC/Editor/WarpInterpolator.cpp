@@ -69,7 +69,9 @@ const VectorXd& WarpInterpolator::getInterpU(const int frame_id){
   if (use_warp && nodeWarper != NULL){
 	nodeWarper->warp(delta_z[frame_id],frame_id,full_u);
   }else{
-	full_u = u_ref[frame_id] + W*delta_z[frame_id];
+	const VectorXd p = W*delta_z[frame_id];
+	// full_u = u_ref[frame_id] + p;
+	warper->warp(p,frame_id,full_u); /// @todo
   }
   return full_u;
 }
