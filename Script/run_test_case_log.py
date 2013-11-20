@@ -37,8 +37,15 @@ def mtl_info(log_file):
     lambda_diag_d = ""
     ek0 = grepNumberWithKey(log_file,"initial values:")
     lambda_diag_d += str(map(lambda n: float('%.5g'%n), ek0))[1:-2]+"\\\ \hline\n&"
+    r = len(ek0)
 
-    ek = grepNumberWithKey(log_file,"eigen(K):")
+    ek_all = grepNumberWithKey(log_file,"eigen(K):")
+    ek = []
+    if(len(ek_all)>=r):
+        ek += ek_all[0:r]
+    if(len(ek_all)>35*r):
+        ek += ek_all[-35*r:len(ek_all)]
+    
     for i in range(0,len(ek)):
         lambda_diag_d += str('%.5g'%ek[i])
         if (i+1)%len(ek0) == 0:
@@ -50,11 +57,10 @@ def mtl_info(log_file):
     return lambda_diag_d
 
 def save_fig(y,fname,f_label,style='r'):
-    if len(y) >= 2:
-        y = y[1:len(y)]
     if len(y) > 0:
-        plt.ylim(-min(y)*0.1,max(y)*1.1)
-        plt.xlim(-len(y)/10.0,len(y)*1.1)
+        plt.semilogy()
+        plt.xlim(-len(y)/20,len(y)+len(y)/20)
+        plt.grid(True)
         plt.plot(range(0,len(y)),y,style,label=f_label)
     plt.savefig(fname)
     plt.clf()
@@ -79,11 +85,20 @@ def opt_fig(log_file):
 
 def z_fig(log_file):
     all_curve_new_z = grepNumberWithKey(log_file,"curve_new_z:")
-    T = int(all_curve_new_z[0])
-    r = int(all_curve_new_z[1])
-    curve_new_z = all_curve_new_z[len(all_curve_new_z)-T*r:len(all_curve_new_z)]
-    for i in range(0,r):
-        plt.plot(range(0,T),curve_new_z[i*T:(i+1)*T],label='m'+str(i))
+    keyframes = map(int,grepNumberWithKey(log_file,"keyframe id:"))
+    if len(all_curve_new_z) > 1:
+        T = int(all_curve_new_z[0])
+        r = int(all_curve_new_z[1])
+        curve_new_z = all_curve_new_z[len(all_curve_new_z)-T*r:len(all_curve_new_z)]
+        for i in range(0,r):
+            zi = curve_new_z[i*T:(i+1)*T]
+            plt.grid(True)
+            plt.plot(range(0,len(zi)),zi,label='m'+str(i))
+            if len(keyframes) > 0:
+                kzf = []
+                for j in keyframes:
+                    kzf.append(int(zi[j]))
+                plt.plot(keyframes,kzf,'ro')
 
     zf=os.path.dirname(log_file)+"/"+os.path.basename(log_file).replace(".","-")+'-z.png'
     plt.legend(bbox_to_anchor=(0,1.01,1,1), loc=3, ncol=5, mode="expand",borderaxespad=0.)
@@ -95,8 +110,12 @@ def z_fig(log_file):
 os.system("cd /home/simba/Workspace/AnimationEditor/")
 tex_str = open("./Script/patterns/test_report_head.tex").read()
 log_fs = os.listdir("./tempt")
+
 for log_f in log_fs:
     if not log_f.endswith(".mtllog"): continue
+    # if log_f.find("AtA") < 0: continue
+    # if log_f.find("mtlopt_cen_keyW") < 0: continue
+    if log_f.find("3") < 0: continue
     log_f = "./tempt/"+log_f
     mode_data = model_info(log_f)
     mtl_data = mtl_info(log_f)

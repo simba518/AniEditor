@@ -28,11 +28,7 @@ public:
 	for (int i = 0; i < Z.cols(); ++i)
 	  saveMeshOneZ(Z.col(i),fname+TOSTR(i)+".vtk");
   }
-  void saveMeshOneZ(const VectorXd &z,const string fname){
-	VectorXd u;
-	TEST_ASSERT ( rs2euler.reconstruct(hatW*z,u) );
-	TEST_ASSERT ( tetmesh->writeVTK(fname,u) );
-  }
+  void saveMeshOneZ(const VectorXd &z,const string fname);
   void saveUc(const string fname)const{
 	for (int i = 0; i < uc.size(); ++i)
 	  saveUc(fname+TOSTR(i)+".vtk",uc[i],conNodes[i]);
@@ -57,12 +53,14 @@ public:
   double alphaK;
   double alphaM;
 
+  MatrixXd Z_initial;
   MatrixXd Kz;
   vector<int> Kid;
   vector<int> conFrames;
   vector<vector<int> > conNodes;
   vector<VectorXd> uc;
-  double penaltyCon;
+  double partialConPenalty;
+  double fullConPenalty;
 };
 
 typedef boost::shared_ptr<MtlOptModel> pMtlOptModel;

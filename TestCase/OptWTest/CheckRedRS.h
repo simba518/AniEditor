@@ -1,6 +1,7 @@
 #include <eigen3/Eigen/Dense>
 #include <MatrixIO.h>
 #include <assertext.h>
+#include <AuxTools.h>
 #include <Euler2ReducedCoord.h>
 #include <ConMatrixTools.h>
 #include <RS2Euler.h>
@@ -22,9 +23,9 @@ SparseMatrix<double> P,G,PG,con_Matrix, rm_fixed_nodes;
 SparseMatrix<double> K,M;
 pTetMesh tetmesh;
 MatrixXd B,W,unwarpB, W_ma;
-VectorXd Lambda;
+VectorXd Lambda,Lambda_ma;
 RS2Euler rs2euler;
-const int r = 30;
+const int r_w = 6;
 
 /// init tetmesh, lambda, G and U
 void initModelMtl(){
@@ -52,7 +53,7 @@ void initModelMtl(){
   rs2euler.setFixedNodes(fixed_nodes);
   rs2euler.precompute();
 
-  succ = load(d+"/W80_B40_C97_FixEnd/nlmode80.b",B); assert(succ);
+  succ = load(d+"/RedRS/nlmode20.b",B); assert(succ);
 }
 
 /// compute K,M, W_ma, remove fixed nodes
@@ -74,7 +75,7 @@ void computeKM(){
   M = rm_fixed_nodes*(diagM*rm_fixed_nodes.transpose());
 
   const int r = B.cols();
-  bool succ = EIGEN3EXT::EigenSparseGenEigenSolver::solve(KLower,M,W_ma,Lambda,r);
+  bool succ = EIGEN3EXT::EigenSparseGenEigenSolver::solve(KLower,M,W_ma,Lambda_ma,r);
   W_ma = rm_fixed_nodes.transpose()*W_ma;
   assert(succ);
 }
@@ -121,7 +122,10 @@ void computeW(){
   const MatrixXd subK = W.transpose()*K*W;
   SelfAdjointEigenSolver<MatrixXd> eigenK(subK);
   W *= eigenK.eigenvectors();
-  Lambda = eigenK.eigenvalues();
+
+  const MatrixXd temptW = W.leftCols(r_w);
+  W = temptW;
+  Lambda = eigenK.eigenvalues().head(r_w);
 
   // insert zeros to W,LinearU
   W = rm_fixed_nodes.transpose()*W;
@@ -131,19 +135,23 @@ void computeW(){
 void save(){
   
   TRACE_FUN();
-  bool succ = EIGEN3EXT::write(d+"RedRS/lambda.b",Lambda); assert(succ);
-  succ = EIGEN3EXT::write(d+"RedRS/W.b",W); assert(succ);
-  succ = EIGEN3EXT::write(d+"RedRS/B.b",B); assert(succ);
+  cout<< "Lambda_ma: " << Lambda_ma.transpose() << endl;
+  cout<< "Lambda: " << Lambda.transpose() << endl;
+
+  const string r = TOSTR(W.cols())+".b";
+  bool succ = EIGEN3EXT::write(d+"RedRS_new/lambda"+r,Lambda); assert(succ);
+  succ = EIGEN3EXT::write(d+"RedRS_new/W"+r,W); assert(succ);
+  succ = EIGEN3EXT::write(d+"RedRS_new/B"+r,B); assert(succ);
 
   B *= 10.0f;
-  succ = tetmesh->writeVTK(d+"RedRS/tempt/B",B); assert(succ);
+  succ = tetmesh->writeVTK(d+"RedRS_new/tempt/B",B); assert(succ);
   unwarpB *= 10.0f;
-  succ = tetmesh->writeVTK(d+"RedRS/tempt/unwarpB",unwarpB); assert(succ);
+  succ = tetmesh->writeVTK(d+"RedRS_new/tempt/unwarpB",unwarpB); assert(succ);
   W *= 1000.0f;
-  succ = tetmesh->writeVTK(d+"RedRS/tempt/W",W); assert(succ);
+  succ = tetmesh->writeVTK(d+"RedRS_new/tempt/W",W); assert(succ);
 
   W_ma *= 1000.0f;
-  succ = tetmesh->writeVTK(d+"RedRS/tempt/W_ma",W_ma); assert(succ);
+  succ = tetmesh->writeVTK(d+"RedRS_new/tempt/W_ma",W_ma); assert(succ);
 }
 
 int main(int argc, char *argv[]){

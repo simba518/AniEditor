@@ -13,3 +13,4 @@ octave-core
 ./*.py
 ng.ini
 *.aux
+*.out

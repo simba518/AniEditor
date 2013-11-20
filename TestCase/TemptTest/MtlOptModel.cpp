@@ -38,13 +38,15 @@ MtlOptModel::MtlOptModel(const string initf){
   MatrixXd kz;
   TEST_ASSERT( jsonf.readMatFile("keyZ",kz) );
   this->Kz = kz.topLeftCorner(redDim(),Kid.size());
+  fullConPenalty = 10.0f;
+  TEST_ASSERT ( jsonf.read("fullConPenalty", fullConPenalty) );
 
   // partial constraints
-  penaltyCon = 10.0f;
+  partialConPenalty = 10.0f;
   string partial_con_str;
   if (jsonf.readFilePath("partial_constraints",partial_con_str)){
 	
-  	TEST_ASSERT ( jsonf.read("penaltyCon",penaltyCon) );
+  	TEST_ASSERT ( jsonf.read("partialConPenalty",partialConPenalty) );
   	ConNodesOfFrameSet AllConNodes;
   	TEST_ASSERT ( AllConNodes.load(partial_con_str) );
   	const set<pConNodesOfFrame> &con_groups=AllConNodes.getConNodeGroups();
@@ -92,6 +94,11 @@ MtlOptModel::MtlOptModel(const string initf){
 	  hatW.col(i) = tempt_hatW.col(testModeId[i]);
   }
 
+  if(!jsonf.readMatFile("Z_initial",Z_initial)){
+	Z_initial.resize(0,0);
+	Z_initial.setZero();
+  }
+
   // init warper
   initWarper(jsonf);
 }
@@ -102,13 +109,31 @@ void MtlOptModel::initMtlData(MtlDataModel &model){
   model.setTimestep(h);
   model.setDamping(alphaK,alphaM,lambda);
   model.setLambda(lambda);
-  model.setKeyframes(Kz,Kid);
-  MatrixXd z = MatrixXd(redDim(),T);
-  z.setZero();
-  model.setSubZ(z);
+  model.setFixframes(Kz,Kid); ///@todo
+
+  // assert_ge(Kid.size(),2);
+  // Vector2i fixF;
+  // fixF <<Kid[0], Kid[Kid.size()-1];
+  // MatrixXd FixZ(Kz.rows(),2);
+  // FixZ.col(0) = Kz.col(0);
+  // FixZ.col(1) = Kz.col(Kz.cols()-1);
+  // model.setFixframes(FixZ,fixF);
+
+  // cout << Z_initial << endl << endl;
+  // cout << Z_initial.rows()<< endl << Z_initial.cols() << endl << endl;
+
+  if(Z_initial.rows() != redDim() || Z_initial.size() != model.getZdim()){
+	const int r = redDim(); assert_gt(r,0);
+	const int subT = model.getZdim()/r;
+	Z_initial.resize(r,subT);
+	Z_initial.setZero();
+  }
+  // cout<< "Z_initial: " << Z_initial << endl;
+
+  model.setSubZ(Z_initial);
 
   model.setPartialCon(conFrames,conNodes,uc);
-  model.setPenaltyCon(penaltyCon);
+  model.setConPenalty(partialConPenalty,fullConPenalty);
   model.setWarper(warper);
 }
 
@@ -156,7 +181,21 @@ void MtlOptModel::print()const{
   cout << "alphak: " << alphaK << endl;
   cout << "alpham: " << alphaM << endl;
 
-  cout << "keyframe id: " << Kid;
+  cout << "keyframe id: ";
   for (int i = 0; i < Kid.size(); ++i) cout << Kid[i] << " ";
   cout << endl;
+}
+
+void MtlOptModel::saveMeshOneZ(const VectorXd &z,const string fname){
+  
+  cout << "SAVE TO: " << fname << endl;
+  VectorXd u;
+  if (warper){
+	INFO_LOG("use reduced rs method");
+	warper->warp(z,u);
+  }else{
+	INFO_LOG("full rs method");
+	TEST_ASSERT ( rs2euler.reconstruct(hatW*z,u) );
+  }
+  TEST_ASSERT ( tetmesh->writeVTK(fname,u) );
 }

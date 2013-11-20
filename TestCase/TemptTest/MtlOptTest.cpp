@@ -9,7 +9,7 @@ using namespace UTILITY;
 using namespace boost;
 using namespace boost::unit_test::framework;
 
-const int max_outter_it = 1000;
+const int max_outter_it = 10000;
 const double outer_tol = 1e-5;
 const int save_per_it = 50;
 string init_file="/home/simba/Workspace/AnimationEditor/Data/beam/mtlopt_cen_keyW.ini";
@@ -88,6 +88,13 @@ BOOST_AUTO_TEST_CASE(Opt_Z){
 
   MtlOptADTestSuite mtlOpt("Opt_Z");
   mtlOpt.addOptimizer(pMtlOptimizer(new ZOptimizer(mtlOpt.getDataModel())));
+  mtlOpt.solve();
+}
+
+BOOST_AUTO_TEST_CASE(Opt_ZAtA_simu){
+
+  MtlOptADTestSuite mtlOpt("Opt_ZAtA_simu");
+  mtlOpt.addOptimizer(pMtlOptimizer(new ZAtAOptimizer(mtlOpt.getDataModel())));
   mtlOpt.solve();
 }
 

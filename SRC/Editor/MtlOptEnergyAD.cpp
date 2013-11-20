@@ -1,10 +1,10 @@
 #include <Log.h>
 #include <MtlOptEnergyAD.h>
 
-void RedSpaceTimeEnergyAD::insertKeyframes(MatrixXd &Z)const{
+void RedSpaceTimeEnergyAD::insertFixedframes(MatrixXd &Z)const{
 
   const int r = reducedDim();
-  const int T = Z.cols()+_keyZ.cols();
+  const int T = Z.cols()+_fixedZ.cols();
   assert_eq(Z.rows(),r);
   assert_eq(T,_T);
   
@@ -13,9 +13,9 @@ void RedSpaceTimeEnergyAD::insertKeyframes(MatrixXd &Z)const{
   Z.setZero();
   int xpos = 0;
   for (size_t i = 0; i < T; ++i){
-  	const int k = isKeyframe(i);
+  	const int k = isFixedFrame(i);
   	if(k >= 0){
-  	  Z.col(i) = _keyZ.col(k);
+  	  Z.col(i) = _fixedZ.col(k);
   	}else{
   	  Z.col(i) = oldZ.col(xpos);
   	  xpos++;
@@ -30,12 +30,13 @@ void RedSpaceTimeEnergyAD::assembleEnergy(){
   const VSX vz = makeSymbolic(T*r,"z");
   VMatSX z(T);
   _varZ.clear();
+  _energy = 0.0f;
 
-  { // keyframe constraints
+  { // fixed frames constraints (hard constraints, replace variables)
 	for (int i = 0; i < T; ++i){
-	  const int k = isKeyframe(_keyId,i);
+	  const int k = isFixedFrame(i);
 	  if(k >= 0){
-		CASADI::convert((VectorXd)(_keyZ.col(k)),z[i]);
+		CASADI::convert((VectorXd)(_fixedZ.col(k)),z[i]);
 	  }else{
 		const VSX zi(vz.begin()+r*i,vz.begin()+r*(i+1));
 		assert_eq(zi.size(),r);
@@ -45,8 +46,17 @@ void RedSpaceTimeEnergyAD::assembleEnergy(){
 	}
   }
 
+  { // keyframes constraints (using penalty method)
+	for (int k = 0; k < _keyId.size(); ++k){
+	  const SXMatrix zk = CASADI::convert((VectorXd)_keyZ.col(k));
+	  const SXMatrix &zi = z[_keyId[k]];
+	  const SXMatrix diff = zk-zi;
+	  for (int j = 0; j < r; ++j)
+		_energy += _fullConPenalty*diff.elem(j,0)*diff.elem(j,0);
+	}
+  }
+
   { // control forces
-	_energy = 0;
 	for (int i = 1; i < T-1; ++i){
 	  const SXMatrix za = (z[i+1]-z[i]*2.0f+z[i-1])/(_h*_h);
 	  const SXMatrix zv = _D.mul(z[i+1]-z[i])/(_h);
@@ -65,7 +75,7 @@ void RedSpaceTimeEnergyAD::assembleEnergy(){
 		_warper->warp(z[f],u,_conNodes[i]);
 		assert_eq(u.size1(),_uc[i].size());
 		for (int j = 0; j < _uc[i].size(); ++j)
-		  _energy += _penaltyCon*(u.elem(j,0)-_uc[i][j])*(u.elem(j,0)-_uc[i][j]);
+		  _energy += _partialConPenalty*(u.elem(j,0)-_uc[i][j])*(u.elem(j,0)-_uc[i][j]);
 	  }
 	}
   }
@@ -111,7 +121,7 @@ void MtlOptimizer::optimize(){
   this->optimizationEnd();
 }
   
-void MtlOptimizer::resetEnergy(const bool useAllZ){
+void MtlOptimizer::resetEnergy(const bool fix_all_z){
 
   const int T = _model->T;
   _energy.setT(T);
@@ -119,17 +129,19 @@ void MtlOptimizer::resetEnergy(const bool useAllZ){
   _energy.setDamping(_model->D);
   _energy.setK(_model->K);
   _energy.setKeyframes(_model->keyZ,_model->keyId);
+  _energy.setFixframes(_model->fixedZ,_model->fixedZid);
   _energy.setPartialCon(_model->conFrames,_model->conNodes,_model->uc);
-  _energy.setPenaltyCon(_model->penaltyCon);
+  _energy.setPartialConPenalty(_model->partialConPenalty);
+  _energy.setFullConPenalty(_model->fullConPenalty);
   _energy.setWarper(_model->warper);
 
-  if(useAllZ){
+  if(fix_all_z){
 	assert_eq(_model->Z.cols(), T);
 	assert_eq(_model->Z.rows(), _energy.reducedDim());
-	vector<int> kfid(T);
+	vector<int> Fixedfid(T);
 	for (int i = 0; i < T; ++i)
-	  kfid[i] = i;
-	_energy.setKeyframes(_model->Z,kfid);
+	  Fixedfid[i] = i;
+	_energy.setFixframes(_model->Z,Fixedfid);
   }
 }
 

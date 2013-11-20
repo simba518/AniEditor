@@ -5,10 +5,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #-----------------------------data-------------------------------------------------
-init_file = "mtlopt_cen_keyW.ini"
+init_file = "mtlopt_cen_keyW3_4_new.ini"
 method = "Opt_Z_AtA"
 
-data_dir = "./Data/beam/"
+data_dir = "./Data/beam/KeyW_new/"
 app = "./Bin/Release/TemptTest --run_test=MtlOptTestSave "
 
 #-----------------------------main-------------------------------------------------

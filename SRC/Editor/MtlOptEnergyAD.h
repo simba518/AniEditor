@@ -17,15 +17,17 @@ class RedSpaceTimeEnergyAD{
   
 public:
   RedSpaceTimeEnergyAD(){
-	_penaltyCon = 1.0f;
+	_partialConPenalty = 1.0f;
+	_fullConPenalty = 1.0f;
 	_usePartialCon = true;
   }
   RedSpaceTimeEnergyAD(pRedRSWarperAD warper):_warper(warper){
-	_penaltyCon = 1.0f;
+	_partialConPenalty = 1.0f;
+	_fullConPenalty = 1.0f;
 	_usePartialCon = true;
   }
   void setT(const int T){_T = T;}
-  template<class SCALAR> 
+  template<class SCALAR>
   void setTimestep(const SCALAR h){_h = h;}
   void setDamping(const double ak, const double am, const VectorXd &lambda){
 	setDamping((VectorXd)(am*VectorXd::Ones(lambda.size())+ak*lambda));
@@ -66,6 +68,14 @@ public:
   	for (int i = 0; i < fid.size(); ++i)
   	  _keyId[i] = fid[i];
   }
+  template<class VECTOR>
+  void setFixframes(const MatrixXd &Fz, const VECTOR &fid){
+  	assert_eq(Fz.cols(),(int)fid.size());
+  	_fixedZ = Fz;
+  	_fixedZid.resize(fid.size());
+  	for (int i = 0; i < fid.size(); ++i)
+  	  _fixedZid[i] = fid[i];
+  }
 
   void setWarper(pRedRSWarperAD warper){
 	_warper = warper;
@@ -73,9 +83,13 @@ public:
   void usePartialCon(const bool use){
 	_usePartialCon = use;
   }
-  void setPenaltyCon(const double penalty){
+  void setPartialConPenalty(const double penalty){
 	assert_gt(penalty,0.0f);
-	_penaltyCon = penalty;
+	_partialConPenalty = penalty;
+  }
+  void setFullConPenalty(const double penalty){
+	assert_gt(penalty,0.0f);
+	_fullConPenalty = penalty;
   }
   void setPartialCon(const vector<int>&conF,
 					 const vector<vector<int> >&conN,
@@ -98,7 +112,10 @@ public:
   int isKeyframe(const int f)const{
 	return isKeyframe(_keyId,f);
   }
-  void insertKeyframes(MatrixXd &Z)const;
+  int isFixedFrame(const int f)const{
+	return isKeyframe(_fixedZid,f);
+  }
+  void insertFixedframes(MatrixXd &Z)const;
   template<class VECTOR>
   static int isKeyframe(const VECTOR& kid,const int f){
   	int k = -1;
@@ -112,7 +129,8 @@ public:
   }
   
 private:
-  double _penaltyCon;
+  double _partialConPenalty;
+  double _fullConPenalty;
   bool _usePartialCon;
   int _T;
   SX _h;
@@ -122,6 +140,8 @@ private:
   VSX _varZ;
 
   pRedRSWarperAD _warper;
+  MatrixXd _fixedZ;
+  VectorXi _fixedZid;
   MatrixXd _keyZ;
   VectorXi _keyId;
   vector<int> _conFrames;
@@ -155,8 +175,19 @@ public:
 	for (int i = 0; i < kid.size(); ++i)
 	  this->keyId[i] = kid[i];
   }
+  template<class VECTOR>
+  void setFixframes(const MatrixXd &Z, const VECTOR &fixid){
+	assert_eq(fixid.size(),Z.cols());
+	this->fixedZ = Z;
+	this->fixedZid.resize(fixid.size());
+	for (int i = 0; i < fixid.size(); ++i)
+	  this->fixedZid[i] = fixid[i];
+  }
   void setSubZ(const MatrixXd &Z){
 	subZ = Z;
+  }
+  int getZdim()const{
+	return K.rows()*(T-fixedZid.size());
   }
   void print()const{
 
@@ -168,9 +199,11 @@ public:
 	SelfAdjointEigenSolver<MatrixXd> eigenD(D);
 	cout<< "eigen(D): " << eigenD.eigenvalues().transpose() << endl;
   }
-  void setPenaltyCon(const double penalty){
-	assert_gt(penalty,0.0f);
-	penaltyCon = penalty;
+  void setConPenalty(const double partialConP,const double fullConP){
+	assert_gt(partialConP,0.0f);
+	assert_gt(fullConP,0.0f);
+	partialConPenalty = partialConP;
+	fullConPenalty = fullConP;
   }
   void setPartialCon(const vector<int>&conF,
 					 const vector<vector<int> >&conN,
@@ -186,6 +219,8 @@ public:
 public:
   int T;
   double h;
+  MatrixXd fixedZ;
+  VectorXi fixedZid;
   MatrixXd keyZ;
   VectorXi keyId;
 
@@ -197,7 +232,8 @@ public:
   VectorXd Am;
 
   pRedRSWarperAD warper;
-  double penaltyCon;
+  double partialConPenalty;
+  double fullConPenalty;
   vector<int> conFrames;
   vector<vector<int> > conNodes;
   vector<VectorXd> uc;
@@ -228,10 +264,10 @@ class MtlOptimizer{
   virtual void optimize();
   
  protected:
-  void resetEnergy(const bool useAllZ = true);
+  void resetEnergy(const bool fix_all_z = true);
   virtual void optimizationBegin(){}
   virtual void optimizationEnd(){}
-  virtual const VSX &getVariable()const = 0;
+  virtual const VSX getVariable()const = 0;
   virtual bool getInitValue(VectorXd &x0, const int size)const; 
   
   static void produceSymetricMat(const string name,const int dim,VSX&s,SXMatrix &SM);
@@ -253,16 +289,15 @@ class MtlOptimizer{
 };
 typedef boost::shared_ptr<MtlOptimizer> pMtlOptimizer;
 
-// optimize reduced coordinates
+// optimize reduced coordinates Z
 class ZOptimizer:public MtlOptimizer{
   
 public:
   ZOptimizer(pMtlDataModel m):MtlOptimizer(m){
 
-	const MatrixXd &Z = m->subZ;
+	MatrixXd Z = m->subZ;
 	assert_gt(Z.size(),0);
-	MatrixXd zz = Z;
-	_rlst = Map<VectorXd>( &(zz(0,0)),zz.size() );
+	_rlst = Map<VectorXd>( &(Z(0,0)),Z.size() );
   }
 
 protected:
@@ -272,16 +307,83 @@ protected:
   }
   void optimizationEnd(){
 	const int r = _energy.reducedDim();
-	const int subT = _model->T - _model->keyId.size();
+	assert_gt(r,0);
+	const int subT = _rlst.size()/r;
 	assert_eq(r*subT, _rlst.size());
 	_model->subZ = Map<MatrixXd>(&_rlst[0],r,subT);
 	_model->Z = _model->subZ;
-	_energy.insertKeyframes(_model->Z);
+	_energy.insertFixedframes(_model->Z);
   }
-  const VSX &getVariable()const{
+  const VSX getVariable()const{
 	return _energy.getVarZ();
   }
 
+};
+
+// optimize both Z and K=AtA, rlst = [Z,A]
+class ZAtAOptimizer:public MtlOptimizer{
+  
+public:
+  ZAtAOptimizer(pMtlDataModel m):MtlOptimizer(m){
+
+	const int r = m->K.rows();
+	_A = makeSymbolic(r*r,"a");
+	const SXMatrix A = convert(_A,r);
+	_K = CasADi::trans(A).mul(A);
+	setInitVal(m->subZ,m->K);
+  }
+
+protected:
+  void setInitVal(const MatrixXd &Z, const MatrixXd &K){
+
+	const int r = K.rows();
+	assert_gt(r,0);
+	assert_eq(K.cols(),r);
+	assert_eq(Z.rows(),r);
+
+	MatrixXd KK(r,r);
+	KK.setZero();
+	for (int i = 0; i < r; ++i)
+	  KK(i,i) = sqrt(K(i,i));
+
+	_rlst.resize(Z.size()+KK.size());
+	_rlst.head(Z.size()) = Map<VectorXd>( const_cast<double*>(&(Z(0,0))),Z.size() );
+	_rlst.tail(KK.size()) = Map<VectorXd>(&KK(0,0),r*r);
+  }
+  void optimizationBegin(){
+
+	_energy.usePartialCon(true);
+	resetEnergy(false);
+	_energy.setK(_K);
+	const SXMatrix Ak = makeEyeMatrix(convert(_model->Ak));
+	const SXMatrix Am = makeEyeMatrix(convert(_model->Am));
+	const SXMatrix D = Am + Ak.mul(_K);
+	_energy.setDamping(D);
+  }
+  void optimizationEnd(){
+
+	const int r = _energy.reducedDim();
+	assert_gt(r,0);
+	const int subT = (_rlst.size()-r*r)/r;
+	assert_eq(r*subT, _rlst.size()-r*r);
+	_model->subZ = Map<MatrixXd>(&_rlst[0],r,subT);
+	_model->Z = _model->subZ;
+	_energy.insertFixedframes(_model->Z);
+
+	const MatrixXd A = Map<MatrixXd>(&_rlst[r*subT],r,r);
+	_model->K = A.transpose()*A;
+	_model->D = _model->Am.asDiagonal();
+	_model->D += _model->Ak.asDiagonal()*_model->K;
+  }
+  const VSX getVariable()const{
+	VSX Z_A = _A;
+	Z_A.insert(Z_A.end(),_energy.getVarZ().begin(),_energy.getVarZ().end());
+	return Z_A;
+  }
+
+private:
+  VSX _A;
+  SXMatrix _K;
 };
 
 // optimize K
@@ -319,14 +421,18 @@ protected:
 	}
   }
   void optimizationEnd(){
+
 	const int r = _energy.reducedDim();
 	MatrixXd &K = _model->K;
 	K.resize(r,r);
 	K.setZero();
 	for (int i = 0; i < r; ++i)
 	  K(i,i) = _rlst[i];
+
+	_model->D = _model->Am.asDiagonal();
+	_model->D += _model->Ak.asDiagonal()*K;
   }
-  const VSX &getVariable()const{
+  const VSX getVariable()const{
 	return _lambda;
   }
   bool getLowBound(vector<double> &lower)const{
@@ -365,7 +471,7 @@ protected:
 	_rlst = Map<VectorXd>(&KK(0,0),r*r);
   }
   void optimizationBegin(){
-	_energy.usePartialCon(false);
+	_energy.usePartialCon(true);
 	resetEnergy();
 	const SXMatrix &K = _K;
 	_energy.setK(K);
@@ -384,8 +490,10 @@ protected:
 	assert_eq(_rlst.size(),r*r);
 	const MatrixXd A = Map<MatrixXd>(&_rlst[0],r,r);
 	_model->K = A.transpose()*A;
+	_model->D = _model->Am.asDiagonal();
+	_model->D += _model->Ak.asDiagonal()*_model->K;
   }
-  const VSX &getVariable()const{
+  const VSX getVariable()const{
 	return _A;
   }
 
@@ -443,7 +551,7 @@ protected:
 	  for (int j = 0; j < r; ++j)
 		K(i,j) = _rlst[symIndex(i,j)];
   }
-  const VSX &getVariable()const{
+  const VSX getVariable()const{
 	return _kx;
   }
 
@@ -499,7 +607,7 @@ protected:
 	_model->Ak = VectorXd::Ones(r)*ak;
 	_model->Am = VectorXd::Ones(r)*am;
   }
-  const VSX &getVariable()const{
+  const VSX getVariable()const{
 	return _akam;
   }
   bool getLowBound(vector<double> &lower)const{
@@ -563,7 +671,7 @@ protected:
 	_model->Ak = Ak;
 	_model->Am = Am;
   }
-  const VSX &getVariable()const{
+  const VSX getVariable()const{
 	return _AkAm;
   }
 
@@ -624,7 +732,7 @@ protected:
 
 	AkAmOptimizer::optimizationEnd();
   }
-  const VSX &getVariable()const{
+  const VSX getVariable()const{
 	return _AkAmKx;
   }
   bool getLowBound(vector<double> &lower)const{
@@ -701,7 +809,7 @@ protected:
 	_model->D = _model->Am.asDiagonal();
 	_model->D += _model->Ak.asDiagonal()*_model->K;
   }
-  const VSX &getVariable()const{
+  const VSX getVariable()const{
 	return _a_ak_am;
   }
   bool getLowBound(vector<double> &lower)const{
@@ -788,7 +896,7 @@ protected:
 	_model->D = _model->Am.asDiagonal();
 	_model->D += _model->Ak.asDiagonal()*_model->K;
   }
-  const VSX &getVariable()const{
+  const VSX getVariable()const{
 	return _a_ak_am;
   }
   bool getLowBound(vector<double> &lower)const{

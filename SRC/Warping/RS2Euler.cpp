@@ -55,6 +55,15 @@ void RS2Euler::setFixedNodes(const vector<int> &fixed_nodes){
   assert_eq(F.cols(), node_num*3);
 }
 
+// compute the constraint matrix for the fixed nodes
+void RS2Euler::setFixedNodes(const set<int> &fixed_nodes){
+  
+  assert (tetmesh != NULL);
+  const int node_num = tetmesh->nodes().size();
+  UTILITY::computeConM(fixed_nodes,F, node_num);
+  assert_eq(F.cols(), node_num*3);
+}
+
 // compute the constraint matrix for the constrained nodes
 void RS2Euler::setConNodes(const vector<set<int> > &c_nodes,const VectorXd &bcen_uc){
 
