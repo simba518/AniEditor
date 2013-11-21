@@ -50,31 +50,74 @@ bool VolApproxTri::saveAll(const string filename){
 }
 
 // optimization using alglib
-void function1_grad(const real_1d_array &x, double &func, real_1d_array &grad,void*ptr) {
+void function_grad(const real_1d_array &x, double &func, real_1d_array &grad,void*ptr) {
 
-  func = 100*pow(x[0]+3,4) + pow(x[1]-3,4);
-  grad[0] = 400*pow(x[0]+3,3);
-  grad[1] = 4*pow(x[1]-3,3);
+  VolApproxTri *appr = (VolApproxTri *)ptr;
+  assert_gt(x.length(),0);
+  const VectorXd &u = Map<VectorXd>((double*)&x[0],x.length());
+  VectorXd g;
+  appr->funGrad(u,func,g);
+  assert_eq(grad.length(),g.size());
+  memcpy(&grad[0],&g[0],sizeof(double)*g.size());
+
+  cout << func << endl;
 }
 
-
 bool VolApproxTri::generateKeyVolMesh(){
-  
-  real_1d_array x = "[0,0]";
-  double epsg = 0.0000000001;
-  double epsf = 0;
-  double epsx = 0;
-  ae_int_t maxits = 0;
+
+  // precompute
+  this->prepare();
+
+  // set optimization parameters.
+  double epsg = 1e-8;
+  double epsf = 0.0f;
+  double epsx = 0.0f;
+  ae_int_t maxits = 100;
   minlbfgsstate state;
   minlbfgsreport rep;
 
-  minlbfgscreate(1, x, state);
+  const int n = _tetMeshRest->nodes().size();
+  real_1d_array u;
+  u.setlength(n*3);
+  for (int i = 0; i < n*3; ++i){
+    u[i] = 0.0f;
+  }
+
+  // solve
+  minlbfgscreate(1, u, state);
   minlbfgssetcond(state, epsg, epsf, epsx, maxits);
-  alglib::minlbfgsoptimize(state, function1_grad);
-  minlbfgsresults(state, x, rep);
+  alglib::minlbfgsoptimize(state, function_grad,NULL,(void*)this);
+  minlbfgsresults(state, u, rep);
 
-  printf("%d\n", int(rep.terminationtype)); // EXPECTED: 4
-  printf("%s\n", x.tostring(2).c_str()); // EXPECTED: [-3,3]
+  // get results
+  _volKeyU.resize(n*3);
+  for (int i = 0; i < n*3; ++i){
+    _volKeyU[i] = u[i];
+  }
 
-  return false;
+  printf("%d\n", int(rep.terminationtype)); 
+  // printf("%s\n", u.tostring(2).c_str());
+
+  return true;
+}
+
+void VolApproxTri::funGrad(const VectorXd &u,double &fun,VectorXd &grad){
+
+  // function
+  const VectorXd du = (_A*u-_objKeyU);
+  fun = 0.5f*du.dot(du);
+  const VectorXd x = _volRestU+u;
+  fun += _penalty*_elasticModel->energy(x);
+
+  // grad
+  _elasticModel->force(x,grad);
+  grad += _A.transpose()*du;
+}
+
+void VolApproxTri::prepare(){
+ 
+  _elasticModel = pElasticForceTetFullStVK(new ElasticForceTetFullStVK(_tetMeshRest));
+  _tetMeshRest->buildInterpMatrix(_embed.getInterpNodes(),_embed.getInterpWeights(),_tetMeshRest->nodes().size(),_A);
+  _objKeyU = _objMeshKey->getVerts()-_objMeshRest->getVerts();
+  _tetMeshRest->nodes(_volRestU);
 }

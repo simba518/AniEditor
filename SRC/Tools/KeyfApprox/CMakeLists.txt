@@ -11,6 +11,7 @@ TARGET_LINK_LIBRARIES(${APP_NAME}
   
   /usr/local/lib/libutility_math.a
   /usr/local/lib/libutility_common.a
+  /usr/local/lib/libutility_elastic.a
   /usr/local/lib/libalglib.a
   ${Boost_LIBRARIES}
   ${ARPACK_LIBRARIES}

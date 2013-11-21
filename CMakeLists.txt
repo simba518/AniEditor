@@ -134,11 +134,10 @@ FIND_INTERNAL_PACKAGE(${PROJECT_SOURCE_DIR}/Lib/${CMAKE_BUILD_TYPE_DIR}
   editor
   warping
   basesim
-  externallib
   )
 
 # projects
 ADD_SUBDIRECTORY(SRC)
 
-# test projects
-ADD_SUBDIRECTORY(TestCase)
+# # test projects
+# ADD_SUBDIRECTORY(TestCase)

@@ -27,6 +27,7 @@ namespace UTILITY{
 	  _tetMeshRest = pTetMesh(new TetMesh);
 	  _objMeshRest = pObjmesh(new Objmesh);
 	  _objMeshKey = pObjmesh(new Objmesh);
+	  _penalty = 1.0f;
 	}
 	bool loadRestVolMesh(const string filename);
 	bool loadRestObjMesh(const string filename);
@@ -34,6 +35,11 @@ namespace UTILITY{
 	bool loadInterpWeights(const string filename);
 	bool generateKeyVolMesh();
 	bool saveAll(const string filename);
+
+	void funGrad(const VectorXd &u,double &fun,VectorXd &grad);
+
+  protected:
+	void prepare();
 	
   private:
 	pTetMesh _tetMeshRest;
@@ -41,6 +47,12 @@ namespace UTILITY{
 	pObjmesh _objMeshKey;
 	TetMeshEmbeding _embed;
 	VectorXd _volKeyU;
+	double _penalty;
+
+	VectorXd _volRestU;
+	VectorXd _objKeyU;
+	SparseMatrix<double> _A;
+	pElasticForceTetFullStVK _elasticModel;
   };
   
 }//end of namespace
