@@ -25,7 +25,7 @@ int main(int argc, char *argv[]){
 	cout << "success to load all data, approximation is begining....."<<endl;
 
 	// approximation
-	if(!approx.generateKeyVolMeshNumDiff()){
+	if(!approx.generateKeyVolMesh()){
 	  cout << "error: failed to generate the keyframe of the volumetric mesh." << endl;
 	}else{
 	  cout << "success to approximate the obj keyframes with a tetrahedron mesh."<<endl;
