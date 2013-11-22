@@ -27,16 +27,25 @@ namespace UTILITY{
 	  _tetMeshRest = pTetMesh(new TetMesh);
 	  _objMeshRest = pObjmesh(new Objmesh);
 	  _objMeshKey = pObjmesh(new Objmesh);
-	  _penalty = 1.0f;
+	  _penalty = 0.000001f;
 	}
 	bool loadRestVolMesh(const string filename);
 	bool loadRestObjMesh(const string filename);
 	bool loadKeyObjMesh(const string filename);
 	bool loadInterpWeights(const string filename);
+	void setElasticPenalty(const double p){
+	  assert_gt(p,0.0f);
+	  _penalty = p;
+	}
 	bool generateKeyVolMesh();
+	bool generateKeyVolMeshNumDiff();
 	bool saveAll(const string filename);
 
+	double penalty()const{
+	  return _penalty;
+	}
 	void funGrad(const VectorXd &u,double &fun,VectorXd &grad);
+	void fun(const VectorXd &u,double &fun);
 
   protected:
 	void prepare();

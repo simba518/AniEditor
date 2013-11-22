@@ -59,8 +59,14 @@ void function_grad(const real_1d_array &x, double &func, real_1d_array &grad,voi
   appr->funGrad(u,func,g);
   assert_eq(grad.length(),g.size());
   memcpy(&grad[0],&g[0],sizeof(double)*g.size());
+}
 
-  cout << func << endl;
+void function_func(const real_1d_array &x, double &func, void *ptr) {
+  
+  VolApproxTri *appr = (VolApproxTri *)ptr;
+  assert_gt(x.length(),0);
+  const VectorXd &u = Map<VectorXd>((double*)&x[0],x.length());
+  appr->fun(u,func);
 }
 
 bool VolApproxTri::generateKeyVolMesh(){
@@ -69,10 +75,10 @@ bool VolApproxTri::generateKeyVolMesh(){
   this->prepare();
 
   // set optimization parameters.
-  double epsg = 1e-8;
+  double epsg = 1e-12;
   double epsf = 0.0f;
   double epsx = 0.0f;
-  ae_int_t maxits = 100;
+  ae_int_t maxits = 0;
   minlbfgsstate state;
   minlbfgsreport rep;
 
@@ -101,6 +107,45 @@ bool VolApproxTri::generateKeyVolMesh(){
   return true;
 }
 
+bool VolApproxTri::generateKeyVolMeshNumDiff(){
+
+  cout << "warnning: numerical differential method will be used, which is very slow!" << endl;
+  
+  // precompute
+  this->prepare();
+
+  // set optimization parameters.
+  double epsg = 0.0000000001;
+  double epsf = 0;
+  double epsx = 0;
+  double diffstep = 1.0e-6;
+  ae_int_t maxits = 0;
+  minlbfgsstate state;
+  minlbfgsreport rep;
+
+  const int n = _tetMeshRest->nodes().size();
+  real_1d_array u;
+  u.setlength(n*3);
+  for (int i = 0; i < n*3; ++i){
+    u[i] = 0.0f;
+  }
+
+  // solve
+  minlbfgscreatef(1, u, diffstep, state);
+  minlbfgssetcond(state, epsg, epsf, epsx, maxits);
+  alglib::minlbfgsoptimize(state, function_func,NULL,(void*)this);
+  minlbfgsresults(state, u, rep);
+
+  // get results
+  _volKeyU.resize(n*3);
+  for (int i = 0; i < n*3; ++i){
+    _volKeyU[i] = u[i];
+  }
+
+  printf("%d\n", int(rep.terminationtype)); 
+  // printf("%s\n", u.tostring(2).c_str());
+}
+
 void VolApproxTri::funGrad(const VectorXd &u,double &fun,VectorXd &grad){
 
   // function
@@ -111,7 +156,16 @@ void VolApproxTri::funGrad(const VectorXd &u,double &fun,VectorXd &grad){
 
   // grad
   _elasticModel->force(x,grad);
-  grad += _A.transpose()*du;
+  grad = _A.transpose()*du - _penalty*grad;
+}
+
+void VolApproxTri::fun(const VectorXd &u,double &fun){
+
+  // function
+  const VectorXd du = (_A*u-_objKeyU);
+  fun = 0.5f*du.dot(du);
+  const VectorXd x = _volRestU+u;
+  fun += _penalty*_elasticModel->energy(x);
 }
 
 void VolApproxTri::prepare(){
