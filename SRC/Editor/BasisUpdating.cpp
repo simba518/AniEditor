@@ -119,6 +119,7 @@ void BasisUpdating::precompute(){
   EIGEN3EXT::addToBlock(tri,L,0,0);
   EIGEN3EXT::addToBlock(tri,con_Matrix,L.rows(),0);
   EIGEN3EXT::addToBlock(tri,ct,0,L.cols());
+
   A.resize(L.rows()+con_Matrix.rows(),L.cols()+con_Matrix.rows());
   A.setFromTriplets(tri.begin(),tri.end());
   A.makeCompressed();

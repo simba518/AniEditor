@@ -49,6 +49,7 @@ namespace UTILITY{
 
   protected:
 	void prepare();
+	bool alglibErrorReport(const int code)const;
 	
   private:
 	pTetMesh _tetMeshRest;

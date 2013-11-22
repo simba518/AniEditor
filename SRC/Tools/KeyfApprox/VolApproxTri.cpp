@@ -101,10 +101,7 @@ bool VolApproxTri::generateKeyVolMesh(){
     _volKeyU[i] = u[i];
   }
 
-  printf("%d\n", int(rep.terminationtype)); 
-  // printf("%s\n", u.tostring(2).c_str());
-
-  return true;
+  return alglibErrorReport(int(rep.terminationtype));
 }
 
 bool VolApproxTri::generateKeyVolMeshNumDiff(){
@@ -142,8 +139,7 @@ bool VolApproxTri::generateKeyVolMeshNumDiff(){
     _volKeyU[i] = u[i];
   }
 
-  printf("%d\n", int(rep.terminationtype)); 
-  // printf("%s\n", u.tostring(2).c_str());
+  return alglibErrorReport(int(rep.terminationtype));
 }
 
 void VolApproxTri::funGrad(const VectorXd &u,double &fun,VectorXd &grad){
@@ -174,4 +170,19 @@ void VolApproxTri::prepare(){
   _tetMeshRest->buildInterpMatrix(_embed.getInterpNodes(),_embed.getInterpWeights(),_tetMeshRest->nodes().size(),_A);
   _objKeyU = _objMeshKey->getVerts()-_objMeshRest->getVerts();
   _tetMeshRest->nodes(_volRestU);
+}
+
+bool VolApproxTri::alglibErrorReport(const int code)const{
+  
+  switch(code){
+  case -7:cout << "gradient verification failed.\n"; break;
+  case -3:cout << "inconsistent constraints.\n"; break;
+  case 1:cout << "relative function improvement is no more than EpsF.\n"; break;
+  case 2:cout << "relative step is no more than EpsX.\n"; break;
+  case 4:cout << "gradient norm is no more than EpsG.\n"; break;
+  case 5:cout << "MaxIts steps was taken.\n"; break;
+  case 7:cout << "stopping conditions are too stringent,further improvement is impossible.\n"; break;
+  default: cout << "the stop code is unkown: " << code << endl;
+  }
+  return code > 0;
 }
