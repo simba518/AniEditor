@@ -82,8 +82,8 @@ namespace ANI_EDIT_UI{
 	}
 	void addConNodes(const vector<int> &groups);
 	void rmConNodes(const vector<int> &groups);
-	void updateConPos(const Vector3d &uc,const int group_id);
-	void updateConPos(const VectorXd &uc);
+	void updateConPos(const Matrix<double,3,-1> &uc,const int group_id);
+	void updateConPos(const Matrix<double,3,-1> &uc);
 	vector<set<int> > getConNodes()const;
 	inline const Matrix<double,3,-1> getUc(const int group)const{
 	  pPartialConstraints_const par = _partialCon.getPartialCon(currentFrameNum());

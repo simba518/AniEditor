@@ -174,12 +174,19 @@ void AniEditDM::rmConNodes(const vector<int> &group){
   }
 }
 
-void AniEditDM::updateConPos(const Vector3d &uc,const int group_id){
+void AniEditDM::updateConPos(const Matrix<double,3,-1> &uc,const int group_id){
+
   pPartialConstraints par = getPartialCon();
-  if (par)	par->moveOneGroup(uc,group_id);
+  if (par){
+	par->updatePc(uc,group_id);
+	if(interpolator != NULL && totalFrameNum() > 0){
+	  interpolator->setUc(currentFrameNum(), par->getPc());
+	  this->interpolate();
+	}
+  }
 }
 
-void AniEditDM::updateConPos(const VectorXd &uc){
+void AniEditDM::updateConPos(const Matrix<double,3,-1> &uc){
   if(interpolator != NULL && totalFrameNum() > 0){
 	if(_partialCon.updatePc(uc,currentFrameNum())){
 	  interpolator->setUc(currentFrameNum(), uc);

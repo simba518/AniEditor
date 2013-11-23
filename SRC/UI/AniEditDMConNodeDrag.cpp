@@ -48,9 +48,10 @@ void AniEditDMConNodeDrag::draw()const{
 
 void AniEditDMConNodeDrag::getDragedPoint(double point[3])const{
 
-  point[0] = dragged_point_start[0];
-  point[1] = dragged_point_start[1];
-  point[2] = dragged_point_start[2];
+  assert_gt(dragged_point_start.cols(),0);
+  point[0] = dragged_point_start.col(0)[0];
+  point[1] = dragged_point_start.col(0)[1];
+  point[2] = dragged_point_start.col(0)[2];
 }
 
 void AniEditDMConNodeDrag::selectDragEle(int sel_group_id){
@@ -61,16 +62,27 @@ void AniEditDMConNodeDrag::selectDragEle(int sel_group_id){
 	const set<int> groups = data_model->getConNodes()[sel_group_id];
 	pTetMesh_const restVolMesh = data_model->getVolMesh();
 	assert_gt(groups.size(),0);
-	const int nodeI = *groups.begin();
-	dragged_point_start = restVolMesh->nodes()[nodeI]+data_model->getUc(sel_group_id).col(0);
+
+	dragged_point_start = data_model->getUc(sel_group_id);
+	int k = 0;
+	BOOST_FOREACH(const int i, groups){
+	  dragged_point_start.col(k++) += restVolMesh->nodes()[i];
+	}
   }
 }
 
 void AniEditDMConNodeDrag::dragTo(double x,double y,double z){
+
   if(data_model){
-	Vector3d u;
-	u << x,y,z;
-	u -= dragged_point_start;
+	Matrix<double,3,-1> u = dragged_point_start;
+	for (int i = 0; i < u.cols(); ++i){
+	  u.col(i)[0] -= x;
+	  u.col(i)[1] -= y;
+	  u.col(i)[2] -= z;
+	}
+	u *= -1.0f;
 	data_model->updateConPos(u,draggedGroupId);
   }
+  if(viewer)
+	viewer->update();
 }

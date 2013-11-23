@@ -26,6 +26,7 @@ namespace LSW_ANI_EDITOR{
 	}
 	bool init (const string init_filename){
 
+	  TRACE_FUN();
 	  JsonFilePaser json_f;
 	  bool succ = json_f.open(init_filename);
 
@@ -67,6 +68,7 @@ namespace LSW_ANI_EDITOR{
 	}
 	void setConGroups(const int frame_id,const vector<set<int> >&group, 
 							  const Eigen::Matrix<double,3,-1> &pc){
+	  TRACE_FUN();
 	  assert_in(frame_id,0,getT());
 	  int nodes = 0;
 	  for (int i = 0; i < group.size(); ++i){
@@ -79,7 +81,7 @@ namespace LSW_ANI_EDITOR{
 	  assert_eq(pc.cols(),nodes);
 	}
 	void setUc(const int frame_id, const Eigen::Matrix<double,3,-1> &pc){
-	  
+	  TRACE_FUN();
 	  assert_in(frame_id,0,getT()-1);
 	  assert_gt(pc.cols(),0);
 	  assert_eq(_pc[frame_id].cols(),pc.cols());
@@ -92,15 +94,17 @@ namespace LSW_ANI_EDITOR{
 	}
 	bool interpolate (){
 
+	  TRACE_FUN();
 	  for (int f = 0; f < getT(); ++f){
 		const vector<set<int> > &group = _group[f];
 		const Eigen::Matrix<double,3,-1> &pc = _pc[f];
 		int nodes = 0;
-		for (int i = 0; i < group.size(); ++i){
-		  int k = 0;
-		  BOOST_FOREACH(const int i, group[i]){
+		for (int j = 0; j < group.size(); ++j){
+		  BOOST_FOREACH(const int i, group[j]){
 		    assert_in(i*3,0,_inputU[f].size()-2);
-		    _inputU[f].segment<3>(i*3) = pc.col(nodes++);
+			assert_lt(nodes,pc.cols());
+		    _inputU[f].segment<3>(i*3) = pc.col(nodes);
+			nodes++;
 		  }
 		}
 	  }
