@@ -1,3 +1,10 @@
+# include <QMenu>
+# include <QKeyEvent>
+# include <QMouseEvent>
+
+#include <qcursor.h>
+#include <qmap.h>
+#include <math.h>
 #include <boost/filesystem.hpp>
 #include <Log.h>
 #include <JsonFilePaser.h>
@@ -41,7 +48,7 @@ void AniEditMainWin::initViewers(){
   about_Dialog = new QDialog(this);
   m_about.setupUi(about_Dialog);
   viewer->setAnimationPeriod(1); 
-  preview_viewer->setAnimationPeriod(30); 
+  preview_viewer->setAnimationPeriod(30);
 }
 
 void AniEditMainWin::createConnections(){

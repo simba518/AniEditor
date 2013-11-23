@@ -12,12 +12,10 @@ using namespace UTILITY;
 using namespace ANI_EDIT_UI;
 
 AniEditDM::AniEditDM(pTetMeshEmbeding vol_obj, pAniDataModel animation):
-  _animation(animation), vol_obj(vol_obj){
-}
+  _animation(animation), vol_obj(vol_obj){}
 
 AniEditDM::AniEditDM(pTetMeshEmbeding vol_obj, pAniDataModel animation, pBaseInterpolator interpolator):
-  _animation(animation),interpolator(interpolator), vol_obj(vol_obj){
-}
+  _animation(animation),interpolator(interpolator), vol_obj(vol_obj){}
 
 bool AniEditDM::initialize(const string filename,const bool create_interp){
 

@@ -20,9 +20,7 @@ namespace ANI_EDIT_UI{
   public: 
 	AniEditDMVolVertexSel(pAniEditDM dm):data_model(dm){}
 	int totalEleNum ()const{
-	  if ( hasVolMesh() )
-		return data_model->getVolMesh()->nodes().size();
-	  return 0;
+	  return hasVolMesh() ? data_model->getVolMesh()->nodes().size():0;
 	}
 	void drawWithNames ()const{drawVertice();}
 	void addSelection(const vector<int> &sel_ids){
@@ -34,9 +32,7 @@ namespace ANI_EDIT_UI{
 
   protected:
 	bool hasVolMesh()const{
-	  if(data_model != NULL)
-		return (data_model->getVolMesh() != NULL);
-	  return false;
+	  return (data_model != NULL) && (data_model->getVolMesh() != NULL);
 	}
 	void drawVertice()const{
 	  if( this->hasVolMesh() && data_model->currentFrameNum()>=0){
@@ -68,7 +64,7 @@ namespace ANI_EDIT_UI{
   public:
 	AniEditDMSelCtrl(pQGLViewerExt viewer, pAniEditDM data_model){
 	  vol_vert_sel=pAniEditDMVolVertexSel(new AniEditDMVolVertexSel(data_model));
-	  sel_ctrl = pSelectCtrl(new SelectCtrl(viewer,vol_vert_sel));
+	  sel_ctrl = pSelectCtrl(new SelectCtrl(viewer,vol_vert_sel,10));
 	  sel_ctrl->setObserver(vol_vert_sel);
 	}
 	
