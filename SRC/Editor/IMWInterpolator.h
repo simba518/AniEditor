@@ -43,8 +43,7 @@ namespace LSW_ANI_EDITOR{
     void setUc(const int frame_id, const Matrix<double,3,-1> &uc);
 
 	void removePartialCon(const int frame_id){
-	  ///@todo
-	  ERROR_LOG("undefined function.");
+	  removeConOfFrame(frame_id);
 	}
 
 	void removeAllPosCon();

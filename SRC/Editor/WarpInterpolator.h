@@ -53,8 +53,7 @@ namespace LSW_ANI_EDITOR{
 	}
 
 	void removePartialCon(const int frame_id){
-	  ///@todo
-	  ERROR_LOG("undefined function.");
+	  removeConOfFrame(frame_id);
 	}
 
 	void setReducedEdits(const int frame_id, const VectorXd &z_i){
