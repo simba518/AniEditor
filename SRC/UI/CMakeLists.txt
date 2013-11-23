@@ -13,6 +13,7 @@ SET(UI_SOURCES
 
   AniEditMainWin.cpp  
   AniEditDMRender.cpp
+  AniEditDMConNodeDrag.cpp
 )
 
 SET(UI_HEADERS 
@@ -20,7 +21,7 @@ SET(UI_HEADERS
   AniEditDM_UI.h
   AniEditMainWin.h
   AniEditDMRender.h
-  AniEditDMDragCtrl.h
+  AniEditDMConNodeDrag.h
   PreviewAniDMRender.h
   AniEditDMSelection.h
 )

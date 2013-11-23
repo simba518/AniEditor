@@ -101,7 +101,6 @@ void AniEditMainWin::createConnections(){
   connect(m_mainwindow.actionRemoveAllConNodes, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(removeAllPosCon()));
   connect(m_mainwindow.actionSavePartialCon, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveParitalCon()));
   connect(m_mainwindow.actionLoadPartialCon, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(loadParitalCon()));
-  connect(m_mainwindow.actionLoadConPath, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(loadConPath()));
   connect(m_mainwindow.actionSaveOutputVolMeshesVTK, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveOutputVolMeshesVTK()));
   connect(m_mainwindow.actionSaveOutputMeshes, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveOutputMeshes()));
   connect(m_mainwindow.actionSaveInputMeshes, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveInputMeshes()));
@@ -124,14 +123,8 @@ void AniEditMainWin::createConnections(){
   connect(m_mainwindow.actionShowInputVol, SIGNAL(triggered()), p_AniEditDMRenderCtrl.get(), SLOT(toggleShowInputVol()));
   connect(m_mainwindow.actionShowOutputObj, SIGNAL(triggered()), p_AniEditDMRenderCtrl.get(), SLOT(toggleShowOutputObj()));
   connect(m_mainwindow.actionShowOutputVol, SIGNAL(triggered()), p_AniEditDMRenderCtrl.get(), SLOT(toggleShowOutputVol()));
-  //connect(m_mainwindow.actionShowKeyframe, SIGNAL(triggered()), p_AniEditDMRenderCtrl.get(), SLOT(toggleShowKeyframeObj()));
   connect(m_mainwindow.actionShowConNodes, SIGNAL(triggered()), p_AniEditDMRenderCtrl.get(), SLOT(toggleShowConNodes()));
   connect(m_mainwindow.actionShowConPath, SIGNAL(triggered()), p_AniEditDMRenderCtrl.get(), SLOT(toggleShowConPath()));
-
-  // AniEditDMDragCtrl
-  // connect(m_mainwindow.actionEnableDrag, SIGNAL(triggered()), p_AniEditDMDragCtrl.get(), SLOT(toggleDrag()));
-  connect(m_mainwindow.actionMouseCircle, SIGNAL(triggered()), p_AniEditDMDragCtrl.get(), SLOT(toggleShowMouseCircle()));
-  connect(m_mainwindow.actionConCircle, SIGNAL(triggered()), p_AniEditDMDragCtrl.get(), SLOT(toggleShowDragCircle()));
 
   // AniEditDMSelCtrl 
   connect(m_mainwindow.actionPrintSelNodes, SIGNAL(triggered()), p_AniEditDMSelCtrl.get(), SLOT(togglePrintSelEle()));

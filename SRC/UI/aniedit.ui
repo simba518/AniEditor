@@ -193,43 +193,6 @@
     <string>LoadInitFile</string>
    </property>
   </action>
-  <action name="actionLoadVolMesh">
-   <property name="text">
-    <string>LoadVolMesh</string>
-   </property>
-  </action>
-  <action name="actionLoadObjMesh">
-   <property name="text">
-    <string>LoadObjMesh</string>
-   </property>
-  </action>
-  <action name="actionSaveInitFile">
-   <property name="text">
-    <string>SaveInitFile</string>
-   </property>
-  </action>
-  <action name="actionShowObjMesh">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>ObjMesh</string>
-   </property>
-  </action>
-  <action name="actionShowVolMesh">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>VolMesh</string>
-   </property>
-  </action>
   <action name="actionExit">
    <property name="text">
     <string>Exit</string>
@@ -300,31 +263,6 @@
     <string>I</string>
    </property>
   </action>
-  <action name="actionComputeWeights">
-   <property name="text">
-    <string>ComputeWeights</string>
-   </property>
-  </action>
-  <action name="actionLoadWeights">
-   <property name="text">
-    <string>LoadWeights</string>
-   </property>
-  </action>
-  <action name="actionSaveWeights">
-   <property name="text">
-    <string>SaveWeights</string>
-   </property>
-  </action>
-  <action name="actionLoadSequence">
-   <property name="text">
-    <string>loadSequence</string>
-   </property>
-  </action>
-  <action name="actionSaveSequence">
-   <property name="text">
-    <string>saveSequence</string>
-   </property>
-  </action>
   <action name="actionLoadMeshSeq">
    <property name="text">
     <string>loadMeshSeq</string>
@@ -339,89 +277,6 @@
    </property>
    <property name="shortcut">
     <string>S</string>
-   </property>
-  </action>
-  <action name="actionAnimation">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Animation</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+W</string>
-   </property>
-  </action>
-  <action name="actionDeformation">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Deformation</string>
-   </property>
-  </action>
-  <action name="actionPreviewMesh">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>PreviewMesh</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+P</string>
-   </property>
-  </action>
-  <action name="actionKeyframe">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Keyframe</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+K</string>
-   </property>
-  </action>
-  <action name="actionDefObjMesh">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>DefObjMesh</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+D</string>
-   </property>
-  </action>
-  <action name="actionDefVolMesh">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>DefVolMesh</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+V</string>
-   </property>
-  </action>
-  <action name="actionDedConNodes">
-   <property name="text">
-    <string>DedConNodes</string>
    </property>
   </action>
   <action name="actionReloadInitFile">
@@ -443,11 +298,6 @@
   <action name="actionSaveKeyframe">
    <property name="text">
     <string>SaveKeyframe</string>
-   </property>
-  </action>
-  <action name="actionLoadKeyframe">
-   <property name="text">
-    <string>LoadKeyframe</string>
    </property>
   </action>
   <action name="actionFastforward">
@@ -474,87 +324,12 @@
     <string>Ctrl+Left</string>
    </property>
   </action>
-  <action name="actionRedStVKMethod">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>RedStVKMethod</string>
-   </property>
-  </action>
-  <action name="actionSelectNextShape">
-   <property name="text">
-    <string>SelectNextShape</string>
-   </property>
-   <property name="shortcut">
-    <string>N</string>
-   </property>
-  </action>
-  <action name="actionShowUneditSeqence">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>ShowUneditSeqence</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+E</string>
-   </property>
-  </action>
-  <action name="actionShowCompareSeqence">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>ShowCompareSeqence</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+C</string>
-   </property>
-  </action>
   <action name="actionForward">
    <property name="text">
     <string>forward</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Right</string>
-   </property>
-  </action>
-  <action name="actionLoadCompareSeq">
-   <property name="text">
-    <string>LoadCompareSeq</string>
-   </property>
-  </action>
-  <action name="actionLoadSequence_2">
-   <property name="text">
-    <string>LoadSequence</string>
-   </property>
-  </action>
-  <action name="actionLoadObjMesh_2">
-   <property name="text">
-    <string>LoadObjMesh</string>
-   </property>
-  </action>
-  <action name="actionLoadInitFile_2">
-   <property name="text">
-    <string>LoadInitFile</string>
-   </property>
-  </action>
-  <action name="actionReloadInitFile_2">
-   <property name="text">
-    <string>ReloadInitFile</string>
-   </property>
-   <property name="shortcut">
-    <string>L</string>
    </property>
   </action>
   <action name="actionPrintSelNodes">
@@ -565,56 +340,9 @@
     <string>PrintSelNodes</string>
    </property>
   </action>
-  <action name="actionHideSelAni">
-   <property name="text">
-    <string>HideSelAni</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+X</string>
-   </property>
-  </action>
-  <action name="actionShowAllAni">
-   <property name="text">
-    <string>ShowAllAni</string>
-   </property>
-  </action>
-  <action name="actionSelNextAni">
-   <property name="text">
-    <string>SelNextAni</string>
-   </property>
-   <property name="shortcut">
-    <string>Alt+N</string>
-   </property>
-  </action>
-  <action name="actionAddAniIni">
-   <property name="text">
-    <string>AddAniIni</string>
-   </property>
-  </action>
-  <action name="actionRemoveSelAni">
-   <property name="text">
-    <string>RemoveSelAni</string>
-   </property>
-   <property name="shortcut">
-    <string>Alt+D</string>
-   </property>
-  </action>
-  <action name="actionHideAllAni">
-   <property name="text">
-    <string>HideAllAni</string>
-   </property>
-  </action>
   <action name="actionLoadScene">
    <property name="text">
     <string>LoadScene</string>
-   </property>
-  </action>
-  <action name="actionUpdate">
-   <property name="text">
-    <string>update</string>
-   </property>
-   <property name="shortcut">
-    <string>U</string>
    </property>
   </action>
   <action name="actionSaveOutputMeshes">
@@ -659,27 +387,6 @@
     <string>saveInputMeshes</string>
    </property>
   </action>
-  <action name="actionSaveKeyframeMeshes">
-   <property name="text">
-    <string>SaveKeyframeMeshes</string>
-   </property>
-  </action>
-  <action name="actionTrackConNodes">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>TrackConNodes</string>
-   </property>
-  </action>
-  <action name="actionConPath">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>ConPath</string>
-   </property>
-  </action>
   <action name="actionLoadPartialCon">
    <property name="text">
     <string>LoadPartialCon</string>
@@ -690,25 +397,9 @@
     <string>SavePartialCon</string>
    </property>
   </action>
-  <action name="actionSelectPreShape">
-   <property name="text">
-    <string>SelectPreShape</string>
-   </property>
-   <property name="shortcut">
-    <string>P</string>
-   </property>
-  </action>
   <action name="actionSaveConPositions">
    <property name="text">
     <string>SaveConPositions</string>
-   </property>
-  </action>
-  <action name="actionInteractiveInterp">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>interactiveInterp</string>
    </property>
   </action>
   <action name="actionShowInputObj">
@@ -804,11 +495,6 @@
     <string>ShowScene</string>
    </property>
   </action>
-  <action name="actionLoadConPath">
-   <property name="text">
-    <string>LoadConPath</string>
-   </property>
-  </action>
   <action name="actionPlay_preview">
    <property name="text">
     <string>playPreview</string>
@@ -835,11 +521,6 @@
     <string>Preview</string>
    </property>
   </action>
-  <action name="actionUpdateRefSeq">
-   <property name="text">
-    <string>UpdateRefSeq</string>
-   </property>
-  </action>
   <action name="actionRemoveAllConNodes">
    <property name="text">
     <string>RemoveAllConNodes</string>
@@ -861,29 +542,6 @@
   <action name="actionSaveCurrentOutputMesh">
    <property name="text">
     <string>saveCurrentOutputMesh</string>
-   </property>
-  </action>
-  <action name="actionSaveDragOp">
-   <property name="text">
-    <string>SaveDragOp</string>
-   </property>
-  </action>
-  <action name="actionLoadDragOp">
-   <property name="text">
-    <string>LoadDragOp</string>
-   </property>
-  </action>
-  <action name="actionRecordDragOp">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>RecordDragOp</string>
-   </property>
-  </action>
-  <action name="actionPlayDragOp">
-   <property name="text">
-    <string>PlayDragOp</string>
    </property>
   </action>
   <action name="actionMouseCircle">
@@ -991,22 +649,9 @@
     <string>LoadCuReducedEdit</string>
    </property>
   </action>
-  <action name="actionSaveRotModalMat">
-   <property name="text">
-    <string>SaveRotModalMat</string>
-   </property>
-  </action>
   <action name="actionPrintEigenvalues">
    <property name="text">
     <string>PrintEigenvalues</string>
-   </property>
-  </action>
-  <action name="actionUpdateConTrajectory">
-   <property name="text">
-    <string>UpdateConTrajectory</string>
-   </property>
-   <property name="shortcut">
-    <string>U</string>
    </property>
   </action>
   <action name="actionSaveAllReducedEdit">
@@ -1017,16 +662,6 @@
   <action name="actionSaveCurrentVolFullU">
    <property name="text">
     <string>saveCurrentVolFullU</string>
-   </property>
-  </action>
-  <action name="actionLoadCubaturePoints">
-   <property name="text">
-    <string>LoadCubaturePoints</string>
-   </property>
-  </action>
-  <action name="actionLoadCubatureWeights">
-   <property name="text">
-    <string>LoadCubatureWeights</string>
    </property>
   </action>
   <action name="actionLoadAllReducedEdit">

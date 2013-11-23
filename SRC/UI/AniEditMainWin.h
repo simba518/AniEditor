@@ -14,7 +14,7 @@ using namespace QGLVEXT;
 #include "AniEditDM_UI.h"
 #include "AniEditDMSelection.h"
 #include "AniEditDMRender.h"
-#include "AniEditDMDragCtrl.h"
+#include "AniEditDMConNodeDrag.h"
 #include "PreviewAniDMRender.h"
 
 namespace ANI_EDIT_UI{

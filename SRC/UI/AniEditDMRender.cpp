@@ -1,6 +1,5 @@
 #include <GL/gl.h>
 #include <boost/lexical_cast.hpp>
-#include <ConNodeSetDrawer.h>
 #include "AniEditDMRender.h"
 #include <MeshRender.h>
 using namespace ANI_EDIT_UI;
@@ -120,11 +119,12 @@ void AniEditDMRender::drawConNodes()const{
 
 void AniEditDMRender::drawConPath()const{
 
-  if (data_model != NULL){
-	const ConNodesOfFrameSet &c_nodes=data_model->getAllConNodes();
-	const double radius = data_model->getMaxRadius()/50.0f;
-	ConNodeSetDrawer::draw(c_nodes.getConNodeGroups(),radius);
-  }
+  ///@todo
+  // if (data_model != NULL){
+  // 	const ConNodesOfFrameSet &c_nodes=data_model->getAllConNodes();
+  // 	const double radius = data_model->getMaxRadius()/50.0f;
+  // 	ConNodeSetDrawer::draw(c_nodes.getConNodeGroups(),radius);
+  // }
 }
 
 void AniEditDMRender::updateConShpereRadius(){

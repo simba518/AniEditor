@@ -7,13 +7,11 @@
 #include <SelectCtrl.h>
 #include <DragCtrl.h>
 #include <Selectable.h>
-#include <BarycenterDragger.h>
 #include "VolNodeGroupRender.h"
 #include "AniEditDM.h"
 using namespace Eigen;
 using namespace UTILITY;
 using namespace QGLVEXT;
-using namespace LSW_SIM;
 
 namespace ANI_EDIT_UI{
 
@@ -32,72 +30,56 @@ namespace ANI_EDIT_UI{
 	int totalEleNum ()const{
 	  return data_model != NULL ? data_model->getConNodes().size() : 0;
 	}
-	void prepareSelection(){
-	  if (data_model != NULL&& data_model->currentFrameNum() >=0 ){
-		const vector<set<int> > con_nodes = data_model->getConNodes();
-		dragger.setConGroups(con_nodes,data_model->getUforConstraint());
-	  }
-	}
 	void drawWithNames ()const;
+	void prepareSelection(){
+	  draggedGroupId = -1;
+	}
 	void getDragedPoint(double point[3])const;
 	
 	// observer
 	void selectDragEle(int sel_group_id);
-	void startDrag(int screen_x, int screen_y){}
-	void startDrag (double x,double y,double z){
-	  dragger.startDrag(x,y,z);
-	}
-	void dragTo (double x,double y,double z){
-	  dragger.dragTo(x,y,z);
-	  updateConPos();
-	}
-	void stopDrag (double x,double y,double z){
-	  dragger.stopDrag();
-	  updateConPos();
-	}
+	void dragTo (double x,double y,double z);
 
 	// render
 	void render();
 	void draw()const;
-	void showMouseCircle(bool show){
-	  draw_mouse_circle = show;
-	}
-	void showDragCircle(bool show){
-	  draw_drag_circle = show;
-	}
-	void toggleShowMouseCircle(){
-	  draw_mouse_circle = draw_mouse_circle ? false:true;
-	}
-	void toggleShowDragCircle(){
-	  draw_drag_circle = draw_drag_circle ? false:true;
-	}
 
   protected:
-	void updateConPos();
-	const Vector3d getBaryCenter(const set<int>&one_group,const VectorXd&u)const;
-	void draw2DCircle(const double screen_width, const double screen_height,
-					  const double screen_x, const double screen_y, 
-					  const double color[3])const;
-	void drawMouseCircle()const;
-	void drawDragPointCircle()const;
-	Vector3d barycentersOfGroup(const VVec3d &nodes, const set<int> &g)const;
-	
+	bool hasDraggedGroup()const{
+	  return draggedGroupId >= 0;
+	}
+
   private:
 	pQGLViewerExt viewer;
 	pAniEditDM data_model;
-	BarycenterDraggerVec dragger;
-	VolNodeGroupRender con_node_render;
+	int draggedGroupId;
 
-	Vector3d drag_point; // return the position of the dragged point, which
-						  // should be initialized when selectDragEle(int) is
-						  // called.
-	Vector3d mouse_point; // center of the mouse's circle
-	Vector3d draged_point;// center of the draged point's circle
-	bool draw_mouse_circle;
-	bool draw_drag_circle;
+	VolNodeGroupRender con_node_render;
+	Vector3d dragged_point_start; // start position of the dragged point.
   };
-  
   typedef boost::shared_ptr<AniEditDMConNodeDrag> pAniEditDMConNodeDrag;
+
+  class AniEditDMDragCtrl:public QObject{
+
+	Q_OBJECT
+	
+  public: 
+	AniEditDMDragCtrl(pQGLViewerExt view,pAniEditDM dm){
+	  con_nodes_drag = pAniEditDMConNodeDrag(new AniEditDMConNodeDrag(view,dm));
+	  drag_ctrl = pDragCtrl( new DragCtrl(view,con_nodes_drag) );
+	  drag_ctrl->setObserver(con_nodes_drag);
+	  drag_ctrl->setDragHook(con_nodes_drag);
+	  if (view != NULL){
+		con_nodes_drag->setRenderPriority(FIRST_RENDER);
+		view->addSelfRenderEle(con_nodes_drag);
+	  }
+	}
+
+  private:
+	pAniEditDMConNodeDrag con_nodes_drag;
+	pDragCtrl drag_ctrl;
+  };
+  typedef boost::shared_ptr<AniEditDMDragCtrl> pAniEditDMDragCtrl;
   
 }//end of namespace
 

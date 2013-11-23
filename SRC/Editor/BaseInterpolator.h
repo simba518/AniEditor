@@ -61,9 +61,10 @@ namespace LSW_ANI_EDITOR{
 
 	/// partial control (position constraints of selected frames)
 	virtual void setConGroups(const int frame_id,const vector<set<int> >&group, 
-							  const VectorXd &uc) = 0;
-	virtual void setUc(const int frame_id, const VectorXd &uc) = 0;
+							  const Eigen::Matrix<double,3,-1> &pc) = 0;
+	virtual void setUc(const int frame_id, const Eigen::Matrix<double,3,-1> &pc) = 0;
 	virtual void removeAllPosCon() = 0;
+	virtual void removePartialCon(const int frame_id) = 0;
 
 	/// set initial value of the control forces
 	virtual void setInitCtrlForces(const VectorXd &w){}

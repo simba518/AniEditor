@@ -59,7 +59,6 @@ namespace ANI_EDIT_UI{
 	void saveCurrentVolFullU()const{ANIEDITDM_SAVE(saveCurrentVolFullU);}
 
 	void loadParitalCon(){ANIEDITDM_LOAD(loadParitalCon);}
-	void loadConPath(){ANIEDITDM_LOAD(loadConPath);}
 	void loadCurrentReducedEdits(){ANIEDITDM_LOAD(loadCurrentReducedEdits);}
 	void loadAllReducedEdits(){ANIEDITDM_LOAD(loadAllReducedEdits);}
 

@@ -3,12 +3,12 @@
 
 #include <boost/shared_ptr.hpp>
 #include <AniDataModel.h>
-#include <ConNodesOfFrame.h>
+#include <PartialConstraints.h>
 #include <BaseInterpolator.h>
 #include <TetMeshEmbeding.h>
 using namespace QGLVEXT;
 using namespace LSW_ANI_EDITOR;
-using namespace LSW_SIM;
+using namespace UTILITY;
 
 namespace ANI_EDIT_UI{
   
@@ -73,12 +73,24 @@ namespace ANI_EDIT_UI{
 	  return interpolator;
 	}
 
-	// constraints
+	// partial constraints
+	pPartialConstraints_const getPartialCon()const{
+	  return _partialCon.getPartialCon(currentFrameNum());
+	}
+	pPartialConstraints getPartialCon(){
+	  return _partialCon.getPartialCon(currentFrameNum());
+	}
 	void addConNodes(const vector<int> &groups);
 	void rmConNodes(const vector<int> &groups);
+	void updateConPos(const Vector3d &uc,const int group_id);
 	void updateConPos(const VectorXd &uc);
 	vector<set<int> > getConNodes()const;
-	const ConNodesOfFrameSet &getAllConNodes()const{return con_nodes_for_edit;}
+	inline const Matrix<double,3,-1> getUc(const int group)const{
+	  pPartialConstraints_const par = _partialCon.getPartialCon(currentFrameNum());
+	  assert(par);
+	  return par->getPc(group);
+	}
+	const PartialConstraintsSet &getAllConNodes()const{return _partialCon;}
 	void removeAllPosCon();
 
 	// warping.
@@ -101,7 +113,6 @@ namespace ANI_EDIT_UI{
 	// file io
 	bool saveParitalCon(const string filename)const;
 	bool loadParitalCon(const string filename);
-	bool loadConPath(const string filename);
 	bool saveOutputVolMeshesVTK(const string filename)const;
 	bool saveOutputMeshes(const string filename)const;
 	bool saveInputMeshes(const string filename)const;
@@ -121,13 +132,13 @@ namespace ANI_EDIT_UI{
 	VectorXd barycenOfRestShape(const vector<set<int> >&g)const; 
 	VectorXd barycenOfVolU(const vector<set<int> >&g)const;
 	string getZeroStr(const int frame, const int T)const;
+	void resetPartialCon(const int frame);
 	
   private:
 	pAniDataModel _animation;
 	pBaseInterpolator interpolator; // perform the edit operation.
-	ConNodesOfFrameSet con_nodes_for_warping; // con nodes for warping.
-	ConNodesOfFrameSet con_nodes_for_edit; // con nodes under edit.
 	pTetMeshEmbeding vol_obj; // store both vol and obj mesh.
+	PartialConstraintsSet _partialCon;
   };
   
   typedef boost::shared_ptr<AniEditDM> pAniEditDM;

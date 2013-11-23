@@ -34,9 +34,7 @@ bool AniEditDM::initialize(const string filename,const bool create_interp){
 	UTILITY::JsonFilePaser inf;
 	if ( inf.open(filename) ){
 
-	  string con_path, partial_con, drag_trajectory;
-	  if ( inf.readFilePath("con_path", con_path) )
-		succ = loadConPath(con_path);
+	  string partial_con, drag_trajectory;
 	  if ( inf.readFilePath("partial_constraints",partial_con) )
 		succ &= loadParitalCon(partial_con);
 	  
@@ -156,69 +154,66 @@ const VectorXd &AniEditDM::getInputU(const int frame)const{
 
 vector<set<int> > AniEditDM::getConNodes()const{
 
-  const int frame_id = currentFrameNum();
-  pConNodesOfFrame_const con = con_nodes_for_edit.getConNodeGroup(frame_id);
-  if (con != NULL){
-	return con->getConNodesSet();
-  }else{
-	vector<set<int> > empty;
-	return empty;
-  }
+  pPartialConstraints_const con = _partialCon.getPartialCon(currentFrameNum());
+  if (con) return con->getConNodesSet();
+  return vector<set<int> >();
 }
 
 // constraint nodes
 void AniEditDM::addConNodes(const vector<int> &group){
-  
-  if( group.size()>0 && this->editable()){
-	
-  	const int frame_id = currentFrameNum();
-  	con_nodes_for_edit.addConNodeGroup(group, frame_id);
-	pConNodesOfFrame_const pc = con_nodes_for_edit.getConNodeGroup(frame_id);
-	assert (pc != NULL);
-	const VectorXd bary_rest = barycenOfRestShape(pc->getConNodesSet());
-	const VectorXd bary_uc = barycenOfVolU(pc->getConNodesSet());
-	con_nodes_for_edit.setConPos(bary_uc,bary_rest,frame_id);
-	if (interpolator != NULL){
-	  const vector<set<int> > &groups = pc->getConNodesSet();
-	  interpolator->setConGroups(currentFrameNum() ,groups, bary_uc);
-	}
+  if (group.size()>0 && editable() && interpolator){
+	_partialCon.addConNodes(group,currentFrameNum());
+	resetPartialCon(currentFrameNum());
   }
 }
 
 void AniEditDM::rmConNodes(const vector<int> &group){
-  
-  if( group.size()>0 ){
+  if (group.size()>0 && editable() && interpolator){
+	_partialCon.rmConNodes(group,currentFrameNum());
+	resetPartialCon(currentFrameNum());
+  }
+}
 
-  	const int frame_id = currentFrameNum();
-  	con_nodes_for_edit.rmConNodeGroup(group, frame_id);
-	pConNodesOfFrame_const pc = con_nodes_for_edit.getConNodeGroup(frame_id);
-	if (pc != NULL){
-	  const VectorXd bary_rest = barycenOfRestShape(pc->getConNodesSet());
-	  const VectorXd bary_uc = barycenOfVolU(pc->getConNodesSet());
-	  con_nodes_for_edit.setConPos(bary_uc,bary_rest,frame_id);
-	  if (interpolator != NULL){
-		const vector<set<int> > &groups = pc->getConNodesSet();
-		interpolator->setConGroups(currentFrameNum() ,groups, bary_uc);
-	  }
+void AniEditDM::updateConPos(const Vector3d &uc,const int group_id){
+  pPartialConstraints par = getPartialCon();
+  if (par)	par->moveOneGroup(uc,group_id);
+}
+
+void AniEditDM::updateConPos(const VectorXd &uc){
+  if(interpolator != NULL && totalFrameNum() > 0){
+	if(_partialCon.updatePc(uc,currentFrameNum())){
+	  interpolator->setUc(currentFrameNum(), uc);
+	  this->interpolate();
 	}
   }
 }
 
-void AniEditDM::updateConPos(const VectorXd &uc){
-
-  con_nodes_for_edit.updateConNodeGroup(uc,currentFrameNum());
-  if (interpolator != NULL && totalFrameNum() > 0){
-	interpolator->setUc(currentFrameNum(), uc);
-	this->interpolate();
+void AniEditDM::removeAllPosCon(){
+  _partialCon.clear();
+  if(interpolator){
+	interpolator->removeAllPosCon();
   }
 }
 
-void AniEditDM::removeAllPosCon(){
+void AniEditDM::resetPartialCon(const int frameid){
+  
+  pPartialConstraints_const par = _partialCon.getPartialCon(frameid);
+  if (par){
 
-  con_nodes_for_warping.clear();
-  con_nodes_for_edit.clear();
-  if (interpolator != NULL){
-	interpolator->removeAllPosCon();
+	const VectorXd &u = getUforConstraint();
+	Matrix<double,3,-1> pc(3,par->numConNodes());
+	const vector<set<int> > &vs = par->getConNodesSet();
+	BOOST_FOREACH(const set<int>& s, vs){
+	  BOOST_FOREACH(const int i, s){
+		assert_in(i,0,pc.cols()-1);
+		assert_in(i*3,0,u.size()-3);
+		pc.col(i) = u.segment<3>(i*3);
+	  }
+	}
+	_partialCon.updatePc(pc,frameid);
+	interpolator->setConGroups(par->getFrameId(),par->getConNodesSet(),par->getPc());
+  }else{
+	interpolator->removePartialCon(frameid);
   }
 }
 
@@ -254,25 +249,17 @@ void AniEditDM::print()const{
 // file io
 bool AniEditDM::saveParitalCon(const string filename)const{
 
-  return con_nodes_for_edit.save(filename);
+  return _partialCon.save(filename);
 }
 
 bool AniEditDM::loadParitalCon(const string filename){
   
-  const bool succ = con_nodes_for_edit.load(filename);
+  const bool succ = _partialCon.load(filename);
   if (interpolator != NULL && succ){
 	interpolator->removeAllPosCon();
-	const set<pConNodesOfFrame>&con_groups=con_nodes_for_edit.getConNodeGroups();
-	BOOST_FOREACH(pConNodesOfFrame pc, con_groups){
-	  if ( pc != NULL && !pc->isEmpty() ) {
-		const int frame_id = pc->getFrameId();
-		if(_animation)
-		  _animation->setCurrentFrame(frame_id);
-		const VectorXd bary_uc = pc->getBarycenterUc();
-		const vector<set<int> > &groups = pc->getConNodesSet();
-		interpolator->setConGroups(frame_id,groups, bary_uc);
-	  }
-	}
+	const set<pPartialConstraints> &con_groups=_partialCon.getPartialConSet();
+	BOOST_FOREACH(pPartialConstraints par, con_groups)
+	  interpolator->setConGroups(par->getFrameId(),par->getConNodesSet(),par->getPc());
   }
   return succ;
 }
@@ -485,61 +472,6 @@ bool AniEditDM::editable()const{
   return false;
 }
 
-bool AniEditDM::loadConPath(const string filename){
-
-  TRACE_FUN();
-
-  // read in the constrained nodes and frames' ids.
-  vector<int> con_frame_ids;
-  vector<set<int> > con_nodes(1);
-  vector<VectorXd> target_pos;
-  ifstream in_file;
-  in_file.open (filename.c_str());
-  if (!in_file.is_open()){
-	ERROR_LOG("failed to open file: "<<filename);
-	return false;
-  }
-
-  // load constrained nodes
-  int con_node_size = 0;
-  in_file >> con_node_size;
-  assert_gt(con_node_size,0);
-  con_nodes.resize(con_node_size);
-  for (int i = 0; i < con_node_size; ++i){
-	int con_node_id = 0;
-    in_file >> con_node_id;
-	con_nodes[0].insert(con_node_id);;
-  }
-
-  // load constrained frames and target positions
-  int con_frame_num = 0;
-  in_file >> con_frame_num;
-  assert_gt(con_node_size,0);
-  con_frame_ids.resize(con_frame_num);
-  target_pos.resize(con_frame_num);
-  for (int i = 0; i < con_frame_num; ++i){
-	target_pos[i].resize(3);
-    in_file >> con_frame_ids[i];
-    in_file >> target_pos[i][0];
-    in_file >> target_pos[i][1];
-    in_file >> target_pos[i][2];
-  }
-
-  // set the constrained nodes
-  assert_eq(con_frame_ids.size(), target_pos.size());
-  con_nodes_for_edit.clear();
-  const VectorXd bary_rest = this->barycenOfRestShape(con_nodes);
-  for (size_t i=0; i < con_frame_ids.size(); ++i){
-	pConNodesOfFrame con_frame = pConNodesOfFrame(new ConNodesOfFrame());
-	const VectorXd bary_uc = target_pos[i]-bary_rest;
-	con_frame->setConNodes(con_nodes,bary_uc,bary_rest,con_frame_ids[i]);
-	con_nodes_for_edit.addConNodeGroup(con_frame);
-	if (interpolator != NULL)
-	  interpolator->setConGroups(con_frame_ids[i] ,con_nodes, bary_uc);
-  }
-  return true;
-}
-
 int AniEditDM::reducedDim()const{
 
   if (interpolator){
@@ -550,8 +482,5 @@ int AniEditDM::reducedDim()const{
 }
 
 int AniEditDM::fullDim()const{
-  if (vol_obj){
-	return vol_obj->getTetMesh()->nodes().size()*3;
-  }
-  return 0;
+  return vol_obj ? vol_obj->getTetMesh()->nodes().size()*3:0;
 }
