@@ -55,17 +55,55 @@ namespace LSW_ANI_EDITOR{
 			}
 		}
 	  }
+
+	  _group.resize(getT());
+	  _pc.resize(getT());
+
 	  return succ;
 	}
 	bool editable(const int frame_id)const{
+	  assert_in(frame_id,0,getT()-1);
 	  return true;
 	}
 	void setConGroups(const int frame_id,const vector<set<int> >&group, 
-							  const Eigen::Matrix<double,3,-1> &pc){}
-	void setUc(const int frame_id, const Eigen::Matrix<double,3,-1> &pc){}
+							  const Eigen::Matrix<double,3,-1> &pc){
+	  assert_in(frame_id,0,getT());
+	  int nodes = 0;
+	  for (int i = 0; i < group.size(); ++i){
+		assert_gt(group[i].size(),0);
+		_group[frame_id] = group;
+		_pc[frame_id] = pc;
+		nodes += group[i].size();
+	  }
+	  INFO_LOG("set constrained nodes: "<<nodes);
+	  assert_eq(pc.cols(),nodes);
+	}
+	void setUc(const int frame_id, const Eigen::Matrix<double,3,-1> &pc){
+	  
+	  assert_in(frame_id,0,getT()-1);
+	  assert_gt(pc.cols(),0);
+	  assert_eq(_pc[frame_id].cols(),pc.cols());
+	  _pc[frame_id] = pc;
+	  INFO_LOG("set uc: "<<pc);
+	}
 	void removeAllPosCon(){}
-	void removePartialCon(const int frame_id){}
+	void removePartialCon(const int frame_id){
+	  assert_in(frame_id,0,getT()-1);
+	}
 	bool interpolate (){
+
+	  for (int f = 0; f < getT(); ++f){
+		const vector<set<int> > &group = _group[f];
+		const Eigen::Matrix<double,3,-1> &pc = _pc[f];
+		int nodes = 0;
+		for (int i = 0; i < group.size(); ++i){
+		  int k = 0;
+		  BOOST_FOREACH(const int i, group[i]){
+		    assert_in(i*3,0,_inputU[f].size()-2);
+		    _inputU[f].segment<3>(i*3) = pc.col(nodes++);
+		  }
+		}
+	  }
 	  return true;
 	}
 	const VectorXd& getInterpU(const int frame_id){
@@ -92,6 +130,8 @@ namespace LSW_ANI_EDITOR{
 
   private:
 	vector<VectorXd> _inputU; 
+	vector<vector<set<int> > > _group;
+	vector<Eigen::Matrix<double,3,-1> > _pc;
   };
   
   typedef boost::shared_ptr<FakeInterpForUITest> pFakeInterpForUITest;
