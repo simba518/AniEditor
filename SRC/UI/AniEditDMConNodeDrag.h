@@ -39,6 +39,9 @@ namespace ANI_EDIT_UI{
 	// observer
 	void selectDragEle(int sel_group_id);
 	void dragTo (double x,double y,double z);
+	void stopDrag (double x,double y,double z){
+	  draggedGroupId = -1;
+	}
 
 	// render
 	void render();

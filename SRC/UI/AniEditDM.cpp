@@ -204,10 +204,10 @@ void AniEditDM::resetPartialCon(const int frameid){
 	Matrix<double,3,-1> pc(3,par->numConNodes());
 	const vector<set<int> > &vs = par->getConNodesSet();
 	BOOST_FOREACH(const set<int>& s, vs){
+	  int index = 0;
 	  BOOST_FOREACH(const int i, s){
-		assert_in(i,0,pc.cols()-1);
 		assert_in(i*3,0,u.size()-3);
-		pc.col(i) = u.segment<3>(i*3);
+		pc.col(index++) = u.segment<3>(i*3);
 	  }
 	}
 	_partialCon.updatePc(pc,frameid);
