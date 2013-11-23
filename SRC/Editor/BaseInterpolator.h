@@ -5,6 +5,7 @@
 #include <vector>
 #include <set>
 #include <boost/shared_ptr.hpp>
+#include <boost/foreach.hpp>
 #include <eigen3/Eigen/Dense>
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
@@ -117,7 +118,27 @@ namespace LSW_ANI_EDITOR{
 	virtual void print(const string data_name)const{
 	  cout << "unspported data print operation." << endl;
 	}
-	
+
+  protected:
+	/// @todo this method should be removed.
+	void splitAllConstraints(const vector<set<int> >&group,const Eigen::Matrix<double,3,-1> &uc,
+							 vector<vector<set<int> > >&group_rlst,vector<Eigen::Vector3d> &uc_rlst)const{
+	  group_rlst.clear();
+	  BOOST_FOREACH(const set<int>& s, group){
+		vector<set<int> > vs;
+		BOOST_FOREACH(const int i, s){
+		  set<int> ones;
+		  ones.insert(i);
+		  vs.push_back(ones);
+		}
+		group_rlst.push_back(vs);
+	  }
+
+	  uc_rlst.resize(uc.cols());
+	  for (int i = 0; i < uc.cols(); ++i){
+		uc_rlst[i] = uc.col(i);
+	  }
+	}
   };
   
   typedef boost::shared_ptr<BaseInterpolator> pBaseInterpolator;

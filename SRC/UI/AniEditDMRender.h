@@ -58,7 +58,6 @@ namespace ANI_EDIT_UI{
 	void drawOutputObj()const;
 	void drawOutputVol()const;
 	void drawConNodes()const;
-	void drawConPath()const;
 
 	bool hasVolMesh()const{
 	  return (data_model != NULL && data_model->getVolMesh() != NULL);

@@ -6,6 +6,7 @@
 #include <MtlOptInterpolatorAdj.h>
 #include <MtlOptInterpolator.h>
 #include "InterpolatorFactory.h"
+#include "FakeInterpForUITest.h"
 using namespace LSW_ANI_EDITOR;
 
 pBaseInterpolator InterpolatorFactory::create(const string ini_file){
@@ -31,7 +32,8 @@ bool InterpolatorFactory::validMethod(const string method_name){
 					   string("IMW") == method_name||
 					   string("REDRS") == method_name||
 					   string("MTLOPT") == method_name||
-					   string("MTLOPTADJ") == method_name);
+					   string("MTLOPTADJ") == method_name||
+					   string("TEST") == method_name);
   if(!valid){
 	ERROR_LOG("the method name is invalid!(in json node : interp_method )"<<
 			  "the method name is " << method_name << ", which should be 'IEDS' or 'IMW' or 'REDRS' or 'MTLOPT' or 'MTLOPTADJ'");
@@ -50,8 +52,10 @@ pBaseInterpolator InterpolatorFactory::createMethod(const string in_method){
   	interpolator = pBaseInterpolator(new MtlOptInterpolator());
   }else if(string("MTLOPTADJ") == in_method){
 	interpolator = pBaseInterpolator(new MtlOptInterpolatorAdj());
-  }else{
+  }else if(string("IMW") == in_method){
   	interpolator = pIMWInterpolator(new IMWInterpolator());
+  }else{
+	interpolator = pFakeInterpForUITest(new FakeInterpForUITest());
   }
   return interpolator;
 }

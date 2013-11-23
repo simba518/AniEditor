@@ -19,13 +19,14 @@ namespace LSW_ANI_EDITOR{
 	bool editable(const int frame_id)const{
 	  return !(anieditor.isBoundaryFrame(frame_id));
 	}
-	void setConGroups(const int f_id,const vector<set<int> >&group,const VectorXd &uc){
-	  addConGroups(f_id,group,uc);
-	  anieditor.setConstrainedFrames(con_frame_id);
-	}
-	void setAllConGroups(const set<pConNodesOfFrame> &newCons){
-	  WarpInterpolator::setAllConGroups(newCons);
-	  anieditor.setConstrainedFrames(con_frame_id);
+	void setConGroups(const int f_id,const vector<set<int> >&group,const Matrix<double,3,-1> &uc){
+	  vector<vector<set<int> > >group_rlst;
+	  vector<Eigen::Vector3d> uc_rlst;
+	  splitAllConstraints(group,uc,group_rlst,uc_rlst);
+	  for (int i = 0; i < uc_rlst.size(); ++i){
+		addConGroups(f_id,group_rlst[i],uc_rlst[i]);
+		anieditor.setConstrainedFrames(con_frame_id);
+	  }
 	}
 	bool interpolate ();
 	string getName()const{

@@ -36,9 +36,13 @@ namespace LSW_ANI_EDITOR{
 
 	bool editable(const int frame_id)const;
 
-	void setConGroups(const int f,const vector<set<int> >&g,const VectorXd&uc);
+	void setConGroups(const int f,const vector<set<int> >&g,const Matrix<double,3,-1>&uc);
 
-	void setUc(const int frame_id, const VectorXd &uc);
+	void setUc(const int frame_id, const Matrix<double,3,-1> &uc);
+
+	void removePartialCon(const int frame_id){
+	  removeConOfFrame(frame_id);
+	}
 
 	void removeAllPosCon();
 
@@ -110,6 +114,7 @@ namespace LSW_ANI_EDITOR{
 	void applyPosCon();
 	void reducedWarp(const int frame_id);
 	void removeConOfFrame(const int frame_id);
+	void setConGroups(const int f,const vector<set<int> >&g,const VectorXd&uc);
 
   private:
 	FastAniEditor anieditor;

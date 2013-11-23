@@ -6,12 +6,10 @@
 #include <BaseInterpolator.h>
 #include <RSWarperExt.h>
 #include <RedRSWarperExt.h>
-#include <ConNodesOfFrame.h>
 #include <ModalModeDisplayer.h>
 using namespace std;
 using namespace IEDS;
 using namespace LSW_WARPING;
-using namespace LSW_SIM;
 
 namespace LSW_ANI_EDITOR{
   
@@ -37,18 +35,26 @@ namespace LSW_ANI_EDITOR{
 	  return use_warp;
 	}
 
-	virtual void setAllConGroups(const set<pConNodesOfFrame> &newCons);
-
-	virtual void setConGroups(const int f,const vector<set<int> >&g,const VectorXd&uc){
-	  addConGroups(f,g,uc);
+	virtual void setConGroups(const int f,const vector<set<int> >&g,const Matrix<double,3,-1>&uc){
+	  vector<vector<set<int> > >group_rlst;
+	  vector<Eigen::Vector3d> uc_rlst;
+	  splitAllConstraints(g,uc,group_rlst,uc_rlst);
+	  for (int i = 0; i < uc_rlst.size(); ++i){
+		addConGroups(f,group_rlst[i],uc_rlst[i]);
+	  }
 	}
 
-	virtual void setUc(const int frame_id,const VectorXd &uc);
+	virtual void setUc(const int frame_id,const Matrix<double,3,-1> &uc);
 
 	virtual void removeAllPosCon(){
 	  con_frame_id.clear();
 	  con_nodes.clear();
 	  uc.clear();
+	}
+
+	void removePartialCon(const int frame_id){
+	  ///@todo
+	  ERROR_LOG("undefined function.");
 	}
 
 	void setReducedEdits(const int frame_id, const VectorXd &z_i){
@@ -117,7 +123,7 @@ namespace LSW_ANI_EDITOR{
 	  WARN_LOG_COND("the frame id of the constraints is invalid:"<<frame_id,valid);
 	  return valid;
 	}
-	void addConGroups(const int f,const vector<set<int> >&g,const VectorXd&uc);
+	void addConGroups(const int f,const vector<set<int> >&g,const Matrix<double,3,-1>&uc);
 	void removeConOfFrame(const int frame_id);
 	bool loadUref(JsonFilePaser &json_f,vector<VectorXd> &u_ref)const;
 	VectorXd adjustToSubdim(const VectorXd &z)const;

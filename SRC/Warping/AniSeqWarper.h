@@ -5,7 +5,6 @@
 #include <set>
 #include <boost/shared_ptr.hpp>
 #include <eigen3/Eigen/Dense>
-#include <ConNodesOfFrame.h>
 #include <TetMesh.h>
 
 using namespace std;
@@ -35,9 +34,6 @@ namespace LSW_WARPING{
 
 	// set constrained nodes and con-disp for one frame.
 	virtual void setConNodes(const vector<set<int> > &c_nodes,const VectorXd &bcen_uc){}
-	void setConNodesOfFrame(const LSW_SIM::ConNodesOfFrame &con_nodes){
-	  this->setConNodes(con_nodes.getConNodesSet() ,con_nodes.getBarycenterUc());
-	}
 
 	virtual bool precompute() = 0;
 

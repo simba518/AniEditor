@@ -8,12 +8,10 @@
 #include <ModalWarpingExt.h>
 #include <WarpedPosConAD.h>
 #include <WarperAD.h>
-#include <ConNodesOfFrame.h>
 #include <ModalModeDisplayer.h>
 using namespace std;
 using namespace IEDS;
 using namespace LSW_WARPING;
-using namespace LSW_SIM;
 
 namespace LSW_ANI_EDITOR{
   
@@ -40,11 +38,14 @@ namespace LSW_ANI_EDITOR{
 
 	bool editable(const int frame_id)const;
 
-	void setAllConGroups(const set<pConNodesOfFrame> &newCons);
+	void setConGroups(const int f,const vector<set<int> >&g,const Matrix<double,3,-1>&uc);
 
-	void setConGroups(const int f,const vector<set<int> >&g,const VectorXd&uc);
+    void setUc(const int frame_id, const Matrix<double,3,-1> &uc);
 
-	void setUc(const int frame_id, const VectorXd &uc);
+	void removePartialCon(const int frame_id){
+	  ///@todo
+	  ERROR_LOG("undefined function.");
+	}
 
 	void removeAllPosCon();
 
@@ -113,8 +114,9 @@ namespace LSW_ANI_EDITOR{
   protected:
 	bool initWarper(const string init_filename);
 	bool validConstraints(const int frame_id)const;
-	void addConGroups(const int f,const vector<set<int> >&g,const VectorXd&uc);
+    void addConGroups(const int f,const vector<set<int> >&g,const Matrix<double,3,-1>&uc);
 	void removeConOfFrame(const int frame_id);
+	void setConGroups(const int f,const vector<set<int> >&g,const VectorXd&uc);
 	
   private:
 	FastIntuitiveAniEditor anieditor;

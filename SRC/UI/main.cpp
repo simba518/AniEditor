@@ -3,6 +3,7 @@
 #include <Log.h>
 #include <QInputEventRecorderCmd.h>
 #include "AniEditMainWin.h"
+#include <FakeInterpForUITest.h>
 using namespace UTILITY;
 
 int main(int argc, char *argv[]){

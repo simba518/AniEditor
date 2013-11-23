@@ -71,13 +71,18 @@ bool IMWInterpolator::init (const string init_filename){
   return succ;
 }
 
-void IMWInterpolator::setConGroups(const int frame_id,const vector<set<int> >&group, const VectorXd &uc){
+void IMWInterpolator::setConGroups(const int frame_id,const vector<set<int> >&group, const Matrix<double,3,-1> &uc){
 
-  addConGroups(frame_id,group,uc);
-  anieditor.setConstrainedFrames(con_frame_id);
+  vector<vector<set<int> > >group_rlst;
+  vector<Eigen::Vector3d> uc_rlst;
+  splitAllConstraints(group,uc,group_rlst,uc_rlst);
+  for (int i = 0; i < uc_rlst.size(); ++i){
+	addConGroups(frame_id,group_rlst[i],uc_rlst[i]);
+	anieditor.setConstrainedFrames(con_frame_id);
+  }
 }
-
-void IMWInterpolator::setUc(const int frame_id, const VectorXd &uc){
+ 
+ void IMWInterpolator::setUc(const int frame_id, const Matrix<double, 3,-1> &uc){
 
   assert_in (frame_id,0,(int)u_ref.size()-1);
   assert_eq (con_nodes.size(),con_frame_id.size());
@@ -293,18 +298,16 @@ const VectorXd &IMWInterpolator::getWarpU(const int frame_id,
   return full_u;
 }
 
-void IMWInterpolator::setAllConGroups(const set<pConNodesOfFrame> &newCons){
-
-  removeAllPosCon();
-  BOOST_FOREACH(pConNodesOfFrame con, newCons){
-  	if( !con->isEmpty() ){
-	  addConGroups(con->getFrameId(), con->getConNodesSet(), con->getBarycenterUc());
-	}
-  }
-  anieditor.setConstrainedFrames(con_frame_id);
+void IMWInterpolator::addConGroups(const int frame_id,const vector<set<int> >&group,const Matrix<double,3,-1>&uc){
+  
+  vector<vector<set<int> > >group_rlst;
+  vector<Eigen::Vector3d> uc_rlst;
+  splitAllConstraints(group,uc,group_rlst,uc_rlst);
+  for (int i = 0; i < uc_rlst.size(); ++i)
+    setConGroups(frame_id,group_rlst[i],(VectorXd)uc_rlst[i]);
 }
 
-void IMWInterpolator::addConGroups(const int frame_id,const vector<set<int> >&group,const VectorXd&uc){
+void IMWInterpolator::setConGroups(const int frame_id,const vector<set<int> >&group,const VectorXd&uc){
   
   if(!validConstraints(frame_id)){
 	return ;

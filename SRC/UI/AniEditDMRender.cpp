@@ -37,9 +37,6 @@ void AniEditDMRender::draw()const{
   if (render_type & CON_NODES){
   	drawConNodes();
   }
-  if (render_type & CON_PATH){
-  	drawConPath();
-  }
 }
 
 void AniEditDMRender::updateFrameNumText(){
@@ -115,16 +112,6 @@ void AniEditDMRender::drawConNodes()const{
 	  node_group_render.draw(vol_mesh, groups,&vol_u[0],UTILITY::DRAW_POINT);
 	}
   }
-}
-
-void AniEditDMRender::drawConPath()const{
-
-  ///@todo
-  // if (data_model != NULL){
-  // 	const ConNodesOfFrameSet &c_nodes=data_model->getAllConNodes();
-  // 	const double radius = data_model->getMaxRadius()/50.0f;
-  // 	ConNodeSetDrawer::draw(c_nodes.getConNodeGroups(),radius);
-  // }
 }
 
 void AniEditDMRender::updateConShpereRadius(){

@@ -80,7 +80,35 @@ bool IEDSInterpolator::init (const string init_filename){
   return succ;
 }
 
-void IEDSInterpolator::setConGroups(const int frame_id,const vector<set<int> >&group, const VectorXd &uc){
+void IEDSInterpolator::setConGroups(const int frame_id,const vector<set<int> >&group, const Matrix<double,3,-1> &uc){
+  
+  vector<vector<set<int> > >group_rlst;
+  vector<Eigen::Vector3d> uc_rlst;
+  splitAllConstraints(group,uc,group_rlst,uc_rlst);
+  for (int i = 0; i < uc_rlst.size(); ++i)
+    setConGroups(frame_id,group_rlst[i],(VectorXd)uc_rlst[i]);
+}
+
+void IEDSInterpolator::setUc(const int frame_id, const Matrix<double,3,-1> &uc){
+
+  assert_in (frame_id,0,(int)u_ref.size()-1);
+  assert_eq (C.size(),con_frame_id.size());
+  if(!validConstraints(frame_id)){
+	return ;
+  }
+
+  int i = 0;
+  for (i = 0; i < (int)con_frame_id.size(); ++i) {
+
+	if (frame_id == con_frame_id[i]){
+	  this->uc[i] = uc;
+	  break;
+	}
+  }
+  ERROR_LOG_COND("failed to setUc!", (i<(int)con_frame_id.size())); 
+}
+
+void IEDSInterpolator::setConGroups(const int frame_id,const vector<set<int> >&group,const VectorXd&uc){
 
   if(!validConstraints(frame_id)){
 	return ;
@@ -113,25 +141,6 @@ void IEDSInterpolator::setConGroups(const int frame_id,const vector<set<int> >&g
 	this->C.push_back(C);
 	this->uc.push_back(uc);
   }
-}
-
-void IEDSInterpolator::setUc(const int frame_id, const VectorXd &uc){
-
-  assert_in (frame_id,0,(int)u_ref.size()-1);
-  assert_eq (C.size(),con_frame_id.size());
-  if(!validConstraints(frame_id)){
-	return ;
-  }
-
-  int i = 0;
-  for (i = 0; i < (int)con_frame_id.size(); ++i) {
-
-	if (frame_id == con_frame_id[i]){
-	  this->uc[i] = uc;
-	  break;
-	}
-  }
-  ERROR_LOG_COND("failed to setUc!", (i<(int)con_frame_id.size())); 
 }
 
 void IEDSInterpolator::removeAllPosCon(){

@@ -45,7 +45,7 @@ bool WarpInterpolator::init (const string init_filename){
   return succ;
 }
 
-void WarpInterpolator::setUc(const int frame_id, const VectorXd &uc){
+void WarpInterpolator::setUc(const int frame_id, const Matrix<double,3,-1>&uc){
 
   assert_in (frame_id,0,(int)u_ref.size()-1);
   assert_eq (con_nodes.size(),con_frame_id.size());
@@ -114,17 +114,7 @@ const VectorXd &WarpInterpolator::getWarpU(const int frame_id,
   return full_u;
 }
 
-void WarpInterpolator::setAllConGroups(const set<pConNodesOfFrame> &newCons){
-  
-  removeAllPosCon();
-  BOOST_FOREACH(pConNodesOfFrame con, newCons){
-  	if( !con->isEmpty() ){
-  	  addConGroups(con->getFrameId(), con->getConNodesSet(), con->getBarycenterUc());
-  	}
-  }
-}
-
-void WarpInterpolator::addConGroups(const int frame_id,const vector<set<int> >&group,const VectorXd&uc){
+void WarpInterpolator::addConGroups(const int frame_id,const vector<set<int> >&group,const Matrix<double,3,-1>&uc){
 
   if(!validConstraints(frame_id)){
 	ERROR_LOG("frame "<<frame_id<<" can not be constrained.");
