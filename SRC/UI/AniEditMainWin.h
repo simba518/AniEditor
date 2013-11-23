@@ -37,7 +37,6 @@ namespace ANI_EDIT_UI{
 	void paserCommandLine();
 	bool paserInitFile(const string init_filename);
 	void initViewers();
-	void autoRun(const string init_filename);
 
   protected slots:
 	void loadInitFile();

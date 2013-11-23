@@ -6,7 +6,6 @@ SET(NONE_QT_CPP
   
   AniEditDM.cpp
   AniEditDMConNodeDrag.cpp
-  DragTrajectoryRecord.cpp
 )
 
 #####################################QT#####################################

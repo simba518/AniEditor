@@ -110,16 +110,7 @@ void AniEditMainWin::createConnections(){
   connect(m_mainwindow.actionLoadAllReducedEdit, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(loadAllReducedEdits()));
   connect(m_mainwindow.actionSaveCurrentVolFullU, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveCurrentVolFullU()));
   connect(m_mainwindow.actionLoadCuReducedEdit, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(loadCurrentReducedEdits()));
-  // connect(m_mainwindow.actionSaveRotModalMat, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveRotModalMatrix()));
   connect(m_mainwindow.actionPrintEigenvalues, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(printEigenValues()));
-  connect(m_mainwindow.actionUpdateConTrajectory, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(computeConNodeTrajectory()));
-  
-
-  // AniEditDM_UI: record drag operation
-  connect(m_mainwindow.actionRecordDragOp, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(toggleRecord()));
-  connect(m_mainwindow.actionPlayDragOp, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(playRecodDrag()));
-  connect(m_mainwindow.actionSaveDragOp, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(saveDragRecord()));
-  connect(m_mainwindow.actionLoadDragOp, SIGNAL(triggered()), p_AniEditDM_UI.get(), SLOT(loadDragRecord()));
 
   // AniEditDMRenderCtrl
   connect(m_mainwindow.actionShowInputObj, SIGNAL(triggered()), p_AniEditDMRenderCtrl.get(), SLOT(toggleShowInputObj()));
@@ -162,7 +153,6 @@ void AniEditMainWin::paserCommandLine(){
   	}else{
 	  ERROR_LOG("file " << init_filename <<" is not exist!" );
   	}
-	autoRun(init_filename);
   }
 }
 
@@ -217,28 +207,4 @@ void AniEditMainWin::resetWindows(){
   if (preview_viewer) 
 	preview_viewer->resize(default_w,default_h);
   this->resize(default_w*2,default_h);
-}
-
-void AniEditMainWin::autoRun(const string init_filename){
-  
-  UTILITY::JsonFilePaser inf;
-  if(inf.open(init_filename)){
-	
-	bool auto_run = false;
-	bool auto_exit = false;
-	string interp_seq_save_file;
-
-	if(inf.read("auto_run",auto_run) && auto_run){
-	  
-	  if (p_AniEditDM){
-		const bool succ = p_AniEditDM->playRecodDrag();
-		ERROR_LOG_COND("failed to perform interpolation ",succ);
-	  }
-	  if(inf.read("auto_exit",auto_exit) && auto_exit){
-		INFO_LOG("auto exit, controlled by the json node 'auto_exit' of the file " << init_filename );
-		exit(0);
-	  }
-	}
-  }
-
 }

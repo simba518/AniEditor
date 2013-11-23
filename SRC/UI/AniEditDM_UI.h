@@ -45,21 +45,6 @@ namespace ANI_EDIT_UI{
 	void removeAllPosCon(){
 	  if (data_model) data_model->removeAllPosCon();
 	}
-	void computeConNodeTrajectory(){
-	  if(data_model){
-		data_model->computeConNodeTrajectory();
-		emit update();
-	  }
-	}
-	void toggleRecord(){
-	  if (data_model){
-		const bool record = data_model->isRecordDrag() ? false : true;
-		data_model->setRecord(record);
-	  }
-	}
-	void playRecodDrag(){
-	  file_dialog->warning(data_model != NULL && data_model->playRecodDrag());
-	}
 
 	void saveParitalCon()const{ANIEDITDM_SAVE(saveParitalCon);}
 	void saveOutputVolMeshesVTK()const{ANIEDITDM_SAVE(saveOutputVolMeshesVTK);}
@@ -72,13 +57,11 @@ namespace ANI_EDIT_UI{
 	void saveCurrentReducedEdits()const{ANIEDITDM_SAVE(saveCurrentReducedEdits);}
 	void saveAllReducedEdits()const{ANIEDITDM_SAVE(saveAllReducedEdits);}
 	void saveCurrentVolFullU()const{ANIEDITDM_SAVE(saveCurrentVolFullU);}
-	void saveDragRecord()const{ANIEDITDM_SAVE(saveDragRecord);}
 
 	void loadParitalCon(){ANIEDITDM_LOAD(loadParitalCon);}
 	void loadConPath(){ANIEDITDM_LOAD(loadConPath);}
 	void loadCurrentReducedEdits(){ANIEDITDM_LOAD(loadCurrentReducedEdits);}
 	void loadAllReducedEdits(){ANIEDITDM_LOAD(loadAllReducedEdits);}
-	void loadDragRecord(){ANIEDITDM_LOAD(loadDragRecord);}
 
 	void printEigenValues()const{
 	  if (data_model && data_model->getInterpolator()){

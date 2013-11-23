@@ -6,7 +6,6 @@
 #include <ConNodesOfFrame.h>
 #include <BaseInterpolator.h>
 #include <TetMeshEmbeding.h>
-#include "DragTrajectoryRecord.h"
 using namespace QGLVEXT;
 using namespace LSW_ANI_EDITOR;
 using namespace LSW_SIM;
@@ -116,36 +115,12 @@ namespace ANI_EDIT_UI{
 	bool saveAllReducedEdits(const string filename)const;
 	bool saveCurrentVolFullU(const string filename)const;
 
-	// record drag operations
-	void setRecord(const bool recrod){
-	  this->record_drag = recrod;
-	}
-	bool isRecordDrag()const{
-	  return record_drag;
-	}
-	bool saveDragRecord(const string filename)const{
-	  return drag_record.save(filename);
-	}
-	bool loadDragRecord(const string filename){
-	  return drag_record.load(filename);
-	}
-	bool playRecodDrag();
-
 	bool editable()const;
-	void computeConNodeTrajectory();
-	const vector<VectorXd> &getConNodeTraj()const{
-	  return con_node_traj;
-	}
 
   protected:
 	VectorXd barycenOfRestShape(const vector<set<int> >&g)const; 
 	VectorXd barycenOfVolU(const vector<set<int> >&g)const;
 	string getZeroStr(const int frame, const int T)const;
-	void recordDragOp(const int frame_num, const VectorXd &uc){
-	  if (isRecordDrag()){
-		drag_record.record(frame_num, uc);
-	  }
-	}
 	
   private:
 	pAniDataModel _animation;
@@ -153,9 +128,6 @@ namespace ANI_EDIT_UI{
 	ConNodesOfFrameSet con_nodes_for_warping; // con nodes for warping.
 	ConNodesOfFrameSet con_nodes_for_edit; // con nodes under edit.
 	pTetMeshEmbeding vol_obj; // store both vol and obj mesh.
-	DragTrajectoryRecord drag_record;
-	bool record_drag; // if true then record the drag operation.
-	vector<VectorXd> con_node_traj; // trajectory of contraint nodes.
   };
   
   typedef boost::shared_ptr<AniEditDM> pAniEditDM;

@@ -13,14 +13,10 @@ using namespace ANI_EDIT_UI;
 
 AniEditDM::AniEditDM(pTetMeshEmbeding vol_obj, pAniDataModel animation):
   _animation(animation), vol_obj(vol_obj){
-
-  record_drag = false;
 }
 
 AniEditDM::AniEditDM(pTetMeshEmbeding vol_obj, pAniDataModel animation, pBaseInterpolator interpolator):
   _animation(animation),interpolator(interpolator), vol_obj(vol_obj){
-
-  record_drag = false;
 }
 
 bool AniEditDM::initialize(const string filename,const bool create_interp){
@@ -45,8 +41,6 @@ bool AniEditDM::initialize(const string filename,const bool create_interp){
 		succ = loadConPath(con_path);
 	  if ( inf.readFilePath("partial_constraints",partial_con) )
 		succ &= loadParitalCon(partial_con);
-	  if ( inf.readFilePath("drag_trajectory",drag_trajectory) )
-		succ &= loadDragRecord(drag_trajectory);
 	  
 	  MatrixXd keyZM;
 	  vector<int> keyframes;
@@ -216,7 +210,6 @@ void AniEditDM::updateConPos(const VectorXd &uc){
 
   con_nodes_for_edit.updateConNodeGroup(uc,currentFrameNum());
   if (interpolator != NULL && totalFrameNum() > 0){
-	recordDragOp(currentFrameNum(), uc);
 	interpolator->setUc(currentFrameNum(), uc);
 	this->interpolate();
   }
@@ -563,48 +556,4 @@ int AniEditDM::fullDim()const{
 	return vol_obj->getTetMesh()->nodes().size()*3;
   }
   return 0;
-}
-
-bool AniEditDM::playRecodDrag(){
-  
-  bool succ = true;
-  this->interpolate();
-  for (int i = 0; i < drag_record.totalRecord(); ++i){
-
-	const OneDragRecord &one_drag = drag_record.getRecord(i);
-	interpolator->setUc(one_drag.getFrameNum(), one_drag.getUc());
-	if ( !this->interpolate() ){
-	  succ = false;
-	  break;
-	}
-  }
-  return succ;
-}
-
-void AniEditDM::computeConNodeTrajectory(){
-  
-  pTetMesh_const vol_mesh = this->getVolMesh();
-  const vector<set<int> > groups = this->getConNodes();
-  size_t total_con_node = 0;
-  for (size_t i = 0; i < groups.size(); ++i){
-	total_con_node += groups[i].size();
-  }
-  con_node_traj.resize(total_con_node);
-  for (size_t i = 0; i < con_node_traj.size(); ++i){
-    con_node_traj[i].resize(3*totalFrameNum());
-	con_node_traj[i].setZero();
-  }
-  for (int f = 0; f < totalFrameNum(); ++f){
-	const VectorXd &vol_u = this->getVolFullU(f);
-	int count = 0;
-	for (size_t g = 0; g < groups.size(); ++g){
-	  BOOST_FOREACH(int i, groups[g]){
-		const Vector3d &rest_v = vol_mesh->nodes()[i];
-		con_node_traj[count][f*3+0] = vol_u[i*3+0] + rest_v[0];
-		con_node_traj[count][f*3+1] = vol_u[i*3+1] + rest_v[1];
-		con_node_traj[count][f*3+2] = vol_u[i*3+2] + rest_v[2];
-		count ++;
-	  }
-	}
-  }
 }

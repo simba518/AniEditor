@@ -41,9 +41,6 @@ void AniEditDMRender::draw()const{
   if (render_type & CON_PATH){
   	drawConPath();
   }
-  if (render_type & CON_TRAJECTORY){
-  	drawConTraj();
-  }
 }
 
 void AniEditDMRender::updateFrameNumText(){
@@ -136,29 +133,6 @@ void AniEditDMRender::updateConShpereRadius(){
 	const double radius = data_model->getMaxRadius()/50.0f;
 	if (radius > 0.0f){
 	  node_group_render.setSphereRadius(radius);
-	}
-  }
-}
-
-void AniEditDMRender::drawConTraj()const{
-  
-  if(data_model){
-	const vector<VectorXd> &con_trajs = data_model->getConNodeTraj();
-	
-	for (size_t i = 0; i < con_trajs.size(); ++i){
-	  const VectorXd &p = con_trajs[i];
-	  glDisable(GL_LIGHTING);
-	  glColor3d(1,0,0);
-	  glLineWidth(1.0f);
-	  glBegin(GL_LINE_STRIP);
-	  for (int i = 0; i < p.size()/3; ++i){
-		const double x = p[i*3+0];
-		const double y = p[i*3+1];
-		const double z = p[i*3+2];
-		glVertex3f(x,y,z);
-	  }
-	  glEnd();
-	  glEnable(GL_LIGHTING);
 	}
   }
 }
