@@ -20,13 +20,11 @@ namespace LSW_ANI_EDITOR{
 	  return !(anieditor.isBoundaryFrame(frame_id));
 	}
 	void setConGroups(const int f_id,const vector<set<int> >&group,const Matrix<double,3,-1> &uc){
-	  vector<vector<set<int> > >group_rlst;
-	  vector<Eigen::Matrix<double,3,-1> > uc_rlst;
+	  vector<set<int > > group_rlst;
+	  VectorXd uc_rlst;
 	  splitAllConstraints(group,uc,group_rlst,uc_rlst);
-	  for (int i = 0; i < uc_rlst.size(); ++i){
-		addConGroups(f_id,group_rlst[i],uc_rlst[i]);
-		anieditor.setConstrainedFrames(con_frame_id);
-	  }
+	  addConGroups(f_id,group_rlst,uc_rlst);
+	  anieditor.setConstrainedFrames(con_frame_id);
 	}
 	bool interpolate ();
 	string getName()const{

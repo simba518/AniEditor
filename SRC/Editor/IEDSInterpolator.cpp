@@ -82,18 +82,10 @@ bool IEDSInterpolator::init (const string init_filename){
 
 void IEDSInterpolator::setConGroups(const int frame_id,const vector<set<int> >&group, const Matrix<double,3,-1> &uc){
 
-  TRACE_FUN();
-  vector<vector<set<int> > >group_rlst;
-  vector<Eigen::Matrix<double,3,-1> > uc_rlst;
+  vector<set<int > > group_rlst;
+  VectorXd uc_rlst;
   splitAllConstraints(group,uc,group_rlst,uc_rlst);
-  for (int i = 0; i < uc_rlst.size(); ++i){
-	assert_ge(group_rlst[i].size(),1);
-	assert_eq(group_rlst[i][0].size(),1);
-	assert_eq(uc_rlst[i].rows(),3);
-	assert_eq(uc_rlst[i].cols(),group_rlst[i].size());
-	const VectorXd &vc = Map<VectorXd>(&(uc_rlst[i])(0,0),uc_rlst[i].size());
-    setConGroups(frame_id,group_rlst[i],vc);
-  }
+  setConGroups(frame_id,group_rlst,uc_rlst);
 }
 
 void IEDSInterpolator::setUc(const int frame_id, const Matrix<double,3,-1> &uc){
@@ -107,6 +99,7 @@ void IEDSInterpolator::setUc(const int frame_id, const Matrix<double,3,-1> &uc){
   int i = 0;
   for (i = 0; i < (int)con_frame_id.size(); ++i) {
 	if (frame_id == con_frame_id[i]){
+	  assert_eq(this->uc[i].size(),uc.size());
 	  this->uc[i] = Map<VectorXd>(const_cast<double*>(&uc(0,0)),uc.size());
 	  break;
 	}
@@ -115,8 +108,6 @@ void IEDSInterpolator::setUc(const int frame_id, const Matrix<double,3,-1> &uc){
 }
 
 void IEDSInterpolator::setConGroups(const int frame_id,const vector<set<int> >&group,const VectorXd&uc){
-
-  TRACE_FUN();
 
   if(!validConstraints(frame_id)){
 	return ;

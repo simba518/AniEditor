@@ -73,16 +73,14 @@ bool IMWInterpolator::init (const string init_filename){
 
 void IMWInterpolator::setConGroups(const int frame_id,const vector<set<int> >&group, const Matrix<double,3,-1> &uc){
 
-  vector<vector<set<int> > >group_rlst;
-  vector<Eigen::Matrix<double,3,-1> > uc_rlst;
+  vector<set<int> > group_rlst;
+  VectorXd uc_rlst;
   splitAllConstraints(group,uc,group_rlst,uc_rlst);
-  for (int i = 0; i < uc_rlst.size(); ++i){
-	addConGroups(frame_id,group_rlst[i],uc_rlst[i]);
-	anieditor.setConstrainedFrames(con_frame_id);
-  }
+  addConGroups(frame_id,group_rlst,uc_rlst);
+  anieditor.setConstrainedFrames(con_frame_id);
 }
  
- void IMWInterpolator::setUc(const int frame_id, const Matrix<double, 3,-1> &uc){
+void IMWInterpolator::setUc(const int frame_id, const Matrix<double, 3,-1> &uc){
 
   assert_in (frame_id,0,(int)u_ref.size()-1);
   assert_eq (con_nodes.size(),con_frame_id.size());
@@ -93,7 +91,8 @@ void IMWInterpolator::setConGroups(const int frame_id,const vector<set<int> >&gr
   int i = 0;
   for (i = 0; i < (int)con_frame_id.size(); ++i) {
 	if (frame_id == con_frame_id[i]){
-	  this->uc[i] = uc;
+	  assert_eq(this->uc[i].size(),uc.size());
+	  this->uc[i] = Map<VectorXd>(const_cast<double*>(&uc(0,0)),uc.size());
 	  break;
 	}
   }
@@ -298,13 +297,47 @@ const VectorXd &IMWInterpolator::getWarpU(const int frame_id,
   return full_u;
 }
 
-void IMWInterpolator::addConGroups(const int frame_id,const vector<set<int> >&group,const Matrix<double,3,-1>&uc){
-  
-  vector<vector<set<int> > >group_rlst;
-  vector<Eigen::Matrix<double,3,-1> > uc_rlst;
-  splitAllConstraints(group,uc,group_rlst,uc_rlst);
-  for (int i = 0; i < uc_rlst.size(); ++i)
-    setConGroups(frame_id,group_rlst[i],(VectorXd)uc_rlst[i]);
+void IMWInterpolator::addConGroups(const int frame_id,const vector<set<int> >&group,const VectorXd&uc){
+
+  if(!validConstraints(frame_id)){
+	return ;
+  }
+  assert_in (frame_id,0,getT()-1);
+  assert_eq (uc.size()%3,0);
+  assert_eq (uc.size(),group.size()*3);
+
+  if(group.size() <= 0){
+	removeConOfFrame(frame_id);
+	return ;
+  }
+
+  vector<int> con_nodes;
+  for (size_t i = 0; i < group.size(); ++i){
+	assert_gt(group[i].size() , 0);
+	con_nodes.push_back(*(group[i].begin()));
+  }
+
+  // we need to sort the constraints by frames numder, required by anieditor.
+  size_t i = 0;
+  for (; i < con_frame_id.size(); ++i){
+
+	if (frame_id == con_frame_id[i]){
+	  // frame_id is in con_frame_id
+	  this->con_nodes[i] = con_nodes;
+	  this->uc[i] = uc;
+	  break;
+	}else if(frame_id < con_frame_id[i]){
+	  this->con_nodes.insert(this->con_nodes.begin()+i,con_nodes);
+	  this->uc.insert(this->uc.begin()+i,uc);
+	  con_frame_id.insert(con_frame_id.begin()+i,frame_id);
+	  break;
+	}
+  }
+  if ( i >= con_frame_id.size()){
+	this->con_nodes.push_back(con_nodes);
+	this->uc.push_back(uc);
+	con_frame_id.push_back(frame_id);
+  }
 }
 
 void IMWInterpolator::setConGroups(const int frame_id,const vector<set<int> >&group,const VectorXd&uc){

@@ -36,12 +36,10 @@ namespace LSW_ANI_EDITOR{
 	}
 
 	virtual void setConGroups(const int f,const vector<set<int> >&g,const Matrix<double,3,-1>&uc){
-	  vector<vector<set<int> > >group_rlst;
-	  vector<Eigen::Matrix<double,3,-1> > uc_rlst;
+	  vector<set<int > >group_rlst;
+	  VectorXd uc_rlst;
 	  splitAllConstraints(g,uc,group_rlst,uc_rlst);
-	  for (int i = 0; i < uc_rlst.size(); ++i){
-		addConGroups(f,group_rlst[i],uc_rlst[i]);
-	  }
+	  addConGroups(f,group_rlst,uc_rlst);
 	}
 
 	virtual void setUc(const int frame_id,const Matrix<double,3,-1> &uc);
@@ -122,7 +120,7 @@ namespace LSW_ANI_EDITOR{
 	  WARN_LOG_COND("the frame id of the constraints is invalid:"<<frame_id,valid);
 	  return valid;
 	}
-	void addConGroups(const int f,const vector<set<int> >&g,const Matrix<double,3,-1>&uc);
+	void addConGroups(const int f,const vector<set<int> >&g,const VectorXd &uc);
 	void removeConOfFrame(const int frame_id);
 	bool loadUref(JsonFilePaser &json_f,vector<VectorXd> &u_ref)const;
 	VectorXd adjustToSubdim(const VectorXd &z)const;

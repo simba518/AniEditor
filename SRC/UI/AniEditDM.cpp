@@ -209,7 +209,6 @@ void AniEditDM::resetPartialCon(const int frameid){
 	const VectorXd &u = getUforConstraint();
 	Matrix<double,3,-1> pc;
 	getSubUc(par->getConNodesSet(),u,pc);
-
 	_partialCon.updatePc(pc,frameid);
 	interpolator->setConGroups(par->getFrameId(),par->getConNodesSet(),par->getPc());
   }else{

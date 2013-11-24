@@ -113,7 +113,7 @@ namespace LSW_ANI_EDITOR{
   protected:
 	bool initWarper(const string init_filename);
 	bool validConstraints(const int frame_id)const;
-    void addConGroups(const int f,const vector<set<int> >&g,const Matrix<double,3,-1>&uc);
+    void addConGroups(const int f,const vector<set<int> >&g,const VectorXd&uc);
 	void removeConOfFrame(const int frame_id);
 	void setConGroups(const int f,const vector<set<int> >&g,const VectorXd&uc);
 	
