@@ -122,8 +122,12 @@ namespace LSW_ANI_EDITOR{
   protected:
 	/// @todo this method should be removed.
 	void splitAllConstraints(const vector<set<int> >&group,const Eigen::Matrix<double,3,-1> &uc,
-							 vector<vector<set<int> > >&group_rlst,vector<Eigen::Vector3d> &uc_rlst)const{
+							 vector<vector<set<int> > >&group_rlst,
+							 vector<Eigen::Matrix<double,3,-1> > &uc_rlst)const{
 	  group_rlst.clear();
+	  group_rlst.reserve(uc.cols());
+	  uc_rlst.reserve(uc.cols());
+	  int index = 0;
 	  BOOST_FOREACH(const set<int>& s, group){
 		vector<set<int> > vs;
 		BOOST_FOREACH(const int i, s){
@@ -132,11 +136,9 @@ namespace LSW_ANI_EDITOR{
 		  vs.push_back(ones);
 		}
 		group_rlst.push_back(vs);
-	  }
-
-	  uc_rlst.resize(uc.cols());
-	  for (int i = 0; i < uc.cols(); ++i){
-		uc_rlst[i] = uc.col(i);
+		assert_le(index+vs.size(),uc.cols());
+		uc_rlst.push_back(uc.block(0,index,3,vs.size()));
+		index += vs.size();
 	  }
 	}
   };

@@ -74,7 +74,7 @@ bool IMWInterpolator::init (const string init_filename){
 void IMWInterpolator::setConGroups(const int frame_id,const vector<set<int> >&group, const Matrix<double,3,-1> &uc){
 
   vector<vector<set<int> > >group_rlst;
-  vector<Eigen::Vector3d> uc_rlst;
+  vector<Eigen::Matrix<double,3,-1> > uc_rlst;
   splitAllConstraints(group,uc,group_rlst,uc_rlst);
   for (int i = 0; i < uc_rlst.size(); ++i){
 	addConGroups(frame_id,group_rlst[i],uc_rlst[i]);
@@ -301,7 +301,7 @@ const VectorXd &IMWInterpolator::getWarpU(const int frame_id,
 void IMWInterpolator::addConGroups(const int frame_id,const vector<set<int> >&group,const Matrix<double,3,-1>&uc){
   
   vector<vector<set<int> > >group_rlst;
-  vector<Eigen::Vector3d> uc_rlst;
+  vector<Eigen::Matrix<double,3,-1> > uc_rlst;
   splitAllConstraints(group,uc,group_rlst,uc_rlst);
   for (int i = 0; i < uc_rlst.size(); ++i)
     setConGroups(frame_id,group_rlst[i],(VectorXd)uc_rlst[i]);
