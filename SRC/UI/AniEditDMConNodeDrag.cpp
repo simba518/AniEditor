@@ -8,7 +8,8 @@ using namespace UTILITY;
 AniEditDMConNodeDrag::AniEditDMConNodeDrag(pQGLViewerExt viewer, pAniEditDM dm):
   viewer(viewer),data_model(dm){
   draggedGroupId = -1;
-  dragged_point_start.setZero();
+  initial_dragged_point.setZero();
+  initial_displacement.setZero();
   const double dragged_color[4] = {0.0f, 0.0f, 0.6f, 1.0f};
   con_node_render.setColor(dragged_color);
 }
@@ -48,10 +49,9 @@ void AniEditDMConNodeDrag::draw()const{
 
 void AniEditDMConNodeDrag::getDragedPoint(double point[3])const{
 
-  assert_gt(dragged_point_start.cols(),0);
-  point[0] = dragged_point_start.col(0)[0];
-  point[1] = dragged_point_start.col(0)[1];
-  point[2] = dragged_point_start.col(0)[2];
+  point[0] = initial_dragged_point.col(0)[0];
+  point[1] = initial_dragged_point.col(0)[1];
+  point[2] = initial_dragged_point.col(0)[2];
 }
 
 void AniEditDMConNodeDrag::selectDragEle(int sel_group_id){
@@ -63,24 +63,27 @@ void AniEditDMConNodeDrag::selectDragEle(int sel_group_id){
 	pTetMesh_const restVolMesh = data_model->getVolMesh();
 	assert_gt(groups.size(),0);
 
-	dragged_point_start = data_model->getUc(sel_group_id);
-	int k = 0;
-	BOOST_FOREACH(const int i, groups){
-	  dragged_point_start.col(k++) += restVolMesh->nodes()[i];
-	}
+	initial_displacement = data_model->getUc(sel_group_id);
+	assert_eq(initial_displacement.cols(),groups.size());
+	initial_dragged_point = initial_displacement.col(0);
+	initial_dragged_point += restVolMesh->nodes()[*groups.begin()];
   }
 }
 
 void AniEditDMConNodeDrag::dragTo(double x,double y,double z){
 
   if(data_model){
-	Matrix<double,3,-1> u = dragged_point_start;
+	double disp[3];
+	disp[0] = x-initial_dragged_point[0];
+	disp[1] = y-initial_dragged_point[1];
+	disp[2] = z-initial_dragged_point[2];
+
+	Matrix<double,3,-1> u = initial_displacement;
 	for (int i = 0; i < u.cols(); ++i){
-	  u.col(i)[0] -= x;
-	  u.col(i)[1] -= y;
-	  u.col(i)[2] -= z;
+	  u.col(i)[0] += disp[0];
+	  u.col(i)[1] += disp[1];
+	  u.col(i)[2] += disp[2];
 	}
-	u *= -1.0f;
 	data_model->updateConPos(u,draggedGroupId);
   }
   if(viewer)

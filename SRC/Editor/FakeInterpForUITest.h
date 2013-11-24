@@ -59,7 +59,7 @@ namespace LSW_ANI_EDITOR{
 
 	  _group.resize(getT());
 	  _pc.resize(getT());
-
+	  _ouputU = _inputU;
 	  return succ;
 	}
 	bool editable(const int frame_id)const{
@@ -68,7 +68,6 @@ namespace LSW_ANI_EDITOR{
 	}
 	void setConGroups(const int frame_id,const vector<set<int> >&group, 
 							  const Eigen::Matrix<double,3,-1> &pc){
-	  TRACE_FUN();
 	  assert_in(frame_id,0,getT());
 	  int nodes = 0;
 	  for (int i = 0; i < group.size(); ++i){
@@ -77,24 +76,29 @@ namespace LSW_ANI_EDITOR{
 		_pc[frame_id] = pc;
 		nodes += group[i].size();
 	  }
-	  INFO_LOG("set constrained nodes: "<<nodes);
 	  assert_eq(pc.cols(),nodes);
 	}
 	void setUc(const int frame_id, const Eigen::Matrix<double,3,-1> &pc){
-	  TRACE_FUN();
 	  assert_in(frame_id,0,getT()-1);
 	  assert_gt(pc.cols(),0);
 	  assert_eq(_pc[frame_id].cols(),pc.cols());
 	  _pc[frame_id] = pc;
-	  INFO_LOG("set uc: "<<pc);
 	}
-	void removeAllPosCon(){}
+	void removeAllPosCon(){
+	  BOOST_FOREACH(vector<set<int> > &g, _group){
+		g.clear();
+	  }
+	  for (size_t i = 0; i < getT(); ++i){
+		_pc[i].resize(3,0);
+	  }
+	}
 	void removePartialCon(const int frame_id){
 	  assert_in(frame_id,0,getT()-1);
+	  _group[frame_id].clear();
+	  _pc[frame_id].resize(3,0);
 	}
 	bool interpolate (){
 
-	  TRACE_FUN();
 	  for (int f = 0; f < getT(); ++f){
 		const vector<set<int> > &group = _group[f];
 		const Eigen::Matrix<double,3,-1> &pc = _pc[f];
@@ -103,7 +107,7 @@ namespace LSW_ANI_EDITOR{
 		  BOOST_FOREACH(const int i, group[j]){
 		    assert_in(i*3,0,_inputU[f].size()-2);
 			assert_lt(nodes,pc.cols());
-		    _inputU[f].segment<3>(i*3) = pc.col(nodes);
+		    _ouputU[f].segment<3>(i*3) = pc.col(nodes);
 			nodes++;
 		  }
 		}
@@ -111,16 +115,16 @@ namespace LSW_ANI_EDITOR{
 	  return true;
 	}
 	const VectorXd& getInterpU(const int frame_id){
-	  assert_in(frame_id,0,_inputU.size()-1);
-	  return _inputU[frame_id];
+	  assert_in(frame_id,0,_ouputU.size()-1);
+	  return _ouputU[frame_id];
 	}
 	const VectorXd& getInputU(const int frame_id){
 	  assert_in(frame_id,0,_inputU.size()-1);
 	  return _inputU[frame_id];
 	}
 	const VectorXd& getReducedEdits(const int frame_id)const{
-	  assert_in(frame_id,0,_inputU.size()-1);
-	  return _inputU[frame_id];
+	  assert_in(frame_id,0,_ouputU.size()-1);
+	  return _ouputU[frame_id];
 	}
 	int getT()const{
 	  return _inputU.size();
@@ -134,6 +138,7 @@ namespace LSW_ANI_EDITOR{
 
   private:
 	vector<VectorXd> _inputU; 
+	vector<VectorXd> _ouputU;
 	vector<vector<set<int> > > _group;
 	vector<Eigen::Matrix<double,3,-1> > _pc;
   };

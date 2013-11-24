@@ -58,7 +58,8 @@ namespace ANI_EDIT_UI{
 	int draggedGroupId;
 
 	VolNodeGroupRender con_node_render;
-	Matrix<double,3,-1> dragged_point_start; // start position of the dragged point.
+	Vector3d initial_dragged_point; // start position of the dragged point.
+	Matrix<double,3,-1> initial_displacement; // initial displacements of the dragged group.
   };
   typedef boost::shared_ptr<AniEditDMConNodeDrag> pAniEditDMConNodeDrag;
 

@@ -82,8 +82,8 @@ TARGET_LINK_LIBRARIES(${APPNAME}
   ${ALGLIB_LIBRARIES}
   ${CASADI_LIBRARIES}
   ${IPOPT_LIBRARIES}
-
-  /usr/lib/liblapack.a
-  /usr/lib/libblas.so
+  ${LAPACK_LIBRARIES}
+  # /usr/lib/liblapack.a
+  # /usr/lib/libblas.so
   libpthread.so
 )

@@ -85,11 +85,7 @@ namespace ANI_EDIT_UI{
 	void updateConPos(const Matrix<double,3,-1> &uc,const int group_id);
 	void updateConPos(const Matrix<double,3,-1> &uc);
 	vector<set<int> > getConNodes()const;
-	inline const Matrix<double,3,-1> getUc(const int group)const{
-	  pPartialConstraints_const par = _partialCon.getPartialCon(currentFrameNum());
-	  assert(par);
-	  return par->getPc(group);
-	}
+	const Matrix<double,3,-1> getUc(const int group)const;
 	const PartialConstraintsSet &getAllConNodes()const{return _partialCon;}
 	void removeAllPosCon();
 
@@ -133,6 +129,7 @@ namespace ANI_EDIT_UI{
 	VectorXd barycenOfVolU(const vector<set<int> >&g)const;
 	string getZeroStr(const int frame, const int T)const;
 	void resetPartialCon(const int frame);
+	void getSubUc(const vector<set<int> > &groups,const VectorXd &full_u,Matrix<double,3,-1> &sub_u)const;
 	
   private:
 	pAniDataModel _animation;

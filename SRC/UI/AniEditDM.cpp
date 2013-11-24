@@ -206,22 +206,40 @@ void AniEditDM::resetPartialCon(const int frameid){
   
   pPartialConstraints_const par = _partialCon.getPartialCon(frameid);
   if (par){
-
 	const VectorXd &u = getUforConstraint();
-	Matrix<double,3,-1> pc(3,par->numConNodes());
-	const vector<set<int> > &vs = par->getConNodesSet();
-	BOOST_FOREACH(const set<int>& s, vs){
-	  int index = 0;
-	  BOOST_FOREACH(const int i, s){
-		assert_in(i*3,0,u.size()-3);
-		pc.col(index++) = u.segment<3>(i*3);
-	  }
-	}
+	Matrix<double,3,-1> pc;
+	getSubUc(par->getConNodesSet(),u,pc);
+
 	_partialCon.updatePc(pc,frameid);
 	interpolator->setConGroups(par->getFrameId(),par->getConNodesSet(),par->getPc());
   }else{
 	interpolator->removePartialCon(frameid);
   }
+  this->interpolate();
+}
+
+void AniEditDM::getSubUc(const vector<set<int> > &groups,const VectorXd &full_u,Matrix<double,3,-1> &sub_u)const{
+
+  int nodes = 0;
+  BOOST_FOREACH(const set<int>& s, groups)
+	nodes += s.size();
+
+  sub_u.resize(3,nodes);
+  int index = 0;
+  BOOST_FOREACH(const set<int>& s, groups){
+	BOOST_FOREACH(const int i, s){
+	  assert_in(i*3,0,full_u.size()-3);
+	  sub_u.col(index) = full_u.segment<3>(i*3);
+	  index++;
+	}
+  }
+}
+
+const Matrix<double,3,-1> AniEditDM::getUc(const int group)const{
+
+  pPartialConstraints_const par = _partialCon.getPartialCon(currentFrameNum());
+  assert(par);
+  return par->getPc(group);
 }
 
 // interpolate
@@ -230,10 +248,10 @@ bool AniEditDM::interpolate(){
   bool succ = false;
   if (interpolator != NULL){
 	
-	UTILITY::Timer timer;
-	timer.start();
+	// UTILITY::Timer timer;
+	// timer.start();
 	succ = interpolator->interpolate();
-	timer.stop("total interpolate time: ");
+	// timer.stop("total interpolate time: ");
   }
   if (!succ){
 	ERROR_LOG("interpolation failed");
