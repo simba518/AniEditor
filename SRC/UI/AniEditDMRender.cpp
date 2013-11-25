@@ -1,3 +1,4 @@
+#include <WindowsHeaders.h>
 #include <GL/gl.h>
 #include <boost/lexical_cast.hpp>
 #include "AniEditDMRender.h"

@@ -7,6 +7,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
 #include <eigen3/Eigen/Dense>
+#include <assertext.h>
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using namespace std;

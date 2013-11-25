@@ -1,3 +1,18 @@
+#ifdef WIN32
+#include "InterpolatorFactory.h"
+#include "FakeInterpForUITest.h"
+using namespace LSW_ANI_EDITOR;
+
+pBaseInterpolator InterpolatorFactory::create(const string ini_file){
+
+	pBaseInterpolator interpolator = pFakeInterpForUITest(new FakeInterpForUITest());
+	if(!interpolator->init (ini_file))
+		interpolator.reset();
+	return interpolator;
+}
+
+
+#else
 #include <JsonFilePaser.h>
 #include <Log.h>
 #include <IEDSInterpolator.h>
@@ -59,3 +74,5 @@ pBaseInterpolator InterpolatorFactory::createMethod(const string in_method){
   }
   return interpolator;
 }
+
+#endif

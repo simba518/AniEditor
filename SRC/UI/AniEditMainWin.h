@@ -8,8 +8,14 @@
 #include <AniSliderBar.h>
 using namespace QGLVEXT;
 
+#ifdef WIN32
+#include <ui_aniedit.h>
+#include <ui_about.h>
+#else
 #include <SRC/UI/ui_aniedit.h>
 #include <SRC/UI/ui_about.h>
+#endif
+
 #include "VolObjCtrl.h"
 #include "AniEditDM_UI.h"
 #include "AniEditDMSelection.h"
