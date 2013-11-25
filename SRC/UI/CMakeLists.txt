@@ -39,7 +39,8 @@ QT4_WRAP_UI(UI_FORMS_HEADERS ${UI_FORMS})
 
 ADD_EXECUTABLE(${APPNAME}
 
-  main.cpp
+  main_UITest.cpp  
+  # main.cpp
   ${NONE_QT_CPP}
   ${UI_SOURCES} 
   ${UI_HEADERS_MOC}
