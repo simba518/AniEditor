@@ -23,7 +23,7 @@ int main(int argc, char *argv[]){
 	recorder = pQInputEventRecorderCmd(new QInputEventRecorderCmd(&w));
 	if (2 == argc)
 	  recorder->setCmd(argv[argc-1]);
-	else if(2 == argc)
+	else if(3 == argc)
 	  recorder->setCmd(argv[argc-2],argv[argc-1]);
   }
 
