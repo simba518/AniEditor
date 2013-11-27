@@ -57,6 +57,9 @@ void AniEditMainWin::createConnections(){
   connect(m_mainwindow.actionResetWindows, SIGNAL(triggered()), this, SLOT(resetWindows()));
   connect(m_mainwindow.actionPreview, SIGNAL(toggled(bool)), preview_viewer, SLOT(setVisible(bool)));
 
+  // record op
+  connect(m_mainwindow.actionRecordOperation, SIGNAL(triggered()), this, SLOT(resetWindows()));
+
   // about
   connect(m_mainwindow.actionAbout, SIGNAL(triggered()), about_Dialog, SLOT(show()));
 
