@@ -1,0 +1,29 @@
+
+kill(all)$
+
+r: 1$
+
+T: 6$
+
+a: makelist (concat (a,i), i, r)$
+
+b: makelist (concat (b,i), i, r)$
+
+c: makelist (concat (c,i), i, r)$
+
+z: makelist (concat (z,i), i, r*T)$
+
+Ez: 0$
+
+for j: 1 thru r do( 
+	for i: 2 thru T-1 do(
+		Ez : Ez + (a[j]*z[(i)*r+j] + b[j]*z[(i-1)*r+j] + c[j]*z[(i-2)*r+j])^2
+	)
+)$
+
+funEz(z) := (1/2)*Ez$
+
+
+H: zeromatrix(r*T,r*T)$
+
+

@@ -28,6 +28,7 @@ namespace LSW_WARPING{
 	void setFixedNodes(const vector<int> &fixed_nodes);
 	void setFixedNodes(const set<int> &fixed_nodes);
 	void setConNodes(const vector<set<int> > &c_nodes,const VectorXd &bcen_uc);
+	void setConNodes(const vector<int> &c_nodes,const VectorXd &uc);
 	bool precompute();	
 	bool reconstruct(const VectorXd &y, VectorXd &u);
 

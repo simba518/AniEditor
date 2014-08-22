@@ -4,6 +4,7 @@
 #include <QtGui/QMainWindow>
 #include <FileDialog.h>
 #include <QGLViewerExt.h>
+#include <ConTrackBall.h>
 #include <AniCtrl.h>
 #include <AniSliderBar.h>
 using namespace QGLVEXT;
@@ -22,6 +23,12 @@ using namespace QGLVEXT;
 #include "AniEditDMRender.h"
 #include "AniEditDMConNodeDrag.h"
 #include "PreviewAniDMRender.h"
+#include "RecordAndReplayWrapper.h"
+#include "KeyframeDM.h"
+#include "KeyframeDMRender.h"
+#include "KeyframeDMSelection.h"
+#include "ManipulateOP.h"
+using namespace UTILITY;
 
 namespace ANI_EDIT_UI{
   
@@ -56,6 +63,7 @@ namespace ANI_EDIT_UI{
 	pQGLViewerExt viewer;
 	pFileDialog file_dialog;
 	QDialog *about_Dialog;
+	pConTrackBall p_ConTrackBall;
 
 	// animation 
 	pAniCtrl ani_ctrl;
@@ -64,15 +72,23 @@ namespace ANI_EDIT_UI{
 	pTetMeshEmbeding p_VolObjMesh;
 	UTILITY::pVolObjCtrl p_VolObjCtrl;
 	pAniEditDM p_AniEditDM;
+	pLocalframeManipulatoion manipulation;
+	pLocalframeManipulatoionCtrl manipulation_ctrl;
 	pAniDataModel p_animation;
 	pAniEditDM_UI p_AniEditDM_UI;
 	pAniEditDMRenderCtrl p_AniEditDMRenderCtrl;
 	pAniEditDMDragCtrl p_AniEditDMDragCtrl;
 	pAniEditDMSelCtrl p_AniEditDMSelCtrl;
+	pKeyframeDMRenderCtrl p_KeyframeDMRenderCtrl;
+	pKeyframeDM_UI p_KeyframeDM_UI;
+	pKeyframeDMSelectionCtrl p_KeyframeDMSelectionCtrl;
 
 	// preview animation
 	pPreviewAniDMRenderCtrl p_PreviewAniDMRenderCtrl;
 	pQGLViewerExt preview_viewer;
+
+	//record and replay
+	UTILITY::pRecordAndReplayWrapper p_RecordAndReplayWrapper;
 
 	// init file
 	string init_filename; //< recorded for reloading.

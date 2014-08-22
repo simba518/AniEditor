@@ -378,8 +378,7 @@ namespace LSW_WARPING{
 	  static VectorXd b;
 	  computeB(z,frame_id,b);
 	  assert_eq(BP.cols(),b.size());
-	  const Vector3d u3 = BP.block(node*3,0,3,BP.cols())*b;
-	  return u3;
+	  return (BP.block(node*3,0,3,BP.cols())*b);
 	}
 
 	// warp nodes using z of frame f.
@@ -422,14 +421,31 @@ namespace LSW_WARPING{
 	  ui -= uc;
 	  grad.jacobianXu(y,Sqrt_V,nodes,hatW,BP,ui,g);
 	}
+	
+	const MatrixXd &getB()const{
+	  return B;
+	}
+	const MatrixXd &getP()const{
+	  return P;
+	}
+	const MatrixXd &getHatW()const{
+	  return hatW;
+	}
+	const vector<double> &getSqrtV()const{
+	  return Sqrt_V;
+	}
+	const vector<VectorXd> &getRefY()const{
+	  return ref_y;
+	}
 
   protected:
-	void computeB(const VectorXd &z,int frame_id, VectorXd &b){
+	inline void computeB(const VectorXd &z,int frame_id, VectorXd &b){
 
 	  VectorXd y = hatW*z + ref_y[frame_id];
 	  b.resize(y.size());
+	  /// @todo optimize using multi-threads.
 	  for (int i = 0; i < y.size(); i+=9){
-		y[i] += 1e-10; //@todo
+		y[i] += 1e-10; //@todo remove the if cond.
 		ComputeBj::compute(&y[i],Sqrt_V[i/9],&b[i]);
 	  }
 	}

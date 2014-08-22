@@ -44,6 +44,8 @@ namespace LSW_WARPING{
 	 * 
 	 */
 	static void constructWithoutWarp(const SparseMatrix<double> &G, const VectorXd &u, VectorXd &y);
+	static void constructWithoutWarp(const SparseMatrix<double> &G, const MatrixXd &U, MatrixXd &Y);
+	static void constructWithoutWarp(const VectorXd &def_grad, VectorXd &y);
 
 	// given the RS coordinates y, compute the rotation vector w as the average
 	// of the tetrahedron this nodes connected to.

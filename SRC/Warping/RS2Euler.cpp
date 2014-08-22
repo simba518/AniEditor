@@ -78,6 +78,20 @@ void RS2Euler::setConNodes(const vector<set<int> > &c_nodes,const VectorXd &bcen
   }
 }
 
+// compute the constraint matrix for the constrained nodes
+void RS2Euler::setConNodes(const vector<int> &c_nodes,const VectorXd &uc){
+    
+  assert (tetmesh != NULL);
+  assert_eq ((int)c_nodes.size()*3, uc.size());
+  this->barycenter_uc = uc;
+  const int node_num = tetmesh->nodes().size();
+  if (c_nodes.size() > 0){
+	UTILITY::computeConM(c_nodes,C,node_num);
+  }else{
+	C.resize(0,0);
+  }
+}
+
 /**
  * assemble A and make factorization.
  */

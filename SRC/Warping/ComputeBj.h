@@ -11,11 +11,12 @@ using namespace std;
 
 namespace LSW_WARPING{
 
-  typedef Matrix<double, 3, 3, Eigen::RowMajor> mat3r;
+  typedef Eigen::Matrix<double, 3, 3, Eigen::RowMajor> mat3r;
   
   /**
    * @class ComputeBj compute bj = sqrt(Vj)*(exp(yj_w)*(I+S(yj_s)) - I).
    * @see Barbic's siggraph 2012.
+   * @todo optimize
    */
   class ComputeBj{
 	
@@ -38,7 +39,7 @@ namespace LSW_WARPING{
 	  compute_exp(yj, Exp_W);
 
 	  // bj
-	  Matrix<double, 3, 3, RowMajor> m;
+	  Eigen::Matrix<double, 3, 3, RowMajor> m;
 	  m = Sqrt_Vj*(Exp_W*SI);
 	  m(0,0) -= Sqrt_Vj;
 	  m(1,1) -= Sqrt_Vj;
@@ -50,7 +51,6 @@ namespace LSW_WARPING{
 	  bj.resize(9);
 	  compute(&yj[0],Sqrt_Vj,&bj[0]);
 	}
-	
 
 	// compute only the symetric part: S(yj_s)
 	static mat3r &compute_S(const double *yj, mat3r &SI){
@@ -81,10 +81,14 @@ namespace LSW_WARPING{
 	}
 
 	// compute only the rotational part: exp(yj_w)
+	// @todo optimize using maxima
 	static mat3r &compute_exp(const double *yj, mat3r &Exp_W){
 
 	  const double theta = sqrt(yj[0]*yj[0] + yj[1]*yj[1] + yj[2]*yj[2]);
-	  if(fabs(theta) < 1e-6){ // the rotation angle is too small
+	  assert_ge(theta,0.0f);
+
+	  /// @bug remove the if condition.
+	  if(theta < 1e-8){ // the rotation angle is too small
 		Exp_W.setZero();
 		Exp_W(0,0) = 1;  Exp_W(1,1) = 1;  Exp_W(2,2) = 1;
 	  }else{

@@ -46,6 +46,7 @@ namespace IEDS{
 	const vector<VectorXd> &getInputRSCoord()const{
 	  return ref_y;
 	}
+
 	const VectorXd &getInputRSCoord(const int frame_id)const;
 
 	const LSW_WARPING::RS2Euler &getRS2Euler()const{

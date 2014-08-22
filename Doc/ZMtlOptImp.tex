@@ -1,0 +1,178 @@
+\documentclass[9pt,twocolumn]{extarticle}
+
+\usepackage[hmargin=0.5in,tmargin=0.5in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{times}
+
+\usepackage{cleveref}
+\usepackage{color}
+\newcommand{\TODO}[1]{\textcolor{red}{#1}}
+
+\newcommand{\FPP}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\argmin}{\operatornamewithlimits{arg\ min}}
+\author{Siwang Li}
+
+\title{Material Optimization using Direct Method}
+
+%% document begin here
+\begin{document}
+\maketitle
+
+\setlength{\parskip}{0.5ex}
+
+\section{Objective function}
+The objective function for minimize the control forces is
+\begin{equation} \label{obj} E(z,\Lambda,\alpha_k,\alpha_m) = \frac{1}{2}\sum_{i=2}^{T-1}
+  \|\frac{1}{h^2}\hat{z}_i+\frac{1}{h}D(z_{i+1}-z_{i})+ \Lambda z_i\|_2^2
+\end{equation}
+where $h$ is the time step, $\hat{z}_i=z_{i+1}-2z_{i}+z_{i-1}$,
+$D=\alpha_mI+\alpha_k\Lambda$ is the damping. Then we apply the partial
+constraints $C(z) = \frac{1}{2}\|u^j(z_i)-u_c^j\|_2^2$ using penalty method, and
+apply the keyframe constraints using variables replacement, we finally obtain
+the optimization problem,
+\begin{eqnarray} \label{sp}
+  &&\argmin_{z,\Lambda,\alpha_m,\alpha_k}E(z,\Lambda,\alpha_k,\alpha_m)+\gamma_cC(z)\\
+  &&\mbox{s.t. } z_{k_i} = z'_{k_i}
+\end{eqnarray}
+
+In the following we introduce the details for the optimization of the above
+problem.
+
+\section{Optimize displacements}
+\subsection{Control forces}
+\begin{eqnarray*}
+  E(z) &=& \frac{1}{2}\sum_{i=2}^{T-1}
+  \|\frac{1}{h^2}\hat{z}_i+\frac{1}{h}D(z_{i+1}-z_{i})+ \Lambda z_i\|_2^2\\
+  &=& \frac{1}{2}\sum_{i=2}^{T-1}
+  \|\frac{1}{h^2}(z_{i+1}-2z_{i}+z_{i-1})+\frac{1}{h}D(z_{i+1}-z_{i})+ \Lambda
+  z_i\|_2^2\\
+  &=& \frac{1}{2}\sum_{i=2}^{T-1}
+  \|(\frac{1}{h^2}I+\frac{1}{h}D)z_{i+1}+(\Lambda-\frac{1}{h}D-\frac{2}{h^2}I)z_i
+  + \frac{1}{h^2}z_{i-1}\|_2^2\\
+  Z_0 &=& (z_0,\cdots,z_{T-3})\\
+  Z_1 &=& (z_1,\cdots,z_{T-2})\\
+  Z_2 &=& (z_2,\cdots,z_{T-1})\\
+  A &=& \frac{1}{h^2}I+\frac{1}{h}D\\
+  B &=& \Lambda-\frac{1}{h}D-\frac{2}{h^2}I\\
+  E(z) &=& \frac{1}{2}\|AZ_{2}+BZ_1 + \frac{1}{h^2}Z_{0}\|_2^2
+\end{eqnarray*}
+
+\begin{eqnarray*}
+  a &=& A_{ii}\\
+  b &=& B_{ii}\\
+  c &=& \frac{1}{h^2}\\
+  E(z)  &=& \frac{1}{2}\sum_{i=2}^{T-1}\|az_{i+1}+bz_i+cz_{i-1}\|_2^2
+\end{eqnarray*}
+
+\[
+\left( \begin{array}{ccccccc}
+    c^2&bc&ac&0&0&0&0\\
+    bc&c^2+b^2&bc+ab&ac&0&0&0\\
+    ac&bc+ab&c^2+b^2+a^2&bc+ab&ac&0&0\\
+    0&ac&bc+ab&c^2+b^2+a^2&bc+ab&ac&0\\
+    0&0&ac&bc+ab&c^2+b^2+a^2&bc+ab&ac\\
+    0&0&0&ac&bc+ab&b^2+a^2&ab\\
+    0&0&0&0&ac&ab&a^2\\
+  \end{array} \right)
+\]
+
+\subsection{Partial Constraints}
+The full RS method is equal to solve a linear system
+\begin{equation} \label{rs}
+  Au = b(y(z)).
+\end{equation}
+where $y(z) = \tilde{y} + \hat{W}z$. Let $B$ be some linear basis matrix, and
+$P=(B^TAB)^{-1}B^T$, then by using the Cubature scheme, obtain
+\begin{equation} \label{reduced_rs3}
+  u \approx B\sum_{e\in{S}}w_eP_e{b_e(y(z))}
+\end{equation}
+Then we can compute the displacement $u_i(z)$ of node $i$ using
+\begin{equation}
+  u_i(z) = (B_iP)b(\tilde{y} + \hat{W}z)
+\end{equation}
+and the gradient is
+\begin{equation}
+  \frac{\partial{u_i}}{\partial{z}} = P_i \frac{\partial{b}}{\partial{y}}
+  \hat{W} = P_i
+  \left( \begin{array}{c}
+      \frac{\partial{b}}{\partial{y_0}} \hat{W}_0\\
+      \vdots\\
+      \frac{\partial{b}}{\partial{y_N}} \hat{W}_N
+    \end{array} \right)_{9N\times r_2} = 
+  \sum(P_{ij}\frac{\partial{b}}{\partial{y_j}})\hat{W}_j
+\end{equation}
+where $P_{ij}\in R^{3\times 9}$, and
+\begin{equation}
+  b_j(y_j) = \sqrt{V_j}(exp(y_j^w)(I+y_j^e)-I)
+\end{equation}
+and $\frac{\partial{b_j}}{\partial{y_j}}$ is a $9\times9$ matrix. Finally we
+compute 
+\begin{equation} \label{compPePz}
+  {\frac{\partial{E}}{\partial{z_i}}} =
+  (\frac{\partial{u}}{\partial{z_i}})^Tu' =
+  \sum\hat{W}_j^T(\frac{\partial{b}}{\partial{y_j}})^TP_{ij}^Tu'
+\end{equation}
+where $u' = C^TCu-C^Tu^c$.
+
+\section{Optimize materials}
+\subsection{Objective function}
+\begin{eqnarray*}
+  Z_0 &=& (z_0,\cdots,z_{T-3})\\
+  Z_1 &=& (z_1,\cdots,z_{T-2})\\
+  Z_2 &=& (z_2,\cdots,z_{T-1})\\
+  \tilde{Z}_2 &=& \frac{1}{h}(Z_2-Z_1)\\
+  \hat{Z}_2 &=& \frac{1}{h^2}(Z_2-2Z_1+Z_0)\\
+  D &=& \alpha_mI+\alpha_kK\\
+  E(\alpha_m,\alpha_k,K)&=&\frac{1}{2}\|\hat{Z}_2+D\tilde{Z}_2+KZ_1\|_2^2
+\end{eqnarray*}
+
+\subsection{Gradient}
+\begin{eqnarray*}
+  E &=& \tilde{Z}_2 \\
+  F &=& \hat{Z}_2+\alpha_kK\tilde{Z}_2+KZ_1\\
+  \Phi &=& \frac{1}{2}\|\alpha_mE+F\|_2^2 \\
+  &=&\frac{1}{2}(\alpha_mE_{i{ }j}+F_{i{ }j})^2\\
+  \frac{\partial{\Phi}}{\partial{\alpha_m}} &=&
+  E_{i{ }j}(\alpha_mE_{i{ }j}+F_{i{ }j})\\
+  &=&E:(\alpha_mE+F)\\
+  G &=& K\tilde{Z}_2\\
+  H &=& \hat{Z}_2+\alpha_m\tilde{Z}_2+KZ_1\\
+  \Phi &=& \frac{1}{2}\|\alpha_kG+H\|_2^2\\
+  \frac{\partial{\Phi}}{\partial{\alpha_k}} &=&G:(\alpha_kG+H)
+\end{eqnarray*}
+
+\begin{eqnarray*}
+  K &=& A^TA\\
+  J &=& \alpha_k\\
+  L &=& Z_1\\
+  M &=& \hat{Z}_2+\alpha_m\tilde{Z}_2\\
+  \Phi &=& \frac{1}{2}\| J(A^TA)E + (A^TA)L + M \|_2^2\\
+  \Phi &=& \frac{1}{2}(A_{si}A_{st}L_{th}+A_{lj}A_{lk}J_{ik}E_{jh}+M_{ih})^2\\
+  \frac{\partial{\Phi}}{\partial{A_{xy}}}
+  &=&A_{st}L_{th}(A_{si}A_{st}L_{th}+A_{lj}A_{lk}J_{ik}E_{jh}+M_{ih})\delta_x^s\delta_y^i+\\
+  &&A_{si}L_{th}(A_{si}A_{st}L_{th}+A_{lj}A_{lk}J_{ik}E_{jh}+M_{ih})\delta_x^s\delta_y^t+\\
+  &&A_{lk}J_{ik}E_{jh}(A_{si}A_{st}L_{th}+A_{lj}A_{lk}J_{ik}E_{jh}+M_{ih})\delta_x^l\delta_y^j+\\
+  &&A_{lj}J_{ik}E_{jh}(A_{si}A_{st}L_{th}+A_{lj}A_{lk}J_{ik}E_{jh}+M_{ih})\delta_x^l\delta_y^k\\
+  &=&A_{xt}L_{th}(A_{xy}A_{xt}L_{th}+A_{lj}A_{lk}J_{yk}E_{jh}+M_{yh})+\\
+  &&A_{xi}L_{yh}(A_{xi}A_{xy}L_{yh}+A_{lj}A_{lk}J_{ik}E_{jh}+M_{ih})+\\
+  &&A_{xk}J_{ik}E_{yh}(A_{si}A_{st}L_{th}+A_{xy}A_{xk}J_{ik}E_{yh}+M_{ih})+\\
+  &&A_{xj}J_{iy}E_{jh}(A_{si}A_{st}L_{th}+A_{xj}A_{xy}J_{iy}E_{jh}+M_{ih})\\
+  &=&  (AL)_{xh}((A^TAL)_{yh}+(E^TA^TAJ^T)_{hy}+M_{yh})+\\
+  &&A_{xi}L_{yh}((A^TAL)_{ih}+(E^TA^TAJ^T)_{hi}+M_{ih})+\\
+  &&(AJ^T)_{xi}E_{yh}((A^TAL)_{ih}+(E^TA^TAJ^T)_{hi}+M_{ih})+\\
+  &&(AE)_{xh}J_{iy}((A^TAL)_{ih}+(E^TA^TAJ^T)_{hi}+M_{ih})\\
+  &=& ((A^TALL^TA^T)_{yx}+(ALE^TA^TAJ^T)_{xy}+(ALM^T)_{xy})+\\
+  &&((AA^TALL^T)_{xy}+(LE^TA^TAJ^TA^T)_{yx}+(AML^T)_{xy})+\\
+  &&((AJ^TA^TALE^T)_{xy}+(EE^TA^TAJ^TJA^T)_{yx}+\\
+  &&(AJ^TME^T)_{xy})+\\
+  &&((J^TA^TALE^TA^T)_{yx}+(AEE^TA^TAJ^TJ)_{xy}+(AEM^TJ)_{xy})
+\end{eqnarray*}
+
+
+%% references
+% \begin{thebibliography}{99}
+% \bibitem{sig2011} Fast simulation of skeleton-driven deformable body
+%   characters.
+% \end{thebibliography}
+
+\end{document}

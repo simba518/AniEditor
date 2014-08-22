@@ -24,7 +24,12 @@ namespace ANI_EDIT_UI{
 	}
 	void drawWithNames ()const{drawVertice();}
 	void addSelection(const vector<int> &sel_ids){
-	  if (data_model != NULL) data_model->addConNodes(sel_ids);
+	  if (sel_ids.size() > 0){
+		// vector<int> first_node;
+		// first_node.push_back(sel_ids[0]);
+		// if (data_model != NULL) data_model->addConNodes(first_node);
+		if (data_model != NULL) data_model->addConNodes(sel_ids);
+	  }
 	}
 	void removeSelection(const vector<int> &sel_ids){
 	  if (data_model != NULL) data_model->rmConNodes(sel_ids);
@@ -35,9 +40,17 @@ namespace ANI_EDIT_UI{
 	  return (data_model != NULL) && (data_model->getVolMesh() != NULL);
 	}
 	void drawVertice()const{
+	  
 	  if( this->hasVolMesh() && data_model->currentFrameNum()>=0){
+
 		pTetMesh_const vol_mesh = data_model->getVolMesh();
 		const VectorXd &vol_u = data_model->getVolFullU();
+
+		double x=0,y=0,z=0;
+		if (data_model){
+		  data_model->getSceneTranslate(x,y,z);
+		  glTranslated(x,y,z);
+		}
 		glFlush();
 		for (int i=0; i<vol_mesh->nodes().size(); i++){
 		  const Vector3d &v = vol_mesh->nodes()[i];
@@ -47,6 +60,8 @@ namespace ANI_EDIT_UI{
 		  glEnd();
 		  glPopName();
 		}
+		glTranslated(-x,-y,-z);
+
 	  }
 	}
 	

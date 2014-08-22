@@ -24,7 +24,7 @@ void AniEditDMConNodeDrag::drawWithNames ()const{
   	const VectorXd &vol_u = data_model->getVolFullU();
   	const double radius = data_model->getMaxRadius()/78.0f;
   	if (vol_u.size() > 0 && radius > 0.0f){
-  	  DragGroupSelDraw::drawAllGroupsWithShpere(vol_mesh,con_groups,&vol_u[0], radius);
+  	  DragGroupSelDraw::drawAllGroupsWithPoints(vol_mesh,con_groups,&vol_u[0]);
   	}
   }
 }
@@ -44,7 +44,7 @@ void AniEditDMConNodeDrag::draw()const{
 	const set<int> dragged_nodes = data_model->getConNodes()[draggedGroupId];
   	const VectorXd &vol_u = data_model->getVolFullU();
   	if (vol_u.size() >= 3)
-  	  con_node_render.draw(vol_mesh, dragged_nodes, &vol_u[0], DRAW_SHPERE);
+  	  con_node_render.draw(vol_mesh, dragged_nodes, &vol_u[0], DRAW_POINT);
   }
 }
 
@@ -60,15 +60,15 @@ void AniEditDMConNodeDrag::selectDragEle(int sel_group_id){
   if(data_model){
 	assert_in(sel_group_id,0,data_model->getConNodes().size()-1);
 	draggedGroupId = sel_group_id;
-	const set<int> groups = data_model->getConNodes()[sel_group_id];
 	pTetMesh_const restVolMesh = data_model->getVolMesh();
-	assert_gt(groups.size(),0);
-
 	initial_displacement = data_model->getUc(sel_group_id);
-	assert_eq(initial_displacement.cols(),groups.size());
-	initial_dragged_point = initial_displacement.col(0);
-	initial_dragged_point += restVolMesh->nodes()[*groups.begin()];
   }
+}
+
+void AniEditDMConNodeDrag::startDrag (double x,double y,double z){
+  initial_dragged_point[0] = x;
+  initial_dragged_point[1] = y;
+  initial_dragged_point[2] = z;
 }
 
 void AniEditDMConNodeDrag::dragTo(double x,double y,double z){

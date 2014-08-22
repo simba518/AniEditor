@@ -22,7 +22,7 @@ def model_info(log_file):
     data = []
     data += grepNumberWithKey(log_file,"number of nodes:")
     data += grepNumberWithKey(log_file,"number of tetrahedrons:")
-    data += grepNumberWithKey(log_file,"number of modes:")
+    data += grepNumberWithKey(log_file,"number of selected modes:")
     data.append(len(grepNumberWithKey(log_file,"OUTTER ITERATION")))
     data += grepNumberWithKey(log_file,"time step:")
     data += grepNumberWithKey(log_file,"alphak:")
@@ -31,6 +31,9 @@ def model_info(log_file):
     data += grepStrWithKey(log_file,"test opt method:")
     data.append(map(int,grepNumberWithKey(log_file,"keyframe id:")))
     data.append(str('%.5g'%(grepNumberWithKey(log_file,"Objective...............:")[-1])))
+    data += grepNumberWithKey(log_file,"number of modes:")
+    data += grepNumberWithKey(log_file,"partial penalty:")
+    data.append(str(('%.5g'%grepNumberWithKey(log_file,"S.norm() =")[-1])))
     return data
 
 def mtl_info(log_file):
@@ -64,12 +67,26 @@ def save_fig(y,fname,f_label,style='r'):
         plt.plot(range(0,len(y)),y,style,label=f_label)
     plt.savefig(fname)
     plt.clf()
+
+def save_color_segements(y,end_of_segments,fname,colors):
+    if len(y) > 0:
+        plt.semilogy()
+        plt.xlim(-len(y)/20,len(y)+len(y)/20)
+        plt.grid(True)
+        for i in range(1,len(end_of_segments)-1):
+            p0 = end_of_segments[i-1]
+            p1 = end_of_segments[i]
+            plt.plot(range(p0,p1),y[p0:p1],colors[(i-1)%len(colors)])
+
+    plt.savefig(fname)
+    plt.clf()
     
 def opt_fig(log_file):
     lof = os.path.dirname(log_file)+"/"+os.path.basename(log_file).replace(".","-")
     fig_file_name = [lof+'-inner_py.png',lof+'-outer_py.png']
     inner_y = []
     outer_y = []
+    end_of_segments = [0]
     f = open(log_file)
     for line in f:
         if line.find("iter    objective") >= 0:
@@ -79,7 +96,11 @@ def opt_fig(log_file):
                     inner_y.append( float(line.split()[1]) )
         elif line.find("Objective...............:") >= 0:
             outer_y.append( float(line.split()[2]) )
-    save_fig(inner_y,fig_file_name[0],'inner iteration','r')
+            end_of_segments.append(len(inner_y)-1)
+
+    # save_fig(inner_y,fig_file_name[0],'inner iteration','r')
+    colors = ['r','g','b']
+    save_color_segements(inner_y,end_of_segments,fig_file_name[0],colors)
     save_fig(outer_y,fig_file_name[1],'outer iteration','-b')
     return fig_file_name
 
@@ -113,9 +134,8 @@ log_fs = os.listdir("./tempt")
 
 for log_f in log_fs:
     if not log_f.endswith(".mtllog"): continue
-    # if log_f.find("AtA") < 0: continue
-    # if log_f.find("mtlopt_cen_keyW") < 0: continue
-    if log_f.find("3") < 0: continue
+    # if log_f.find("Z_Lambda_u") < 0: continue
+    # if log_f.find("mtlopt.ini") < 0: continue
     log_f = "./tempt/"+log_f
     mode_data = model_info(log_f)
     mtl_data = mtl_info(log_f)
@@ -125,7 +145,6 @@ for log_f in log_fs:
     os.system("cp "+"./Script/patterns/test_report_data.tex "+tempt)
     changeElements(tempt,"#number_of_nodes#",str(int(mode_data[0])))
     changeElements(tempt,"#number_of_tets#",str(int(mode_data[1])))
-    changeElements(tempt,"#number_of_modes#",str(int(mode_data[2])))
     changeElements(tempt,"#number_of_outer_its#",str(int(mode_data[3])))
     changeElements(tempt,"#time_step#",str(str(mode_data[4])))
     changeElements(tempt,"#alphak#",str(str(mode_data[5])))
@@ -134,6 +153,12 @@ for log_f in log_fs:
     changeElements(tempt,"#method#",str(str(mode_data[8])).replace("_","\\_"))
     changeElements(tempt,"#keyframes#",str(mode_data[9]))
     changeElements(tempt,"#optimal fun#",str(mode_data[10]))
+    changeElements(tempt,"#number_of_modes#",str(int(mode_data[11]))+","+str(int(mode_data[2])))
+    changeElements(tempt,"#partial_penalty#",str(mode_data[12]))
+    if(len(mode_data)>=14):
+        changeElements(tempt,"#S.norm()#",str(mode_data[13]))
+    else:
+        changeElements(tempt,"#S.norm()#","")
 
     changeElements(tempt,"#lambda_diag_d#",mtl_data)
     changeElements(tempt,"#inner_it#",energy_f[0].replace("_","\\string_"))

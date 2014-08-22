@@ -1,0 +1,110 @@
+\documentclass[9pt,twocolumn]{extarticle}
+
+\usepackage[hmargin=0.5in,tmargin=0.5in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{subfigure}
+
+\usepackage{cleveref}
+\usepackage{color}
+\newcommand{\TODO}[1]{\textcolor{red}{#1}}
+
+\newcommand{\FPP}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\argmin}{\operatornamewithlimits{arg\ min}}
+\author{Siwang Li}
+
+\title{Experiment of Optimization of the Basis}
+
+%% document begin here
+\begin{document}
+\maketitle
+
+\setlength{\parskip}{0.5ex}
+
+\section{First experiment}
+\subsection{Setup}
+Expand the RS basis $\hat{W}$ as
+\begin{equation} \label{w}
+  \hat{W}' = \left( \begin{array}{ccc}
+      \hat{W} & y_{k0} &y_{k1} \cdots
+    \end{array} \right)
+\end{equation}
+and then using the new eigenvalues as
+\begin{equation} \label{e}
+  \Lambda' = \left( \begin{array}{cccc}
+      \Lambda &\\
+      &\lambda_{k0}&\\
+      &&\lambda_{k1}&\\
+      &&&\ddots
+    \end{array} \right)
+\end{equation}
+where $y_{ki}$ is the RS coordinates of the keyframes $u_{ki}$, while
+$\lambda_{ki}$ is some given eigenvalues with each these keyframes.
+
+We hope that 
+\begin{itemize}
+\item the $u_{ki}$ can be exactly approximated by using the modes in $\hat{W}'$,
+\item with material optimization, we can find only a few modes to represent the
+  final motion, and
+\item the motion is smooth, i.e, no motion with high frequency.
+\end{itemize}
+
+\subsection{Results}
+$u_{ki}$ can be well approximated by using $\hat{W}'$, and the control forces
+are much smaller by using material optimization, and the motion is
+smooth. However, we can not find one single mode to represent the motion. This
+is because in our setup, we assume that the modes $y_{ki}$ are decoupled, and
+there is only one keyframe for each mode, and the initial energy is very small.
+
+\begin{figure}
+  \centering
+
+  \subfigure[Inner iteration.] { \label{fig:a}
+  \includegraphics[width=0.4\textwidth]{./figures/mtlopt_cen_keyWOpt_Z_AtA-inner_py.png}}
+
+  \subfigure[Outer iteration.] { \label{fig:b}
+  \includegraphics[width=0.4\textwidth]{./figures/mtlopt_cen_keyWOpt_Z_AtA-outer_py.png}}
+
+  \subfigure[z curve.] { \label{fig:c}
+  \includegraphics[width=0.4\textwidth]{./figures/mtlopt_cen_keyW_Opt_Z_AtA_curveZ.png}}
+
+  \caption{Results of the first experiment. (a) and (b) Energy-iteration
+    curves. (c) curves for $z$.}
+  \label{opt-6}
+\end{figure}
+
+\section{Second experiment}
+\subsection{Setup}
+We expand compute $\hat{W}'$ and $z_k$ using the following method 
+\begin{eqnarray*}
+  z_{k} &=& \argmin_{z_{k}} \frac{1}{2}\|\hat{W}z_k-y_k\|_2^2   \\
+  y_k' &=& y_k - \hat{W}z_k\\
+  \hat{W}' &=& \left( \begin{array}{ccc}
+      \hat{W} &y_k'
+    \end{array} \right)\\
+  z_k' &=& \left( \begin{array}{ccc}
+      z_k & 1
+    \end{array} \right)\\
+  \Lambda' &=& \left( \begin{array}{ccc}
+      \Lambda & \\
+      & \lambda_0
+    \end{array} \right)
+\end{eqnarray*}
+where we choose $\lambda_0$ as the first element of $\Lambda$. We hope to find
+one single mode to represent the motion, and the whole motion is smooth.
+\subsection{Results}
+The results of the this experiments are shown in figure \ref{exp2}. It can be
+seen that the resulting shape(yellow) is non-smooth. And this is because the
+additional mode 3(red) is non-smooth. Thus, we can not simply expand the
+RS-modes $\hat{W}$ as above.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.48\textwidth]{./figures/mtlopt_cen_keyW_Opt_Z_AtA_curveZ_exp2.png}
+  \caption{Results of the second experiment. Yellow is the resulting shape, blue
+  is mode 0, green is mode 2, and red is mode 3.}
+  \label{exp2}
+\end{figure}
+
+\end{document}

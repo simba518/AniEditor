@@ -1,0 +1,99 @@
+\documentclass[9pt,twocolumn]{extarticle}
+
+\usepackage[hmargin=0.5in,tmargin=0.5in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{subfigure}
+
+\usepackage{cleveref}
+\usepackage{color}
+\newcommand{\TODO}[1]{\textcolor{red}{#1}}
+
+\newcommand{\FPP}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\argmin}{\operatornamewithlimits{arg\ min}}
+\author{Siwang Li}
+
+\title{cubature scheme}
+
+%% document begin here
+\begin{document}
+\maketitle
+
+\setlength{\parskip}{0.5ex}
+
+\section{Cubature}
+The optimized cubature, proposed by An et al\cite{cubature2008}, constructs an
+approximation of the reduced forces based on a best subset selection
+problem. And we found that this approach be used to find the sample and
+weightings of our reduced RS method. Let $f_e(z) = P_eb_e(y_e(z))$, then we have
+\begin{equation} \label{reduced_rs6}
+  q(z) = \sum_{e\in\mathcal{T}}f_e(y_e(z)),
+\end{equation}
+and our Reduce RS method is
+\begin{equation} \label{reduced_rs7}
+  q(z) = \sum_{e\in\mathcal{T}_{\text{cub}}}\!\!\omega_e f_e(y_e(z)).
+\end{equation}
+If we view $q(z)$ as the reduced internal forces item in \cite{cubature2008},
+and $z$ as the reduced coordinates with respect to $q$, then we can use the
+similar cubature scheme to obtain $\omega_e$ by solving a nonnegative least
+sequence problem, and find the cubature samples $\mathcal{T}_{\text{cub}}$ by
+using a greedy estimation scheme.
+
+Given a set of reduced coordinates $\{z_i\}_{i=1}^{N_{tr}}$ (here, $N_{tr}$ is
+the total number of training set, and we use a modal-analysis simulator
+\cite{ma} to generate them), we construct $u_i(z_i)$ using full rs method, then
+compute $q_i=B^Tu_i$. Then we find the cubature samples
+$\mathcal{T}_{\text{cub}}$ by using a greedy estimation scheme iteratively, and
+at each step, we estimate the nonnegative weights $\omega_e$ by solving a
+nonnegative least squares problem $\bold{A}\bold{w}=\bold{b}$, where
+$\omega=(\omega_1,\hdots,\omega_{|\mathcal{T}_{\text{cub}}|})^T$, and
+\begin{equation} \label{nls}
+  \bold{A} = \left( \begin{array}{ccccc}
+      \frac{f_1^{(1)}}{\|q^{(1)}\|}&\hdots&\frac{f_{|\mathcal{T}_{\text{cub}}|}^{(1)}}{\|q^{(1)}\|}\\
+      \vdots &&\vdots\\
+      \frac{f_{1}^{(N_{tr})}}{\|q^{(N_{tr})}\|}&\hdots&\frac{f_{|\mathcal{T}_{\text{cub}}|}^{(N_{tr})}}{\|q^{(N_{tr})}\|}
+    \end{array} \right)
+\end{equation}
+
+\begin{equation} \label{nls}
+  \bold{b} = \left( \begin{array}{ccccc}
+      \frac{q^{(1)}}{\|q^{(1)}\|}\\
+      \vdots\\
+      \frac{q^{(N_{tr})}}{\|q^{(N_{tr})}\|}
+    \end{array} \right)
+\end{equation}
+
+For our examples, we can usually choose $N_{tr}=600$, and
+$\mathcal{T}_{\text{cub}}$, and the cubature process can usually finished in a
+few minutes. In \cite{cubature2013}, the authors propose a more fast cubature
+scheme, and we can consider to use their approach to accelerate this
+pre-computation.
+
+\section{Other problems}
+\begin{itemize}
+\item line 255, the iterations for solving $S$ using LBFGS depends on the
+  constraints, and currently, no warm start is used, simply set $S^{(0)}=(I,O)$,
+  and we use the ALGLIB Free Edition(GPL) with single-threaded\cite{lbfgs}.
+\item line 259, the left-hand matrix for solving $\Lambda$ is diagonal, thus we
+  solve it directly without using any specific linear solver.
+\item line 285, the computational cost for $B$ depends on the complexity of the
+  tetrahedron mesh and the basis we need in $B$. For large models with $r_B=80$,
+  it may takes about 20 minutes. A more efficient approach has been proposed by
+  \cite{cubature2013}, by using this approach, it is possible to obtain $B$ in a
+  few minutes.
+\end{itemize}
+
+
+%% references
+\begin{thebibliography}{99}
+\bibitem{cubature2008} Optimizing Cubature for Efficient Integration of Subspace
+  Deformations, siggraph asia, 2008.
+\bibitem{cubature2013} An Efficient Construction of Reduced Deformable Objects,
+  siggraph asia, 2013.
+\bibitem{ma} Interactive Deformation Using Modal Analysis with Constraints,
+  Graphics Interface 2003.
+\bibitem{lbfgs} http://www.alglib.net/.
+\end{thebibliography}
+
+\end{document}

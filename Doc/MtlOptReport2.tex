@@ -1,0 +1,455 @@
+\documentclass[9pt,twocolumn]{extarticle}
+
+\usepackage[hmargin=0.5in,tmargin=0.5in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{subfigure}
+
+\usepackage{cleveref}
+\usepackage{color}
+\newcommand{\TODO}[1]{\textcolor{red}{#1}}
+
+\newcommand{\FPP}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\argmin}{\operatornamewithlimits{arg\ min}}
+\author{Siwang Li}
+
+\title{Report for Space-time Material Optimization}
+
+%% document begin here
+\begin{document}
+\maketitle
+
+\setlength{\parskip}{0.5ex}
+\begin{abstract}
+  Given a motion equation, the corresponding initial elastic materials, and some
+  partial constraints provided by the user, the approach proposed here can
+  generate an animation sequence satisfied these partial constraints, with
+  minimal control forces and consistent effects. The novelties of this work
+  include, an efficient method for the space-time elastic materials optimization
+  in the subspace and an efficient Reduced RS model reduction method to support
+  large deformation and promise tightly positional constraints. What's more, by
+  providing a novel method for basis optimization(selection/combination), this
+  approach can also automatically find a compact subspace to represent the
+  resulting animation sequence.
+\end{abstract}
+
+\section{Introduction}
+Traditional method to create an animation is to interpolate a set of
+key frames.  Two problems here:
+\begin{itemize}
+\item User needs to provide a set of key frames which describes the whole shape
+  of the model at specific times.  We argue that incomplete key frame
+  (positional constraints) could improve the efficiency of animation authoring
+  and quality of the final results.
+\item The interpolation method often leads to over-smoothed result because of
+  lacking proper dynamics effects.  Increasing the number of key frames can
+  alleviate the problem, however, requires more tedious human work. Thus, we
+  propose to integrate the equation of motion into the animation authoring
+  procedure.
+\end{itemize}
+
+Recently, some methods have been proposed for physically based sequence editing,
+which could be applied to create the animation as well. But, in these methods,
+only moderate change is allowed, otherwise, there would be great distortion
+making the result unnatural, or can not provide tightly positional constraints
+which is required when the artist intend to design a portion of a shape,
+i.e. partial constraints. More importantly, they require the input sequence
+coming with a proper equation of motion, e.g. the stiffness, mass etc.
+Unsuitable material setting leads large control force.  Be more specific, there
+will be the following typical problems:
+\begin{itemize}
+\item The dynamics around the editing frame is not consistent with the
+  other frames far away from the editing frame.
+\item Repeatedly editing is required for desired periodically
+  behavior.
+\end{itemize}
+
+However, a suitable material setting is not easy to get in general, and such a
+requirement imposes additional difficulty than the traditional key frame based
+method. In this paper, we propose a method to progressively create an animation
+by space-time constraints, which is driven by an equation of motion with
+material to be optimized. 
+
+In the following, we will first review some background techniques in section
+\ref{sec:background}, then introduce our Reduced-RS method in section
+\ref{sec:reduced-rs-method} , and our material optimization scheme in section
+\ref{sec:mater-optim}, finally the experiments' results in section
+\ref{sec:experiments}, and conclusion in section \ref{sec:conclusion}.
+
+\section{Background}\label{sec:background}
+Firstly, our framework is based on space-time optimization on a set of decoupled
+linear motion equations, which is closely related to modal analysis. Secondly,
+we adopt the RS-coordinates to avoid the artifacts under large deformation. In
+this section, we briefly review these techniques.
+
+\subsection{Modal analysis}
+The linear motion equation of an object is
+\begin{equation} \label{linear_eq}
+  \tilde{M}\ddot{u} + (\alpha_mI+\alpha_k\tilde{K})\dot{u} + \tilde{K}u = f_{ext}(t)
+\end{equation}
+where $u\in R^{3n}$ represents the displacements of all the $n$ nodes of the
+object, $\tilde{M},\tilde{K} \in R^{3n\times 3n}$ are the mass and stiffness
+matrix respectively, $\alpha_m,\alpha_k$ are the damping coefficients, and
+$f_{ext}(t)$ is the external force at time $t$.
+
+By using modal analysis method, motion equation (\ref{linear_eq}) can be reduced
+and decoupled. To achieve this, we solve a general eigenvalue problem
+\begin{equation} \label{general_eig}
+  \tilde{K}\phi = \lambda \tilde{M}\phi
+\end{equation}
+If we preserve the first $r_w$ eigenvectors and eigenvalues to obtain
+$W=(\phi_1,\cdots,\phi_{r_w})$, and $\Lambda=diag(\lambda_1,\lambda_{r_w})$,
+then replace $u=Wz$ in equation (\ref{linear_eq}) and pre-multiply it with
+$W^T$, finally we obtain the decoupled reduced motion equations
+\begin{equation} \label{ma_eq}
+  \ddot{z} + (\alpha_mI+\alpha_k\Lambda)\dot{z} + \Lambda{z} = w(t)
+\end{equation}
+Here, $w(t)=W^Tf_{ext}(t)$ represents the forces in the subspace.
+
+\subsection{RS method}
+Given a displacement $z\in R^{r_w}$ in the frequency subspace, there are many
+method to construct the displacements $u(z)\in R^{3n}$ in full space, such as
+linear mapping (e.g $u = Wz$), modal warping, or RS coordinates. Experiments
+show that, when the deformation is large, only the RS coordinates method can
+produce plausible results. In the following, we briefly review the RS method,
+and we refer it as full-RS here. Using full-RS, we compute $u(z)$ by solving
+\begin{equation}\label{full_rs_min}
+  \min_{u} E_{rs}(u)=\frac{1}{2}\sum_{e\in T_{all}}\|(Gu)_e + I - \exp({y_e^w})(I+y_e^s)\|_2^2|V_e|
+\end{equation}
+where $T_{all}$ denotes all of the tetrahedrons, $G$ is the discrete gradient
+operator with respect to the rest shape, $|V_e|$ is the volume of tetrahedron
+$e$, $y_e=(y_e^w,y_e^s)$ is the RS coordinates of tetrahedron $e$. We denote the
+RS-coordinates $y=(y_1,\cdots,y_{|T_{all}|})$, and compute it using
+$y=\hat{W}z=(QW)z$, where $Q$ is a sparse matrix which maps the basis $W$ to the
+RS-basis $\hat{W}$. Then the solution of (\ref{full_rs_min}) can be found by
+solving
+\begin{equation} \label{rs}
+  Au = b(y(z)).
+\end{equation}
+where $A=G^TVG$ is a constant sparse matrix($V$ is a diagonal matrix consisted
+of $V_e$), and $b(y(z))=-\frac{\partial{E_{rs}(u)}}{\partial{u}}|_{u=0}$ is a
+nonlinear function.
+
+\section{Reduced RS method}\label{sec:reduced-rs-method}
+As in our spacetime optimization with positional constraints(introduced in
+section \ref{sec:mater-optim}), we need to compute $u_j(z)$ and
+$\frac{\partial{u_j(z)}}{\partial{z}}$ for each constrained node $j$
+frequently. Using the full RS method introduced above, these computation would
+be expensive. In this section, we presents a reduced RS method to improve the
+performance.
+
+Firstly, we assume $u$ can be well approximated by using some basis matrix $B\in
+R^{3n\times r_b}$, then we replace $u = Bq$ into (\ref{rs}), and multiply
+$B^T$in both sides to obtain
+\begin{equation} \label{reduced_rs1} B^T(ABq) = B^Tb(y(z))
+\end{equation} Let $P = (B^TAB)^{-1}B^T$, then we can compute the reduced
+coordinates $q$ using
+\begin{equation} \label{reduced_rs2} 
+  q = Pb(y) = \sum_{e\in{T_{all}}}P_e{b_e(y_e(z))}
+\end{equation} where $P_e\in R^{r_b\times 9}$ is some constant matrix, $b_e(\cdot)\in
+R^{9}$ is some nonlinear function of $y_e$, and $y_e\in R^9$ is
+the RS coordinates of tetrahedron $e$. 
+
+Then, we approximate $q$ using the cubature scheme, and obtain
+\begin{equation} \label{reduced_rs3} 
+  q \approx \sum_{e\in{T_{cub.}}}w_eP_e{b_e(y_e(z))}
+\end{equation} 
+where $w_e$ is the cubature weights, and $T_{cub.}$ is the set of the selected
+cubature tetrahedrons. Finally, we can compute the displacements $u$ using
+\begin{equation} \label{reduced_rs4}
+  u(z) = B \sum_{e\in{T_{cub.}}}w_eP_e{b_e(y_e(z))}
+\end{equation} 
+which is much faster than solving the large linear system (\ref{rs}).
+
+\subsection{Performance analysis} 
+To compute $u_j(z)$ and $\frac{\partial{u_j(z)}}{\partial{z}}$ for some node $j$
+with the Reduced-RS method, we only need to compute $y_e(z)$ and $b_e(y_e)$ for
+the sampled tetrahedrons (usually less than 100), and then make some small
+matrix-vector production to obtain the results. While using full-RS method, to
+compute $u_j(z)$, one needs to compute $y$ and $b$ for all the tetrahedrons, and
+finally solve a large sparse linear system to compute $u$ for all the nodes, and
+select $u_j(z)$ from them. And use full-RS method to compute
+$\frac{\partial{u_j(z)}}{\partial{z}}$ would be much expensive than compute
+$u_j(z)$. Thus, our reduced method should be much efficient than full-RS method,
+especially when $u_j(z)$ and $\frac{\partial{u_j(z)}}{\partial{z}}$ need to be
+computed frequently, such as the sparse positional constraints in our spacetime
+optimization introduced bellow.
+
+\section{Material optimization}\label{sec:mater-optim}
+In the following, we will introduce our spacetime material optimization scheme.
+Firstly, we choose the basis $B,W$ and cubature samples $T_{cub}$ to be large
+enough to represent the desired deformations. We can use modal derivative method
+to obtain $B$, and use modal analysis method to produce $W$. Then we further
+assume that, the resulting animation can usually be represented by some much
+smaller basis $W'=WS$, where $S\in R^{r_w\times r_s}$ is a dense matrix with
+$r_s$ is much smaller than $r_w$. For example, we can choose $r_w=50$, while
+$r_s=10$. There is no necessary to require that $W'$ to be mass-orthogonal, as
+the mass matrix is unknown.
+
+Now, in the subspace with basis in $W'$, we assume that the motion of the object
+to be edited can be described by this decoupled motion equation
+\begin{equation} \label{ma_eq_1}
+  \ddot{z} + (\alpha_mI+\alpha_k\Lambda)\dot{z} + \Lambda{z} = w(t)
+\end{equation}
+with $w(t)$ is the control forces.
+
+Given some user defined constraints, we define our spacetime material
+optimization problem as
+\begin{eqnarray}\label{mtl-opt}
+  &&\argmin_{z,\Lambda,S} E_w(z,\Lambda)+\gamma E_c(S,z)+\mu E_s(S)\\
+  &&\mbox {subject to } \Lambda_i \ge 0
+\end{eqnarray}
+
+Here, $\gamma$ and $\mu$ are the penalties, and $E_w$ is the residual for the
+control forces $w(t)$, $E_c$ represents the residual of the constraints, while
+$E_s$ is a regularization term for $S$. We will define each of these energies in
+the following. 
+
+\paragraph{Residual of control forces.} To define $E_w$, we discretize the
+motion equation (\ref{ma_eq_1}) in time, and define it using spacetime
+constraints
+\begin{equation} \label{ew}
+  E_w(z,\Lambda) = \frac{1}{2}\sum_{i=1}^{T-2}\|\hat{z}_i+(\alpha_mI+\alpha_k\Lambda)(z_{i+1}-z_{i-1})+\Lambda z_i\|_2^2
+\end{equation}
+where $\hat{z}_i=z_{i+1}-2z_{i}+z_{i-1}$, and $T$ is the total number of frames.
+
+\paragraph{Residual for constraints. } The user provided partial constraints can
+be defined as $\{C_iu_i(S,z)=u^c_i\}_{i\in \mathbb{C}}$, where $\mathbb{C}$
+denotes the constrained frames, and $C_i$ is the constraint matrix for frame
+$i$, while $u^c_i$ represents the target positions. Then we define $E_c$ as an
+quadratic energy function to penalize it as
+\begin{equation} \label{ec}
+  E_c(z,S) = \frac{1}{2}\sum_{i\in \mathbb{C}}\|C_iu_i(S,z)-u^c_i\|_2^2
+\end{equation}
+Here, we compute $u(S,z_i)$ using our Reduced-RS method,
+\begin{equation} \label{redrs_s}
+  u(S,z_i) = B\sum_{e\in T_{cub}}w_eP_eb_e(\hat{W}_eSz_i)
+\end{equation}
+where $\hat{W}_e\in R^{12\times r_w}$ is the sub-matrix of the RS-basis
+$\hat{W}$ with respect to tetrahedron $e$. 
+
+\paragraph{Regularization of $S$. } As the modes in $W$ with smaller frequencies
+are usually much smooth than the modes with high frequencies, we adopt a
+regularization term to penalize each rows of $S$ using the corresponding initial
+frequency $\lambda_i^0$, i.e.
+\begin{equation} \label{reg_s}
+  E_s(S) = \sum_{i=0}^{r_w-1}\sum_{j=0}^{r_s-1}\lambda_i S^2_{i j}
+\end{equation}
+Here, $\lambda_i^0$ is eigenvalues obtained from the initial setting materials
+by solving the general eigenvalue problem (\ref{general_eig}).
+
+\begin{center}
+  \begin{table*}[ht]
+    {\small
+      \hfill{}
+      \begin{tabular}{ | l | c | c | c | c | c | c | c| c | c | c | c | c |}\hline
+	    model & animation& $T$ &$T_{all}$ & $T_{cub}$& $r_b$ & $r_w$& $r_s$ &mtl opt& z opt \\ \hline
+        beam & swing two ends. &200&  1072 &100 &80 &   10& 5& $1.1\times 10^6$& $1.0\times 10^7$ \\ \hline
+        beam & swing one end.  &200&  1072 &97  &80 &  10&  5& $6.1\times 10^5$& $3.3\times 10^7$ \\ \hline        
+        mushroom& rotate.      &400&  2388 &98  &80 &   6&  3& $8.2\times 10^4$& $7.1\times 10^6$  \\ \hline
+      \end{tabular}
+      \hfill{}
+}
+\caption{ Statistics for the examperiments.  From left to right: the name of the
+  model(model), the desired animation(animation), total frames($T$), number of
+  tetrahedrons($T_{all}$), number of cubature samples($T_{cub}$), columns of
+  $B$($r_b$), $W$($r_w$) and $S$($r_s$), the optimal function value
+  with(mtl opt) and without(z opt) material optimization.}
+\label{table_1}
+\end{table*}
+\end{center}
+
+\section{Experiments}\label{sec:experiments}
+\paragraph{Setup. }In this section, we use several simple examples to
+demonstrate our approach. Given the initial elastic materials, we compute the
+full stiffness matrix $\tilde{K}$ and mass matrix $\tilde{M}$, then solve a
+general eigenvalue problem (\ref{general_eig}) to obtain $W$ with the first
+$r_w$ eigenvectors, and $\Lambda_0$ with the first $r_s$ eigenvalues. Then we
+generate $B$ using modal derivative method. 
+% To produce the cubature samples. 
+When we solve for (\ref{mtl-opt}), we use $z=0,\Lambda=\Lambda_0$ and
+$S=(I_{r_s\times r_s},O)^T$ as the initial value.
+
+\paragraph{Implementation. } Currently, as we implement our spacetime material
+optimization method using an auto-differential library(CASADI combined with
+IPOPT), we can only produce some simple examples with no more than ten modes in
+$W$. A much efficient version will be implemented soon, and more modes will be
+supported.
+
+\subsection{Comparison of the warping approaches}
+W compare the results of using different methods to construct the displacement
+$u$ with the same reduced displacement $z$. The results are shown in figure
+\ref{rs_compare}. It can be seen that, when the deformation is large, the
+Reduced-RS method and full-RS method can produce plausible results, while the
+linear mapping and the modal warping method will produce noticeable
+artifacts. In this experiment, we use $r_b=80,r_w=80$ and adopt $89$ cubature
+samples.
+
+\begin{figure}
+  \centering \subfigure[rest shape(white) and result of linear mapping(purple)]
+  { \label{fig:a}
+    \includegraphics[width=0.225\textwidth]{./figures/redrs_ma.png}}
+  \subfigure[modal warping ] { \label{fig:b}
+    \includegraphics[width=0.225\textwidth]{./figures/redrs_mw.png}}
+  \subfigure[full-RS ] { \label{fig:b}
+    \includegraphics[width=0.225\textwidth]{./figures/redrs_fullrs.png}}
+  \subfigure[Reduced-RS ] { \label{fig:b}
+    \includegraphics[width=0.225\textwidth]{./figures/redrs_redrs.png}}
+  \caption{Reconstruct $u$ from the same $z$ using different method. The white
+    shape in (a) is the rest shape.}
+  \label{rs_compare}
+\end{figure}
+
+\subsection{Material opt. with partial constraints}
+In the following examples, we produce the resulting animation using two
+approaches: using material optimization, and without material optimization, i.e
+with only $z$ to be optimized. For the case without material optimization, we
+solve the following optimization problem,
+\begin{equation} \label{opt_z}
+  \argmin_{z} E_w(z,\Lambda)+\gamma E_c(S,z)+\mu E_s(S)
+\end{equation}
+where we fix $\Lambda=\Lambda_0$, set $S=(I_{r_s\times r_s},O)^T$ to select the
+first $r_s$ modes in $W$, and choose the same $\gamma$ and $\mu$ as for material
+optimization.
+
+The input for the first example is a static beam with the center fixed, and we
+set $z_0=z_{1}=0$. There are four positional constraints applied at frame $104$
+and frame $124$, which are designed to make the two ends of the beam swing up
+and down symmetrically. As shown in table \ref{table_1}, by using materials
+optimization, the optimal value for the objective function is much smaller,
+which indicates that the control forces are much smaller, and the constraints
+are satisfied much better. And as shown in the video and figure
+\ref{result_z}(a), with materials optimization, the resulting animation can
+produce interesting consistent effects. Furthermore, as shown in
+figure\ref{result_z}(a), our approach automatically choose two modes (i.e. mode
+0 and 1) to represent the resulting animation, while at least 4 modes are needed
+when there are no materials optimization (figure\ref{result_z}(b)). This
+indicates that, our method can automatically find a compact subspace to describe
+the resulting motion.
+
+In the second example, we modified a static mushroom to rotate using five
+partial constraints at frame 0,50,100,150 and 200. The root of the mushroom is
+fixed. As shown in the video and figure \ref{result_z}(e)(f), because the
+initial material for the mushroom is soft, without material optimization it can
+not repeat the rotation motion when there are no constraints(from frame 201 to
+frame 399). And our approach finds the optimal material to produce this rotation
+motion, avoid repeated editing.
+
+\subsection{Material opt. with keyframes}
+Sometimes, the artist hope to design or modify the animation using keyframes. If
+the nodes of the object is too many, it would inefficient to constrained all the
+nodes. One can choose to constraint only the nodes of the tetrahedrons that
+contains the vertices of the embed mesh. Another approach is to choose the nodes
+of the tetrahedrons with large cubature weights as partial constraints. In this
+experiment, we use the second method.
+% Furthermore, if the keyframes
+% are given as surface mesh, or designed using some geometric-based approach, we
+% need to firstly approximate it with a tetrahedral mesh.  using the approach
+% described in \cite{sub_sp_opt}.
+
+We use a beam as input to make the experiment. Several nodes at one end of the
+beam is fixed. We set $z_0=z_{20}=0$, and use two tetrahedral mesh shown in
+figure \ref{key_beam} as additional keyframes to generate the resulting
+animation. The displacements of half part of the keyframes are zero, and we
+intend to generate an animation with only one half of the beam is swing, while
+another half part is almost static. We approximate both keyframes using 51 nodes
+of the tetrahedrons with large cubature weights. Then we use these selected
+points as partial constraints to produce the results with and without material
+optimization. As shown in the video, the results produced by using material
+optimization can produce the desired effects, i.e swing only one end. While
+without material optimization, the resulting animation can not produce such
+consistent effects, and it is even can not satisfy the constraints. 
+
+\subsection{Material opt. using dense $K$}
+In our earlier research stage, we propose to optimize for a dense SPD matrix
+$K=A^TA$ instead of a diagonal matrix $\Lambda$ for equation (\ref{ew}), where
+$A\in R^{r_s\times r_s}$. By using this approach, we need to solve
+\begin{equation} \label{mtl-opt_dense_seq}
+  \argmin_{z,A,S} E_w(z,K(A))+\gamma E_c(S,z)+\mu E_s(S)
+\end{equation}
+According to our experiments, such a scheme can produce much smaller values of
+the objective function, i.e. smaller control forces with constraints well
+satisfied. However, with such a scheme, the computational cost is much larger,
+and more importantly, it may produce large distortion in the resulting
+animation, especially when the constraints is hard to satisfied. Following is
+the reason.
+\begin{figure}
+  \centering
+  \subfigure[keyframe at frame 10] { \label{fig:a}
+    \includegraphics[width=0.225\textwidth]{./figures/beam-swing-key1.png}}
+  \subfigure[keyframe at frame 30] { \label{fig:b}
+    \includegraphics[width=0.225\textwidth]{./figures/beam-swing-key3.png}}
+  \caption{Keyframes for material optimization. Red points are the partial
+    constraints used to approximate the keyframes.}
+  \label{key_beam}
+\end{figure}
+
+As we require $K$ be a SPD matrix, we can decompose $K=U\Lambda' U^T$, with
+$U$ is orthogonal, and $\Lambda'$ is a diagonal matrix, with $\Lambda'_i\ge
+0$. If we replace $z=Uz'$, then problem (\ref{mtl-opt_dense_seq}) is equal to
+\begin{equation} \label{mtl-opt_dense_2}
+  \argmin_{z',\Lambda',S,U} E_w(z',\Lambda')+\gamma E_c(SU,z')+\mu E_s(S)
+\end{equation}
+with additional constraints that $U$ is orthogonal, and
+$\Lambda'_i\ge0$. Compare to (\ref{mtl-opt}), it have not applied regularization
+terms on $U$ using the initial eigenvalues. Thus it would more easily to
+introduce the modes with large frequency into the resulting animation, and if
+the amplitude of such modes is too large, the resulting animation would produce
+non-smooth motion, as shown in the video.
+
+% \subsection{Performance}
+
+\section{Conclusion}\label{sec:conclusion}
+Firstly, experiments shows that, with the Reduced-RS approach introduced here,
+we can reconstruct shape in full space from the decoupled subspace efficiently,
+and the deformation is plausible. Such an approach has helped us to efficiently
+solve the spacetime optimal control problem with partial constraints. Secondly,
+by using material optimization, the control forces introduced in the spacetime
+optimal control can be significantly reduced, the constraints can be satisfied
+much better, and we can observe some interesting consistent effects. We propose
+to optimize the basis by introduce a basis selection matrix, and such a scheme
+not only reduce the control forces, but also find some compact subspace to
+represent the resulting animation.
+
+\paragraph{Remaining problems.} The first problem is the efficient of the
+algorithm, including both the numerical approach and the implementation. We need
+to find some efficient numerical method to solve our objective function
+(\ref{mtl-opt}) efficiently. We hope to achieve interactive
+performance. Secondly, we need to find out more interesting applications.
+
+\begin{figure}
+  \centering
+  \subfigure[mtl opt] { \label{fig:a}
+    \includegraphics[width=0.225\textwidth]{./figures/mtloptW\string_510mode\string_dual\string_p2-iniOpt\string_Z\string_Lambda\string_updateW-mtllog-z.png}}
+  \subfigure[z opt] { \label{fig:a}
+    \includegraphics[width=0.225\textwidth]{./figures/mtloptW\string_510mode\string_dual\string_p2-iniOpt\string_Z-mtllog-z.png}}
+  \subfigure[mtl opt] { \label{fig:a}
+  \includegraphics[width=0.225\textwidth]{./figures/mtloptW\string_510mode\string_fixhalf\string_p2-iniOpt\string_Z\string_Lambda\string_updateW-mtllog-z.png}}
+  \subfigure[z opt] { \label{fig:a}
+    \includegraphics[width=0.225\textwidth]{./figures/mtloptW\string_510mode\string_fixhalf\string_p2-iniOpt\string_Z-mtllog-z.png}}
+  \subfigure[mtl opt] { \label{fig:a}
+    \includegraphics[width=0.225\textwidth]{./figures/mtlopt-iniOpt\string_Z\string_Lambda\string_updateW-mtllog-z.png}}
+  \subfigure[z opt] { \label{fig:a}
+    \includegraphics[width=0.225\textwidth]{./figures/mtlopt-iniOpt\string_Z-mtllog-z.png}}
+  \caption{Curves of $z$ of the experiments, including the results with material
+    optimization (mtl opt) and without material optimization (z opt). Here,
+    $m_i$ is the curve for mode $i$.  (a) and (b) are the results of the beam
+    with two end swings, (c) and (d) are results of the beam with one end
+    swings, while (e) and (f) are the results of the mushroom.}
+  \label{result_z}
+\end{figure}
+% \begin{figure}
+%   \centering
+%   \subfigure[beam, swing two ends.] { \label{fig:b}
+%     \includegraphics[width=0.425\textwidth]{./figures/mtloptW\string_510mode\string_dual\string_p2-iniOpt\string_Z\string_Lambda\string_updateW-mtllog-inner\string_py.png}}
+%   \subfigure[beam, swing one end.] { \label{fig:b}
+%     \includegraphics[width=0.425\textwidth]{./figures/mtloptW\string_510mode\string_fixhalf\string_p2-iniOpt\string_Z\string_Lambda\string_updateW-mtllog-inner\string_py.png}}
+%   \subfigure[mushroom, rotate.] { \label{fig:a}
+%     \includegraphics[width=0.425\textwidth]{./figures/mtlopt-iniOpt\string_Z\string_Lambda\string_updateW-mtllog-inner\string_py.png}}
+%   \caption{Energy curves of material optimization of the experiments. Subtitles
+%     indicate the name of model and the desired animation.}
+%   \label{energy_curves}
+% \end{figure}
+
+\end{document}

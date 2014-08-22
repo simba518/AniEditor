@@ -74,7 +74,7 @@
      <x>0</x>
      <y>0</y>
      <width>828</width>
-     <height>23</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -85,16 +85,25 @@
     <addaction name="actionLoadScene"/>
     <addaction name="actionReloadInitFile"/>
     <addaction name="separator"/>
-    <addaction name="actionSaveKeyframe"/>
+    <addaction name="actionLoadKeyframe"/>
+    <addaction name="actionLoadKeyVolMesh"/>
+    <addaction name="actionLoadVolKeyframes"/>
+    <addaction name="actionSaveKeyVolMeshes"/>
+    <addaction name="actionSaveKeyObjMesh"/>
+    <addaction name="actionSavePartialConBalls"/>
     <addaction name="actionSavePartialCon"/>
     <addaction name="actionLoadPartialCon"/>
+    <addaction name="actionLoadConPath"/>
     <addaction name="actionSaveConPositions"/>
+    <addaction name="actionLoadAnimationVolU"/>
+    <addaction name="actionSaveSceneSequence"/>
+    <addaction name="actionSaveSceneSequenceVTK"/>
     <addaction name="separator"/>
     <addaction name="actionLoadStateFile"/>
     <addaction name="actionSaveStateFile"/>
     <addaction name="separator"/>
-    <addaction name="actionRecordOperation"/>
     <addaction name="actionReplayOperation"/>
+    <addaction name="actionRecordOperation"/>
     <addaction name="actionStopOperation"/>
     <addaction name="actionLoadRecordFile"/>
     <addaction name="actionSaveRecordFile"/>
@@ -117,8 +126,10 @@
     <addaction name="actionShowOutputObj"/>
     <addaction name="actionShowOutputVol"/>
     <addaction name="actionShowKeyframe"/>
+    <addaction name="actionShowAllKeyframes"/>
     <addaction name="actionShowConNodes"/>
     <addaction name="actionShowConPath"/>
+    <addaction name="actionShowAdditionalAni"/>
     <addaction name="actionMouseCircle"/>
     <addaction name="actionConCircle"/>
     <addaction name="separator"/>
@@ -129,6 +140,7 @@
     <addaction name="actionRestoreViewerStatus"/>
     <addaction name="actionPhoneShading"/>
     <addaction name="actionPrintEigenvalues"/>
+    <addaction name="action3DGrid"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -153,6 +165,9 @@
     <addaction name="actionFastbackward"/>
     <addaction name="separator"/>
     <addaction name="actionSaveOutputVolMeshesVTK"/>
+    <addaction name="actionSaveOutputObjMeshesVTK"/>
+    <addaction name="actionSaveAdditionalAniObjMeshesVTK"/>
+    <addaction name="actionSaveAdditionalAniObjMeshes"/>
     <addaction name="actionSaveOutputMeshes"/>
     <addaction name="actionSaveInputMeshes"/>
     <addaction name="actionLoadMeshSeq"/>
@@ -161,6 +176,7 @@
     <addaction name="actionSaveCurrentOutputVolMesh"/>
     <addaction name="actionSaveVolFullU"/>
     <addaction name="actionSaveCurrentVolFullU"/>
+    <addaction name="actionClearAdditionalAnimation"/>
     <addaction name="separator"/>
     <addaction name="actionPlay_preview"/>
     <addaction name="actionPause_preview"/>
@@ -170,14 +186,18 @@
      <string>Edit</string>
     </property>
     <addaction name="actionInterpolate"/>
+    <addaction name="actionEnableInterpolate"/>
     <addaction name="actionUseWarp"/>
     <addaction name="actionEnableDrag"/>
-    <addaction name="actionEnableSelect"/>
+    <addaction name="actionEnableKeyframeSelect"/>
+    <addaction name="actionApplyKeyframeCons"/>
+    <addaction name="actionApplyKeyframeConOnAll"/>
     <addaction name="actionRemoveAllConNodes"/>
     <addaction name="actionSaveCuReducedEdit"/>
     <addaction name="actionLoadCuReducedEdit"/>
     <addaction name="actionSaveAllReducedEdit"/>
     <addaction name="actionLoadAllReducedEdit"/>
+    <addaction name="actionSetCurrentShapeAsKeyframe"/>
    </widget>
    <widget class="QMenu" name="menuSnapshots">
     <property name="title">
@@ -463,15 +483,15 @@
     <string>EnableDrag</string>
    </property>
   </action>
-  <action name="actionEnableSelect">
+  <action name="actionEnableKeyframeSelect">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="checked">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="text">
-    <string>EnableSelect</string>
+    <string>EnableKeyframeSelect</string>
    </property>
   </action>
   <action name="actionShowOutputVol">
@@ -636,6 +656,9 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>ShowKeyframe</string>
    </property>
@@ -692,34 +715,192 @@
    <property name="text">
     <string>RePlayOperation</string>
    </property>
+   <property name="shortcut">
+    <string>P</string>
+   </property>
   </action>
   <action name="actionStopOperation">
    <property name="text">
     <string>StopOperation</string>
+   </property>
+   <property name="shortcut">
+    <string>T</string>
    </property>
   </action>
   <action name="actionLoadRecordFile">
    <property name="text">
     <string>LoadRecordFile</string>
    </property>
+   <property name="shortcut">
+    <string>D</string>
+   </property>
   </action>
   <action name="actionSaveRecordFile">
    <property name="text">
     <string>SaveRecordFile</string>
    </property>
+   <property name="shortcut">
+    <string>E</string>
+   </property>
+  </action>
+  <action name="action3DGrid">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>3DGrid</string>
+   </property>
+  </action>
+  <action name="actionLoadKeyframe">
+   <property name="text">
+    <string>LoadKeyframe</string>
+   </property>
+  </action>
+  <action name="actionShowKeyframe_2">
+   <property name="text">
+    <string>ShowKeyframe</string>
+   </property>
+  </action>
+  <action name="actionApplyKeyframeCons">
+   <property name="text">
+    <string>ApplyKeyframeCons</string>
+   </property>
+  </action>
+  <action name="actionLoadVolKeyframes">
+   <property name="text">
+    <string>LoadVolKeyframes</string>
+   </property>
+  </action>
+  <action name="actionApplyKeyframeConOnAll">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ApplyKeyframeConOnAll</string>
+   </property>
+  </action>
+  <action name="actionEnableInterpolate">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>EnableInterpolate</string>
+   </property>
+  </action>
+  <action name="actionSetCurrentShapeAsKeyframe">
+   <property name="text">
+    <string>SetCurrentShapeAsKeyframe</string>
+   </property>
+   <property name="shortcut">
+    <string>K</string>
+   </property>
+  </action>
+  <action name="actionSaveKeyVolMeshes">
+   <property name="text">
+    <string>SaveKeyVolMeshes</string>
+   </property>
+  </action>
+  <action name="actionShowAllKeyframes">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ShowAllKeyframes</string>
+   </property>
+  </action>
+  <action name="actionLoadKeyVolMesh">
+   <property name="text">
+    <string>loadKeyVolMesh</string>
+   </property>
+   <property name="shortcut">
+    <string>L</string>
+   </property>
+  </action>
+  <action name="actionSaveOutputObjMeshesVTK">
+   <property name="text">
+    <string>saveOutputObjMeshesVTK</string>
+   </property>
+  </action>
+  <action name="actionLoadAnimationVolU">
+   <property name="text">
+    <string>LoadAnimationVolU</string>
+   </property>
+  </action>
+  <action name="actionClearAdditionalAnimation">
+   <property name="text">
+    <string>clearAdditionalAnimation</string>
+   </property>
+  </action>
+  <action name="actionSaveAdditionalAniObjMeshesVTK">
+   <property name="text">
+    <string>saveAdditionalAniObjMeshesVTK</string>
+   </property>
+  </action>
+  <action name="actionLoadConPath">
+   <property name="text">
+    <string>LoadConPath</string>
+   </property>
+  </action>
+  <action name="actionSaveAdditionalAniObjMeshes">
+   <property name="text">
+    <string>saveAdditionalAniObjMeshes</string>
+   </property>
+  </action>
+  <action name="actionShowAdditionalAni">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>ShowAdditionalAni</string>
+   </property>
+  </action>
+  <action name="actionSaveSceneSequence">
+   <property name="text">
+    <string>SaveSceneSequence</string>
+   </property>
+  </action>
+  <action name="actionSaveSceneSequenceVTK">
+   <property name="text">
+    <string>SaveSceneSequenceVTK</string>
+   </property>
+  </action>
+  <action name="actionSaveKeyObjMesh">
+   <property name="text">
+    <string>SaveKeyObjMesh</string>
+   </property>
+  </action>
+  <action name="actionSavePartialConBalls">
+   <property name="text">
+    <string>SavePartialConBalls</string>
+   </property>
   </action>
  </widget>
  <customwidgets>
-  <customwidget>
-   <class>AniSliderBar</class>
-   <extends>QSlider</extends>
-   <header>AniSliderBar.h</header>
-  </customwidget>
   <customwidget>
    <class>QGLViewerExt</class>
    <extends>QWidget</extends>
    <header>QGLViewerExt.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>AniSliderBar</class>
+   <extends>QSlider</extends>
+   <header>AniSliderBar.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

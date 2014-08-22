@@ -23,6 +23,9 @@ namespace LSW_WARPING{
   class Euler2ReducedCoord{
 	
   public:
+	Euler2ReducedCoord(){
+	  
+	}
 	Euler2ReducedCoord(const SparseMatrix<double> &G, const MatrixXd &W){
 	  initialize(G,W);
 	}
@@ -51,6 +54,9 @@ namespace LSW_WARPING{
 		z.col(i) = solver.solve(_hatW.transpose()*y);
 	  }
 	}
+	const MatrixXd &getHatW()const{
+	  return _hatW;
+	}
 	
   protected:
 	SparseMatrix<double> _G;
@@ -77,10 +83,10 @@ namespace LSW_WARPING{
 	  while(succ){
 
 		string volfile, Wfile, inputU, outputZ, outputOldU, outputNewU;
-		succ = jsonf.read("vol_filename",volfile);
+		succ = jsonf.read("vol_file",volfile);
 		if(!succ) break;
 		
-		succ = jsonf.read("eigen_vectors",Wfile);
+		succ = jsonf.read("eigenvectors",Wfile);
 		if(!succ) break;
 
 		succ = jsonf.read("input_U",inputU);

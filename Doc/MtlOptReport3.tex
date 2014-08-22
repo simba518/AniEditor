@@ -1,0 +1,273 @@
+\documentclass[9pt,twocolumn]{extarticle}
+
+\usepackage[hmargin=0.5in,tmargin=0.5in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{subfigure}
+
+\usepackage{cleveref}
+\usepackage{color}
+\newcommand{\TODO}[1]{\textcolor{red}{#1}}
+
+\newcommand{\FPP}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\argmin}{\operatornamewithlimits{arg\ min}}
+\author{Siwang Li}
+
+\title{Report for Space-time Material Optimization}
+
+%% document begin here
+\begin{document}
+\maketitle
+
+\setlength{\parskip}{0.5ex}
+\begin{abstract}
+  Given a motion equation, the corresponding initial elastic materials, and some
+  partial constraints provided by the user, the approach proposed here can
+  generate an animation sequence satisfied these partial constraints, with
+  minimal control forces and consistent effects. The novelties of this work
+  include, an efficient method for the space-time elastic materials optimization
+  in the subspace and an efficient Reduced RS model reduction method to support
+  large deformation and promise tightly positional constraints. What's more, by
+  providing a novel method for basis optimization(selection/combination), this
+  approach can also automatically find a compact subspace to represent the
+  resulting animation sequence.
+\end{abstract}
+
+\section{Background}\label{sec:background}
+Firstly, our framework is based on space-time optimization on a set of decoupled
+linear motion equations, which is closely related to modal analysis. Secondly,
+we adopt the RS-coordinates to avoid the artifacts under large deformation. In
+this section, we briefly review these techniques.
+
+\subsection{Modal analysis}
+The linear motion equation of an object is
+\begin{equation} \label{linear_eq}
+  \tilde{M}\ddot{u} + (\alpha_mI+\alpha_k\tilde{K})\dot{u} + \tilde{K}u = f_{ext}(t)
+\end{equation}
+where $u\in R^{3n}$ represents the displacements of all the $n$ nodes of the
+object, $\tilde{M},\tilde{K} \in R^{3n\times 3n}$ are the mass and stiffness
+matrix respectively, $\alpha_m,\alpha_k$ are the damping coefficients, and
+$f_{ext}(t)$ is the external force at time $t$.
+
+By using modal analysis method, motion equation (\ref{linear_eq}) can be reduced
+and decoupled. To achieve this, we solve a general eigenvalue problem
+\begin{equation} \label{general_eig}
+  \tilde{K}\phi = \lambda \tilde{M}\phi
+\end{equation}
+If we preserve the first $r_w$ eigenvectors and eigenvalues to obtain
+$W=(\phi_1,\cdots,\phi_{r_w})$, and $\Lambda=diag(\lambda_1,\lambda_{r_w})$,
+then replace $u=Wz$ in equation (\ref{linear_eq}) and pre-multiply it with
+$W^T$, finally we obtain the decoupled reduced motion equations
+\begin{equation} \label{ma_eq}
+  \ddot{z} + (\alpha_mI+\alpha_k\Lambda)\dot{z} + \Lambda{z} = w(t)
+\end{equation}
+Here, $w(t)=W^Tf_{ext}(t)$ represents the forces in the subspace.
+
+\subsection{RS method}
+Given a displacement $z\in R^{r_w}$ in the frequency subspace, there are many
+method to construct the displacements $u(z)\in R^{3n}$ in full space, such as
+linear mapping (e.g $u = Wz$), modal warping, or RS coordinates. Experiments
+show that, when the deformation is large, only the RS coordinates method can
+produce plausible results. In the following, we briefly review the RS method,
+and we refer it as full-RS here. Using full-RS, we compute $u(z)$ by solving
+\begin{equation}\label{full_rs_min}
+  \min_{u} E_{rs}(u)=\frac{1}{2}\sum_{e\in T_{all}}\|(Gu)_e + I - \exp({y_e^w})(I+y_e^s)\|_2^2|V_e|
+\end{equation}
+where $T_{all}$ denotes all of the tetrahedrons, $G$ is the discrete gradient
+operator with respect to the rest shape, $|V_e|$ is the volume of tetrahedron
+$e$, $y_e=(y_e^w,y_e^s)$ is the RS coordinates of tetrahedron $e$. We denote the
+RS-coordinates $y=(y_1,\cdots,y_{|T_{all}|})$, and compute it using
+$y=\hat{W}z=(QW)z$, where $Q$ is a sparse matrix which maps the basis $W$ to the
+RS-basis $\hat{W}$. Then the solution of (\ref{full_rs_min}) can be found by
+solving
+\begin{equation} \label{rs}
+  Au = (VG)^Tb(y(z)).
+\end{equation}
+where $A=G^TV^2G$ is a constant sparse matrix,
+$V=diag(\sqrt{V_1},\sqrt{V_1},\cdots,\sqrt{V}_{|T_{all}|})$ with each entry
+repeated $9$x. Each $9\times1$ block of the long vector $b(y(z))\in
+R^{9|T_{all}|}$ with respect to tetrahedron $e$ is expressed as a row-major
+$3\times 3$ matrix,
+\begin{equation}
+  b_e(y_e(z)) = \sqrt{V_e}(\exp({y_e^w})(I+y_e^s)-I)
+\end{equation}
+
+\section{Reduced RS method}\label{sec:reduced-rs-method}
+As in our spacetime optimization with positional constraints(introduced in
+section \ref{sec:mater-optim}), we need to compute $u_j(z)$ and
+$\frac{\partial{u_j(z)}}{\partial{z}}$ for each constrained node $j$
+frequently. Using the full RS method introduced above, these computation would
+be expensive. In this section, we presents a reduced RS method to improve the
+performance.
+
+Firstly, we assume $u$ can be well approximated by using some basis matrix $B\in
+R^{3n\times r_b}$, then we replace $u = Bq$ into (\ref{rs}), and multiply
+$B^T$in both sides to obtain
+\begin{equation} \label{reduced_rs1} B^T(ABq) = B^T(VG)^Tb(y(z))
+\end{equation} Let $P = (B^TAB)^{-1}B^T(VG)^T$, then we can compute the reduced
+coordinates $q$ using
+\begin{equation} \label{reduced_rs2} 
+  q = Pb(y) = \sum_{e\in{T_{all}}}P_e{b_e(y_e(z))}
+\end{equation} where $P_e\in R^{r_b\times 9}$ is some constant matrix according
+to tetrahedron $e$.
+
+Then, we approximate $q$ using the cubature scheme, and obtain
+\begin{equation} \label{reduced_rs3} 
+  q \approx \sum_{e\in{T_{cub.}}}w_eP_e{b_e(y_e(z))}
+\end{equation} 
+where $w_e$ is the cubature weights, and $T_{cub.}$ is the set of the selected
+cubature tetrahedrons. Finally, we can compute the displacements $u$ using
+\begin{equation} \label{reduced_rs4}
+  u(z) = B \sum_{e\in{T_{cub.}}}w_eP_e{b_e(y_e(z))}
+\end{equation} 
+This approach is much faster than solving the large linear system (\ref{rs}).
+
+\subsection{Performance analysis} 
+To compute $u_j(z)$ and $\frac{\partial{u_j(z)}}{\partial{z}}$ for some node $j$
+with the Reduced-RS method, we only need to compute $y_e(z)$ and $b_e(y_e)$ for
+the sampled tetrahedrons (usually less than 100), and then make some small
+matrix-vector production to obtain the results. While using full-RS method, to
+compute $u_j(z)$, one needs to compute $y$ and $b$ for all the tetrahedrons, and
+finally solve a large sparse linear system to compute $u$ for all the nodes, and
+select $u_j(z)$ from them. And use full-RS method to compute
+$\frac{\partial{u_j(z)}}{\partial{z}}$ would be much expensive than compute
+$u_j(z)$. Thus, our reduced method should be much efficient than full-RS method,
+especially when $u_j(z)$ and $\frac{\partial{u_j(z)}}{\partial{z}}$ need to be
+computed frequently, such as the sparse positional constraints in our spacetime
+optimization introduced bellow.
+
+\section{Material optimization}\label{sec:mater-optim}
+In the following, we will introduce our spacetime material optimization scheme.
+Firstly, we choose the basis $B,W$ and cubature samples $T_{cub}$ to be large
+enough to represent the desired deformations. We can use modal derivative method
+to obtain $B$, and use modal analysis method to produce $W$. Then we further
+assume that, the resulting animation can usually be represented by some much
+smaller basis $W'=WS$, where $S\in R^{r_w\times r_s}$ is a dense matrix, and
+$r_s$ is much smaller than $r_w$. For example, we can choose $r_w=80$, while
+$r_s=30$. There is no necessary to require that $W'$ to be mass-orthogonal, as
+the mass matrix is unknown.
+
+Now, in the subspace with basis in $W'$, we assume that the motion of the object
+to be edited can be described by this decoupled motion equation
+\begin{equation} \label{ma_eq_1}
+  \ddot{z} + (\alpha_mI+\alpha_k\Lambda)\dot{z} + \Lambda{z} = w(t)
+\end{equation}
+with $w(t)$ is the control forces.
+
+Given some constraints, we define our spacetime material optimization problem as
+\begin{eqnarray}\label{mtl-opt}
+  &&\argmin_{z,\Lambda,S} E_w(z,\Lambda)+\gamma E_c(S,z)+\mu E_s(S)\\
+  &&\mbox {subject to } \lambda_i \ge 0
+\end{eqnarray}
+
+Here, $\gamma$ and $\mu$ are the penalties, and $E_w$ is the residual for the
+control forces $w(t)$, $E_c$ represents the residual of the constraints, while
+$E_s$ is a regularization term for $S$. We will define each of these energies in
+the following. 
+
+\paragraph{Residual of control forces.} We define $E_w$ using discrete spacetime
+constraints, and we further scale the traditional spacetime-constraints
+formulation by time step as mentioned in the appendix
+\ref{sec:scale-time-step}. Finally we obtain
+\begin{equation} \label{ew}
+  E_w(z,\Lambda) = \frac{1}{2}\sum_{i=1}^{T-2}\|\hat{z}_i+(\alpha_mI+\alpha_k\Lambda)(z_{i+1}-z_{i-1})+\Lambda z_i\|_2^2
+\end{equation}
+where $\hat{z}_i=z_{i+1}-2z_{i}+z_{i-1}$, and $T$ is the total number of frames.
+
+\paragraph{Residual for constraints. } The residual for the partial constraints
+can be defined as
+\begin{equation} \label{ec}
+  E_c(z,S) = \frac{1}{2}\sum_{(i,j)\in \mathbb{C}}\|u_{i,j}(z_i,S)-u^c_{i,j}\|_2^2
+\end{equation}
+where $\mathbb{C}$ contains all the constrained nodes $j$ at frame $i$, while
+$u^c_{i,j}$ denotes the target displacements. We can compute $u_{i,j}(z_i,S)$
+using our Reduced-RS method efficiently. 
+
+What's more, we also found that it is necessary to scale each column of the
+basis $\hat{W}$ using ${(\lambda_i^{0})^{-\frac{1}{2}}}$, where $\lambda_i^{0}$
+is obtained by solving the general eigenvalue problem (\ref{general_eig}) with
+the initial materials.  Finally we obtain
+\begin{equation}
+  u_{i,j}(S,z_i)=B_j\sum_{e\in T_{cub}}w_eP_eb_e(\hat{W}_e(\Lambda^{(0)})^{-\frac{1}{2}}Sz_i)
+\end{equation}
+where $T_{cub}$ denotes the sampled tetrahedrons of the cubature, $w_e$ is the
+cubature weighting, $B_j\in R^{3\times r_b}$ is the basis for node $j$, $P_e\in
+R^{r_b\times9}$ is a constant matrix for tetrahedron $e$, and $\hat{W}_e\in
+R^{12\times r_w}$ is the sub-matrix of the RS-basis $\hat{W}$.
+
+Sometimes, the artist hope to design or modify the animation using keyframes.
+Usually it is inefficient to constrained all the nodes. In such case, one can
+choose to constraint only the nodes of the selected tetrahedrons in the
+cubature process.
+
+\paragraph{Regularization of $S$. }
+We penalize $S$ using
+\begin{equation} \label{reg_s}
+  E_s(S) = \sum_{i=0}^{r_w-1}\sum_{j=0}^{r_s-1} S^2_{i j}
+\end{equation}.
+
+\section{Numerical method}\label{sec:numer-optim}
+Firstly, we fix $\Lambda=\Lambda^{(0)}, S=S^{(0)}$, and
+solve (\ref{mtl-opt}) to obtain $z^{(0)}$, then in $k$-th outer iteration, we
+solve (\ref{mtl-opt}) for $\Lambda^{(k+1)},S^{(k+1)},z^{(k+1)}$ as following,
+\begin{itemize}
+\item Fix $z=z^{(k)},\Lambda=\Lambda^{k}$, optimize for $S^{(k+1)}$.
+\item Fix $z=z^{(k)},S=S^{(k+1)}$, optimize for $\Lambda^{(k+1)}$.
+\item Fix $\Lambda=\Lambda^{(k+1)},S=S^{(k+1)}$, optimize for $z^{(k+1)}$.
+\end{itemize}
+
+We solve a general eigenvalue problem using the initial full stiffness matrix
+and mass matrix to obtain the initial value $\Lambda^{(0)}$, and set
+$S^{(0)}=(I_{r_s\times r_s},O)^T$. In the following, we will present the details
+of the three steps in each outer iteration.
+
+\subsection{Optimization of $z$}
+We use Newton method to optimize for $z$, and we approximate the hessian using
+\begin{equation} 
+  H_z = H_{w,z}+\gamma J_{c,z}^TJ_{c,z}
+\end{equation}
+where
+\begin{eqnarray}
+  H_{w,z} &=& \frac{\partial^2{E_w}}{\partial^2{z}}\\
+  J_{c,z} &=& \frac{\partial{\tilde{u}_c}}{\partial{z}}
+\end{eqnarray}
+Here, $\tilde{u}_c(z,S)$ is a long vector contains all $u_{i,j}(S,z_i)$. The computation
+of $H_z$ is very efficient, and the computational cost of $J_{c,z}$ depends on
+the number of the constrained nodes. When keyframes are used, there maybe
+hundreds of constrained nodes, and the computational cost for $J_{c,z}$ would be
+much more expensive than computing $H_{w,z}$.
+
+\subsection{Optimization of $\Lambda$}
+When $z$ is fixed, $E_c(\Lambda)$ is a quadratic function of $\Lambda$, and its
+minimization can be obtained by solving a small linear equation. If the
+resulting $\lambda_i<0$, we simply reset $\lambda_i=0$. 
+
+\subsection{Optimization of $S$}
+As both the hessian $\frac{\partial^2{E_c}}{\partial^2{S}}$ and its
+approximation $J_{c,s}^TJ_{c,s}$ (where $J_{c,s} =
+\frac{\partial{\tilde{u}_c}}{\partial{S}}$) are large dense matrices, we should
+consider the hessian-free approaches. In our implementation, we adopt the LBFGS
+approach.
+
+\appendix
+\section{Scale of time step}\label{sec:scale-time-step}
+In our experiments, we found that the results are significantly effected by the
+time step $h$, and the resulting animation is hard to control. Thus we scale
+$\alpha_m,\alpha_k$ and $\Lambda$ by $h$ as following,
+\begin{eqnarray}
+ \alpha'_m &=& \frac{1}{h}\alpha_m  \\
+ \alpha'_k &=& h\alpha_k  \\
+ \Lambda' &=& \frac{1}{h^2}\Lambda
+\end{eqnarray}
+On the other hand, we also hope that $h$ will not effect the function value of
+$E_w$, thus we scale $E_w$ by $h^4$, finally, we obtain
+\begin{eqnarray}
+  E_w(z,\Lambda)&=&\frac{h^4}{2}\sum_{i=1}^{T-2}\|\frac{1}{h^2}\hat{z}_{i}+\frac{1}{h}(\alpha'_mI+\alpha'_k\Lambda')(z_{i+1}-z_{i-1})+\Lambda'
+  z_i\|_2^2 \nonumber\\
+  &=&\frac{1}{2}\sum_{i=1}^{T-2}\|\hat{z}_{i}+(\alpha_mI+\alpha_k\Lambda)(z_{i+1}-z_{i-1})+\Lambda
+  z_i\|_2^2
+\end{eqnarray}
+In this formulation, we totally remove $h$ from the energy function. 
+
+\end{document}

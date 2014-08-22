@@ -1,0 +1,61 @@
+\documentclass[9pt,twocolumn]{extarticle}
+
+\usepackage[hmargin=0.5in,tmargin=0.5in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{subfigure}
+
+\usepackage{cleveref}
+\usepackage{color}
+\newcommand{\TODO}[1]{\textcolor{red}{#1}}
+
+\newcommand{\FPP}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\argmin}{\operatornamewithlimits{arg\ min}}
+\author{Siwang Li}
+
+\title{Scale Timestep}
+
+%% document begin here
+\begin{document}
+\maketitle
+
+\setlength{\parskip}{0.5ex}
+
+\section{Objective function}
+Our objective function is
+\begin{eqnarray}\label{mtl-opt}
+  &&\argmin_{z,\Lambda,S} E_w(z,\Lambda)+\gamma E_c(S,z)+\mu E_s(S)\\
+  &&\mbox {subject to } \lambda_i \ge 0
+\end{eqnarray}
+where
+\begin{eqnarray}\label{energies}
+  E_w(z,\Lambda) &=& \frac{1}{2}\sum_{i=1}^{T-2}
+  \|\frac{1}{h^2}\hat{z}_{i}+\frac{1}{h}D(z_{i+1}-z_{i})+
+  \Lambda z_i\|_2^2\\
+  E_c(z,S) &=& \frac{1}{2}\sum_{(i,j)\in \mathbb{C}}\|u_{i,j}(z_i,S)-u^c_{i,j}\|_2^2\\
+  E_s(S) &=& \frac{1}{2}\sum_{i=0}^{r_w-1}\sum_{j=0}^{r_s-1}\lambda_i S^2_{i j}
+\end{eqnarray}
+here, $\hat{z}_i = z_{i+1}-2z_{i}+z_{i-1}$, $D=\alpha_mI+\alpha_k\Lambda$
+
+\section{Scale of $h$}
+In previous experiment of the beam example, we found that the results are
+significantly effected by the time step $h$, and the resulting animation is
+hard to control. Thus we scale $\alpha_m,\alpha_k$ and $\Lambda$ by $h$ as
+following,
+\begin{eqnarray}
+ \alpha_m(h) &=& \frac{1}{h}\alpha_m  \\
+ \alpha_k(h) &=& h\alpha_k  \\
+ \Lambda(h) &=& \frac{1}{h^2}\Lambda
+\end{eqnarray}
+On the other hand, we also hope that $h$ will not effect the function value of
+$E_w$, thus we scale $E_w$ by $h^4$, finally, we obtain
+\begin{eqnarray}
+  E_w(z,\Lambda)&=&\frac{h^4}{2}\sum_{i=1}^{T-2}\|\frac{1}{h^2}\hat{z}_{i}+\frac{1}{h}(\alpha_m(h)I+\alpha_k(h)\Lambda(h))(z_{i+1}-z_{i})+\Lambda(h)
+  z_i\|_2^2 \nonumber\\
+  &=&\frac{1}{2}\sum_{i=1}^{T-2}\|\hat{z}_{i}+(\alpha_mI+\alpha_k\Lambda)(z_{i+1}-z_{i})+\Lambda
+  z_i\|_2^2
+\end{eqnarray}
+In this formulation, we totally remove $h$ from the energy function. 
+
+\end{document}

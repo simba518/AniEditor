@@ -29,8 +29,37 @@ void RSCoordComp::constructWithoutWarp(const SparseMatrix<double> &G, const Vect
   assert_gt(elem_num,0);
   assert_eq(G.rows()%9, 0);
   assert_eq(G.cols(),u.size());
+  constructWithoutWarp(G*u, y);
+}
 
-  VectorXd m = G*u;
+void RSCoordComp::constructWithoutWarp(const SparseMatrix<double> &G, const MatrixXd &U, MatrixXd &Y){
+  
+  const int elem_num = G.rows()/9;
+  assert_gt(elem_num,0);
+  assert_eq(G.rows()%9, 0);
+  assert_eq(G.cols(),U.rows());
+
+  MatrixXd M = G*U;
+  Y.resize(elem_num*9,U.cols());
+
+  for (int f = 0; f < U.cols(); ++f){
+	for (int i = 0; i < elem_num; ++i){
+	  M(i*9+0, f) += 1.0f;
+	  M(i*9+4, f) += 1.0f;
+	  M(i*9+8, f) += 1.0f;
+	}
+	for (int j =0; j < elem_num; ++j){
+	  const double *mj = &(M(9*j,f));
+	  double *yj = &(Y(9*j,f));
+	  constructWithoutWarp_OneTet(mj, yj);
+	}
+  }
+}
+
+void RSCoordComp::constructWithoutWarp(const VectorXd &Gu, VectorXd &y){
+
+  const int elem_num = Gu.size()/9;
+  VectorXd m = Gu;
   for (int i = 0; i < elem_num; ++i){
     m[i*9 + 0] += 1.0;
     m[i*9 + 4] += 1.0;

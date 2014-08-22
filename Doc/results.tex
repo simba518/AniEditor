@@ -1,0 +1,50 @@
+\documentclass[9pt,twocolumn]{extarticle}
+
+\usepackage[hmargin=0.5in,tmargin=0.5in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{subfigure}
+
+\usepackage{cleveref}
+\usepackage{color}
+\newcommand{\TODO}[1]{\textcolor{red}{#1}}
+
+\newcommand{\FPP}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\argmin}{\operatornamewithlimits{arg\ min}}
+\author{Siwang Li}
+
+\title{introduction for the results}
+
+%% document begin here
+\begin{document}
+\maketitle
+
+\setlength{\parskip}{0.5ex}
+
+\section{Recover the material of simulated results}
+We use two examples to demonstrate the ability our approach for recovering
+non-uniform material.  Firstly, we use a full stvk simulator in full space
+to produce a animation sequence for each model. For the simulation, the material
+of both model are non-uniform distributed: one part of the beam is much softer
+than the rest part, and the tail of the dinosaur is much softer than the rest
+part. Then, we use uniform material as the initial value, and sampled some
+points(according to the cubature results) in the first 100 frames of the
+simulated results, and use them as positional constraints in our material
+optimization method. Finally we use the optimize material to produce the rest
+100 animation frames, and compare them with the input animation. We also produce
+the results with no material optimization, (e.g optimize for z only). It can be
+seen that our method can recover the elastic material.
+
+\section{Track prescribed path}
+In this example, we demonstrate that our approach can track the prescribed
+path, and what's more, keep details of the input animation. The input animation
+is a flower, which is simulated using a full stvk simulator using some random. 
+
+%% references
+% \begin{thebibliography}{99}
+% \bibitem{sig2011} Fast simulation of skeleton-driven deformable body
+%   characters.
+% \end{thebibliography}
+
+\end{document}

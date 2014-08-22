@@ -24,6 +24,10 @@ namespace LSW_WARPING{
   class RedRSWarperAD{
 	
   public:
+	// initialize
+	RedRSWarperAD(){
+	  
+	}
 	RedRSWarperAD(const RS2Euler &rs2euler,const MatrixXd &NLBasis,const MatrixXd &LB){
 	  init(rs2euler,NLBasis,LB);
 	  convert2Symbols();
@@ -35,13 +39,57 @@ namespace LSW_WARPING{
 	  convert2Symbols();
 	}
 
+	// set directly
+	void setBP(const MatrixXd &b,const MatrixXd &p){
+	  B = b;
+	  P = p;
+	  CASADI::convert(B,Bs);
+	  CASADI::convert(P,Ps);
+	}
+	void setHatW(const MatrixXd &hw){
+	  hatW = hw;
+	  CASADI::convert(hatW,hatWs);
+	}
+	template<class VECTOR>
+	void setSqrtV(const VECTOR &v){
+
+	  Sqrt_V.clear();
+	  Sqrt_Vs.clear();
+	  Sqrt_V.reserve(v.size());
+	  Sqrt_Vs.reserve(v.size());
+	  for (int i = 0; i < v.size(); ++i){
+		Sqrt_V.push_back(v[i]);
+		Sqrt_Vs.push_back(v[i]);
+	  }
+	}
+	void checkDimensions(){
+	  assert_eq(B.rows()%3,0);
+	  assert_eq(B.cols(),P.rows());
+	  assert_eq(hatW.rows(),P.cols());
+	  assert_eq(Sqrt_V.size()*9,P.cols());
+	  assert_eq(Sqrt_Vs.size()*9,P.cols());
+	}
+
+	// warp
 	void warp(const VectorXd &z,VectorXd &u){
 	  const VectorXd input_y = VectorXd::Zero(hatW.rows());
 	  warp(input_y,z,u);
 	}
+	void warp(const VectorXd &z,VectorXd &u,const vector<int> &nodes){
+	  const SXMatrix zs = CASADI::convert(z);
+	  SXMatrix us;
+	  warp(zs,us,nodes);
+	  u = CASADI::convert2Vec<double>(us);
+	  assert_eq(u.size(),nodes.size()*3);
+	}
 	void warp(const SXMatrix &z,SXMatrix &u,const vector<int> &nodes){
+	  const VectorXd y = VectorXd::Zero(hatWs.size1());
+	  warp(y,z,u,nodes);
+	}
+	void warp(const VectorXd &input_y,const SXMatrix &z,SXMatrix &u,const vector<int> &nodes){
+
 	  SXMatrix q;
-	  computeQ(z,q);
+	  computeQ(input_y,z,q);
 	  set<int> s;
 	  for (int i = 0; i < nodes.size(); ++i) s.insert(nodes[i]);
 	  Eigen::SparseMatrix<double> P;
@@ -104,6 +152,12 @@ namespace LSW_WARPING{
 	const MatrixXd &getBasisMat()const{
 	  return B;
 	}
+	const MatrixXd &getHatW()const{
+	  return hatW;
+	}
+	const SXMatrix &getHatWs()const{
+	  return hatWs;
+	}
 	const SparseMatrix<double> &get_G()const{
 	  return G;
 	}
@@ -115,6 +169,9 @@ namespace LSW_WARPING{
 		sub_y.segment(i*9,9) = full_y.segment(sorted_selPoints[i]*9,9);
 	  }
 	  return sub_y;
+	}
+	const vector<double> &getSqrtV()const{
+	  return Sqrt_V;
 	}
 
   protected:

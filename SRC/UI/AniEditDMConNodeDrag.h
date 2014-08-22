@@ -38,6 +38,7 @@ namespace ANI_EDIT_UI{
 	
 	// observer
 	void selectDragEle(int sel_group_id);
+	void startDrag (double x,double y,double z);
 	void dragTo (double x,double y,double z);
 	void stopDrag (double x,double y,double z){
 	  draggedGroupId = -1;
@@ -73,6 +74,7 @@ namespace ANI_EDIT_UI{
 	  drag_ctrl = pDragCtrl( new DragCtrl(view,con_nodes_drag) );
 	  drag_ctrl->setObserver(con_nodes_drag);
 	  drag_ctrl->setDragHook(con_nodes_drag);
+	  drag_ctrl->setKeyMouse(Qt::ControlModifier,Qt::LeftButton);
 	  if (view != NULL){
 		con_nodes_drag->setRenderPriority(FIRST_RENDER);
 		view->addSelfRenderEle(con_nodes_drag);

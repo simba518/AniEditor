@@ -1,0 +1,356 @@
+\documentclass[9pt,twocolumn]{extarticle}
+
+\usepackage[hmargin=0.5in,tmargin=0.5in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{subfigure}
+
+\usepackage{cleveref}
+\usepackage{color}
+\newcommand{\TODO}[1]{\textcolor{red}{#1}}
+
+\newcommand{\FPP}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\argmin}{\operatornamewithlimits{arg\ min}}
+\author{Siwang Li}
+
+\title{Material Optimization}
+
+%% document begin here
+\begin{document}
+\maketitle
+
+\setlength{\parskip}{0.5ex}
+
+\section{Summary}
+First, for the optimization of the reduced displacements $z$, Gaussian-Newton
+method convergent very fast, but the computational cost for each step is
+large. Using Gaussian-Newton method, the computational cost for each step of are
+much smaller, but it convergences very slow near the optimal value. We need to
+find some effective approach to improve this optimization process.
+
+Second, we make one experiment to check the material optimization with partial
+constraints. We found that we can use material optimization to produce some
+consistent effects. However, the reduction in the control forces is not large
+compare to the results without material optimization, and the convergence speed
+is slow.
+
+In the following, we first define our objective function in section
+\ref{sec:objective-function}, and then give the alternative optimization scheme
+in section \ref{sec:optimization}, and analysis several numerical approaches for
+the optimization of the reduced displacements in section
+\ref{sec:numer-appr-optim}. Finally, we give the results of material
+optimization with partial constraints in section \ref{sec:mater-optim-with}.
+
+\section{Objective  function}\label{sec:objective-function}
+Suppose that the resulting animation sequence satisfies the following motion
+equation in RS space
+\begin{equation} \label{motion_eq}
+  \ddot{z} + (\alpha_mI+\alpha_k\Lambda)\dot{z}+\Lambda z = w(t)
+\end{equation}
+Here, $z$ is the reduced coordinates in RS space, $w(t)$ are the control forces,
+while $\alpha_m,\alpha_k,\Lambda$ denotes the elastic materials in the
+sub-space. We consider both the keyframe constraints $\{z_i^k,i\in
+\mathbb{K}\}$, and partial constraints $\{Cx(z_i,W,x_0)=x_i^c,i\in
+\mathbb{C}\}$, where $W$ are the RS-modes, $x_0$ is the rest shape, and
+$x(\cdot)$ is the function which maps $z$ to the shape $x$ in full space.
+
+Our target is to optimize both the control force and material to produce an
+elastic animation satisfying the constraints, and after discretion
+(\ref{motion_eq}) in time, we obtain
+\begin{equation}
+  \argmin_{z,\Lambda,\alpha_k,\alpha_m}E(z,\Lambda,\alpha_k,\alpha_m)\label{eq:final_eq}
+\end{equation}
+subject to 
+\begin{equation} \label{partial_con}
+  Cx(z_i) = {x}_i^c\mbox{, for } i\in \mathbb{C}.
+\end{equation}
+\begin{equation} \label{constraints}
+  z_i = z_i^k \mbox{, for } i\in \mathbb{K}.
+\end{equation}
+and the objective function $E(\cdot)$ in (\ref{eq:final_eq}) is defined as
+\begin{eqnarray}
+  E &=& \frac{1}{2}\sum_{i=1}^{T-1}\|\frac{1}{h^2}\hat{z}_i+
+  \frac{1}{h}(\alpha_mI+\alpha_k\Lambda)(z_{i+1}-z_{i})+\Lambda
+  z_i\|_{2}^2 \nonumber \\
+  &=& \frac{1}{2}z^THz  \label{objE}
+\end{eqnarray}
+where $\hat{z}_i=z_{i+1}-2z_{i}+z_{i-1}$, and $H$ is a sparse matrix, which is
+penta-diagonal for each mode, and determined by the materials
+$\Lambda,\alpha_k,\alpha_m$ (see the appendix). Here, to simplify the problem,
+we only optimize for the displacements $z$ and subspace materials
+$\alpha_k,\alpha_m,\Lambda$, and have not optimized for the RS-modes $W$ nor the
+rest shape $x_0$ currently.
+
+\section{Optimization}\label{sec:optimization}
+Firstly, we apply the partial constraints (\ref{partial_con}) using penalty
+method, and apply the keyframe constraints (\ref{constraints}) using variables
+replacement(hard constraints). Then, we alternatively optimize the reduced
+displacements $z$ (section \ref{sec:optim-reduc-displ}) and material
+$\alpha_k,\alpha_m,\Lambda$ (section \ref{sec:optimize-materials}), and we
+denote it as the \emph{outer iteration}. And in each outer iteration, we solve
+each optimization tasks iteratively, and we call this process as the \emph{inner
+  iteration}.
+
+\subsection{Optimize reduced displacements}\label{sec:optim-reduc-displ}
+Given $\alpha_k,\alpha_m,\Lambda$, we optimize for $z$ by solving
+\begin{equation} \label{optz}
+  \argmin_{z}\frac{1}{2}( z^THz+\sum_{i\in \mathbb{C}}\gamma_c\|Cx(z_i)-{x}_i^c\|_{2}^2)
+\end{equation}
+where $\gamma_c$ is the penalty, and the keyframe constraints (\ref{constraints})
+are applied using variables replacement(hard constraints). This is a nonlinear
+optimization problem due to $x(z_i)$ appeared in the partial constraints. And we
+have tried several different approaches to solve it, as discussed in section
+\ref{sec:numer-appr-optim}.
+
+\subsection{Optimize materials}\label{sec:optimize-materials}
+Given fixed $z$, we optimize for $\alpha_k,\alpha_m,\Lambda$. In order to find
+the optimal material, we need to replace the diagonal matrix $\Lambda$ with a
+dense symmetric semi-definite matrix $K=A^TA$, and solve for $\alpha_m,\alpha_k,
+A$ using
+\begin{equation}\label{opt_k}
+  \argmin_{\alpha_k,\alpha_m,A} E(z,A^TA,\alpha_k,\alpha_m)+
+  \frac{1}{2}\sum_{i\in \mathbb{C}}\gamma_c\|Cx(z_i)-{x}_i^c\|_{2}^2
+\end{equation}
+Then we compute $K=A^TA$, and decompose $K=U^T\Lambda'U$, then update $z'=Uz$,
+and use the new material $\alpha_k,\alpha_m,\Lambda'$ in section
+\ref{sec:optim-reduc-displ} to optimize for the optimal displacements $z$, with
+$z'$ as the initial value.
+
+\begin{figure}
+  \centering
+  \subfigure[Objective Function Value vs. Iterations] { \label{fig:a}
+    \includegraphics[width=0.48\textwidth]{./figures/beam-swing-GN.png}
+  }
+  \subfigure[frame 31] { \label{fig:a}
+    \includegraphics[width=0.22\textwidth]{./figures/beam-swing-GN-rlst-f31.png}
+  }
+  \subfigure[frame 78] { \label{fig:b}
+    \includegraphics[width=0.22\textwidth]{./figures/beam-swing-GN-rlst-f78.png}
+  }
+  \subfigure[frame 128] { \label{fig:a}
+    \includegraphics[width=0.22\textwidth]{./figures/beam-swing-GN-rlst-f128.png}
+  }
+  \subfigure[frame 312] { \label{fig:b}
+    \includegraphics[width=0.22\textwidth]{./figures/beam-swing-GN-rlst-f312.png}
+  }
+  \caption{Convergence of the Gaussian-Newton method for optimizing (\ref{optz})
+    in one outer iteration. Pink beams are the results with 3 iterations
+    (objective value is $1.1\times 10^6$), and red is the ground truth with 6
+    iterations (objective value is $9.8\times 10^5$). Pink and blue points are
+    the target positions for the constrained points of the corresponding frames,
+    and $T=400$, $r=3$. }
+  \label{f_rlst_gn}
+\end{figure}
+
+\section{Numerical approaches for optimizing reduced
+  displacements}\label{sec:numer-appr-optim}
+In the following, we will introduce several different numerical approaches for
+optimizing the reduced displacements $z$, e.g problem (\ref{optz}), and discuss
+the difficulties of each choice presented in our experiments.
+
+\begin{figure}
+  \centering
+  \subfigure[Objective Function Value vs. Iterations] { \label{fig:a}
+    \includegraphics[width=0.48\textwidth]{./figures/beam-swing-BFGS.png}
+  }
+  \subfigure[frame 31] { \label{fig:a}
+    \includegraphics[width=0.22\textwidth]{./figures/beam-swing-BFGS-GN-rlst-f31.png}
+  }
+  \subfigure[frame 78] { \label{fig:b}
+    \includegraphics[width=0.22\textwidth]{./figures/beam-swing-BFGS-GN-rlst-f78.png}
+  }
+  \subfigure[frame 128] { \label{fig:a}
+    \includegraphics[width=0.22\textwidth]{./figures/beam-swing-BFGS-GN-rlst-f128.png}
+  }
+  \subfigure[frame 312] { \label{fig:b}
+    \includegraphics[width=0.22\textwidth]{./figures/beam-swing-BFGS-GN-rlst-f312.png}
+  }
+  \caption{Convergence of the BFGS method for optimizing (\ref{optz}) in one
+    outer iteration. Red beams are ground truth generated using Gaussian-Newton
+    method with 6 iterations (objective value is $9.8\times 10^5$), while green
+    beams are the results of BFGS method with $1000$ iterations (objective value
+    is $1.68\times 10^6$). Pink and blue points are the target positions for the
+    constrained points of the corresponding frames, and $T=400$, $r=3$.}
+  \label{f_rlst_bfgs}
+\end{figure}
+
+\subsection{Gaussian Newton}\label{sec:gaussian-newton}
+This approach usually convergent within $10$ inner iterations for one outer
+iteration (see figure \ref{f_rlst_gn}). The disadvantage of this approach is the
+computation cost for one inner iteration is high, as we need to solve a large
+sparse linear equation for each step.
+
+In detail, let $c(z)=\frac{1}{2}\gamma_c\sum_{i\in
+  \mathbb{C}}\|Cx(z_i)-{x}_i^c\|_{2}^2$, then the hessian matrix for the
+objective function in (\ref{optz}) is
+\begin{equation} \label{hessian}
+  H+\gamma_c\frac{\partial^2{c(z)}}{\partial^2{z}}
+\end{equation}
+When the number of constrained nodes are not large, the computational complexity
+for $\frac{\partial^2{c(z)}}{\partial^2{z}}$ is small, which about
+$O(|\mathbb{C}|Sr^2)$, where $S$ is the number of cubature samples in our
+reduced RS model. As the materials are updated frequently, $H$ should be
+recomputed at each outer iteration. The dimension of $H$ is
+$(T-|\mathbb{K}|)r\times (T-|\mathbb{K}|)r$, and in practice, we usually require
+the number of frames $T$ satisfies $100\le T\le400$, and the dimension $r$ of
+the subspace satisfies $30\le r\le80$. Thus for large problem with $T=400$ and
+$r=80$, the computational cost for (\ref{optz}) would be expensive.
+
+In our experiments, the outer iteration usually convergent within $30$
+iterations. Thus, if we want to solve for (\ref{eq:final_eq}) within one second,
+we need to solve (\ref{optz}) within $1/30$ second. If there is no material
+optimization, $H$ is constant all the time, we can pre-compute $H^{-1}$, and use
+Lagrange method to apply the partial constraints, then it is even possible to
+solve (\ref{optz}) within $1/100$ second using Green functions. However, for our
+problem, as $H$ is not constant (updated at each outer iteration), it is much
+more challenge to solve (\ref{optz}) efficiently.
+
+\subsection{BFGS}\label{sec:bfgs}
+Using this approach, we only need to compute the gradient of the objective
+function in (\ref{optz}), thus the computational cost for each step in the inner
+iteration is much cheaper than Gaussian Newton method. However, it convergences
+very slow. As shown in figure \ref{f_rlst_bfgs}, in the first 30 iterations, it
+convergent very fast, however when it is near the optimal results, it is hard to
+convergent. Even after 1000 iterations, the resulting animation are differs
+greatly from the ground truth results generated using the Gaussian-Newton
+method. As the computational cost for one step is cheap for this method, we can
+consider to use it to produce the initial value for the Gaussian-Newton method.
+
+% \subsection{BFGS with adjoint method}
+% Let's denote $q_i = (v_i,z_i)$ as the status of frame $i$, and assume that the
+% integration function for equation (\ref{motion_eq}) is
+% \begin{equation} \label{integ}
+%   q_{i+1} = f_i(q_i,w_i)
+% \end{equation}
+% Then we can rewrite the optimization problem (\ref{optz}) as
+% \begin{equation}\label{adj_final_eq}
+%   \argmin_{w}\frac{1}{2}\sum_{i=0}^{T-2}\|w_i\|_2^2+\sum_{i\in
+%     \mathbb{C}}\|Cx(z_i)-{x}_i^c\|_{M_c}^2+\|z_i-z_i^k\|_{M_k}^2
+% \end{equation}
+% subject to
+% \begin{equation} \label{adj_con}
+%   q_{i+1} = f_i(q_i,w_i)
+% \end{equation}
+% Here, we use penalty method to apply both the partial and keyframe constraints,
+% and optimize for the control forces $w$ directly instead of $z$. we apply the
+% motion equations as hard constraints according to (\ref{adj_con}). Then, we use
+% adjoint method to compute the gradient of this problem, and use BFGS method to
+% solve it. When $w$ is obtained, we compute $z$ using the integration method
+% (\ref{adj_con}), and use it to further optimize for the materials.
+
+% As the motion equations for each mode in (\ref{adj_con}) are decoupled, the
+% computational cost for each step in the inner iteration is much cheaper than
+% computing general Gaussian Newton method in section ~\ref{sec:gaussian-newton},
+% but more expensive than the approach in section \ref{sec:bfgs}. And this
+% approach also convergent much slower than Gaussian Newton method. In our
+% experiments, it takes more than $200$ inner iterations to convergence for one
+% outer iteration.
+
+\subsection{Conclusion of the numerical approaches}
+We have tried several different method to optimize for (\ref{optz}), and found
+that 
+\begin{itemize}
+\item The Gaussian Newton method convergent very fast, but the computational
+  cost for each step is large.
+\item The BFGS method convergent fast at the beginning, but become very slow
+  near the optimal results.
+% \item Combine adjoint method with the BFGS method, the computational cost for
+%   each step smaller than Gaussian-Newton method, and more expensive than
+%   computing the gradient directly(~\ref{sec:bfgs}). And the convergence speed is
+%   still very slow compare to Gaussian-Newton method.
+\end{itemize}
+Thus, one possible numerical choice is to improve speed for each step of the
+Gaussian Newton approach by using muti-grid method on the decoupled modes. For
+example, we can first optimize for the first $0,1,2$ modes, then $3,4,5$, and so
+on. For each sub-problem, the computational cost is much smaller. And if this
+multigrid method can convergent fast, we can significantly improve the
+optimization speed. Further more, we can use the BFGS method to produce the
+initial value for the Gaussian-Newton method.
+
+\section{Material optimization with partial constraints}\label{sec:mater-optim-with}
+In this section, we present the results of the material optimization with
+partial constraints, e.g the optimization results of (\ref{eq:final_eq}),
+(\ref{partial_con}) and (\ref{constraints}). We apply four position constraints
+at frame 78 and 128 respectively, and constrained the displacements at frame
+$0,1,2$ as zero using keyframe constraints. We use Gaussian-Newton method to
+optimize both (\ref{optz}) and (\ref{opt_k}), and the convergence curve of outer
+iteration is shown in figure \ref{f_rlst_parcon}, while the resulting animation
+can be found at the attached video. This experiment shows that,
+\begin{itemize}
+\item By using material optimization, we success to find a mode which represents
+  the cycling motion satisfying the constraints with minimal control forces, and
+  produce consistent effects.
+\item The outer iteration convergent slow. Though the objective value obtained
+  at iteration 30 is similar to the objective value in iteration $50$, the
+  resulting animations differ greatly.
+\item The reduction of the control forces in this example is not large. Without
+  material optimization, the norm of the control forces is $9.8\times 10^5$, and
+  it reduces to $7.9\times 10^5$ by using material optimization.
+\end{itemize}
+\begin{figure}
+  \centering
+  \subfigure[Objective Function Value vs. Outer iterations] { \label{fig:a}
+    \includegraphics[width=0.38\textwidth]{./figures/beam-swing-BFGS-pcon.png}
+  }
+  \subfigure[$z$ with no material optimization] { \label{fig:a}
+    \includegraphics[width=0.38\textwidth]{./figures/beam-swing-BFGS-pcon-no-mtl.png}
+  }  
+  \subfigure[$z$ of 30 iterations] { \label{fig:a}
+    \includegraphics[width=0.38\textwidth]{./figures/beam-swing-BFGS-pcon-Uz_30it.png}
+  }
+  \subfigure[$z$ of 50 iterations] { \label{fig:b}
+    \includegraphics[width=0.38\textwidth]{./figures/beam-swing-BFGS-pcon-Uz_50it.png}
+  }
+  \subfigure[frame 100] { \label{fig:a}
+    \includegraphics[width=0.22\textwidth]{./figures/beam-swing-BFGS-pcon-comp_f100.png}
+  }
+  \subfigure[frame 399] { \label{fig:b}
+    \includegraphics[width=0.22\textwidth]{./figures/beam-swing-BFGS-pcon-comp_f399.png}
+  }
+  \caption{Results of material optimization with partial constraints. (a) the
+    convergence curve of the outer iterations. Before optimization, the
+    objective value is $6.1\times 10^9$, which is not shown in the figure. (b)
+    the resulting $z$ without material optimization. (c) the resulting $z$ of
+    each mode after material optimization with 30 iterations. (d) $z$ with 50
+    iterations. (e) and (f) are two frames of the resulting animation, where
+    green are the results of 30 iterations, while blue are the results of 50
+    iterations. Here, $T=400$, and $r=3$.}
+  \label{f_rlst_parcon}
+\end{figure}
+
+\appendix
+\section{Structure of $H$}
+The hessian $H$ of (\ref{objE}) is a sparse matrix, and it is penta-diagonal for
+each mode. We consider one mode $j$, and let
+\begin{eqnarray}\label{abc}
+  a &=& \frac{1}{h^2}+\frac{1}{h}(\alpha_m+\alpha_k\Lambda_{jj})\\
+  b &=& \Lambda_{jj}-\frac{1}{h}(\alpha_m+\alpha_k\Lambda_{jj})-\frac{2}{h^2}\\
+  c &=& \frac{1}{h^2}
+\end{eqnarray}
+then
+\begin{equation} \label{}
+  E(z^j) = \frac{1}{2}\sum_{i=1}^{T-2}\|az^j_{i+1}+bz^j_{i}+cz^j_{i-1}\|_2^2
+\end{equation}
+As an example, $H$ of one mode with $T=6$ is
+\[
+\left( \begin{array}{ccccccc}
+    c^2&bc&ac&0&0&0\\
+    bc&c^2+b^2&bc+ab&ac&0&0\\
+    ac&bc+ab&c^2+b^2+a^2&bc+ab&ac&0\\
+    0&ac&bc+ab&c^2+b^2+a^2&bc+ab&ac\\
+    0&0&ac&bc+ab&b^2+a^2&ab\\
+    0&0&0&ac&ab&a^2\\
+  \end{array} \right)
+\]
+It is clear that for each mode, $H$ is a symmetric penta-diagonal matrix.
+
+% \section{Example of one outer iteration}
+% We demonstrate the details for one outer iteration here. Suppose that the at the
+% beginning of the $k$-th outer iteration we obtain the optimal reduced
+% coordinates $z^{k}\in R^{r\times T}$, and current RS-modes is $W^{k}\in
+% R^{n\times r}$. Now we optimize for the materials in the subspace, and obtain
+% $\alpha_m^{k+1},\alpha_k^{k+1},K^{k+1}$. Then we decompose $K^{k+1}=U^T\Lambda'
+% U$, and let $z^k=Uz'$
+
+\end{document}

@@ -1,23 +1,32 @@
 #! /usr/bin/env python
 
-# Crop and resize the pictures of for the figures of the paper, then compile the
-# document.
-
 import os
 from resize_images import *
 from utility import *
 
-figure_dir = "/home/simba/Workspace/"
-# show an image
-# image_file_name = figure_dir+"/tempt/a.jpg"
-# show_image(image_file_name)
+paper_doc = "/home/simba/Workspace/AnimationEditorDoc/paper/"
+image_doc = paper_doc+"/images/"
+model = "beam_fine"
 
-# resize images
-src_dir = figure_dir+"/tempt"
-target_dir = figure_dir+"/tempt/aa"
-box = [0, 0, 1000, 1000]
-# resize_images(src_dir, target_dir, box, "png")
-resize_images(src_dir, target_dir, box, "jpg")
+# control forces
+Ef = grepFloatNumbers("./tempt_opt/"+model+"-mtlopt.ini.mtllog-Ef-mtlopt.png.txt")
+Ef_no = grepFloatNumbers("./tempt_opt/"+model+"-mtlopt.ini.mtllog-Ef.png.txt")
+plt.plot(range(0,len(Ef)/2),Ef[0:len(Ef)/2],linewidth=5,label='Material optimization')
+plt.plot(range(0,len(Ef_no)/2),Ef_no[0:len(Ef)/2],linewidth=5,label='No material optimization')
+legend = plt.legend()
+for label in legend.get_texts():
+    label.set_fontsize(30)
+plt.xlabel("Frame number",fontsize=30)
+plt.ylabel("$E_f$",fontsize=30)
+fig = plt.gcf()
+fig.set_size_inches(22,8.5)
+plt.savefig(image_doc+"/control_froces.png")
 
-# compile the document
-# make_doc_one_pass(latex_doc_dir)
+# curve z
+model = "beam_fine"
+os.system("cp "+"./tempt_opt/"+model+"-mtlopt-ini-mtllog-z.png "+image_doc+"beam_z_no_mtlopt.png")
+os.system("cp "+"./tempt_opt/"+model+"-mtlopt-ini-mtllog-z_mtlopt.png "+image_doc+"beam_z.png")
+
+# compile
+os.chdir(paper_doc)
+os.system("pdflatex "+"./mat_opt.tex")

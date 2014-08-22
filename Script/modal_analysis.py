@@ -7,14 +7,14 @@ import os
 
 homedir = os.path.expanduser('~')
 root_path = homedir + "/Workspace/AnimationEditor/"
-sim_dir = root_path+"Data/beam/"
+sim_dir = root_path+"Data/flower/model/"
 space = " "
-vol_filename = space + sim_dir + "/mesh/sim-mesh.hinp"
-fixed_nodes_file = space + sim_dir + "/W80_B40_C97_FixCen/con_nodes.bou"
+vol_filename = space + sim_dir + "/flower.hinp"
+fixed_nodes_file = space + sim_dir + "/con_nodes.bou"
 
-linear_mode_num = 80
-eigen_values = space+sim_dir+"/W80_B40_C97_FixCen/eigen_values"+str(linear_mode_num)+".b"
-eigen_vectors = space+sim_dir+"/W80_B40_C97_FixCen/eigen_vectors"+str(linear_mode_num)+".b"
+linear_mode_num = 100
+eigen_values = space+sim_dir+"/eigenvalues"+str(linear_mode_num)+".b"
+eigen_vectors = space+sim_dir+"/eigenvectors"+str(linear_mode_num)+".b"
 
 MA_app = root_path + "/Script/apps/ModalAnalysis"
 os.chdir(sim_dir)

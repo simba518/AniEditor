@@ -1,0 +1,56 @@
+
+\begin{figure}
+  \centering
+  \subfigure[z curves] { \label{fig:b}
+    \includegraphics[width=0.4\textwidth]{#curve_z#}
+  }
+  \subfigure[inner iterations] { \label{fig:a}
+    \includegraphics[width=0.4\textwidth]{#inner_it#}
+  }
+  \subfigure[outer iterations] { \label{fig:b}
+    \includegraphics[width=0.4\textwidth]{#outer_it#}
+  }
+  \caption{z curves and energy functions. #init_file_name#}
+  \label{en_f}
+\end{figure}
+
+\begin{center}
+  \begin{tabular}{|l*{8}{|l}}
+    \hline
+	file & #init_file_name# \\ \hline
+	nodes & #number_of_nodes# \\ \hline
+	T & #T# \\ \hline
+	h & #time_step# \\ \hline
+	rs & #rs# \\ \hline
+	rw & #rw# \\ \hline
+    con frames & #con_frames#\\\hline
+    con nodes & #con_nodes#\\\hline
+    % penalty & #partial_penalty#\\\hline
+	$\alpha_k$ & #alphak# \\ \hline
+	$\alpha_m$ & #alpham# \\ \hline
+	tets & #number_of_tets# \\ \hline
+    inner its(Z) & #number_of_it(Z)# \\ \hline
+    inner its(S) & #number_of_it(S)# \\ \hline
+    inner its($\Lambda$) & #number_of_it(l)# \\ \hline
+    inner its($K$) & #number_of_it(K)# \\ \hline
+    outer its & #number_of_outer_its# \\ \hline
+    optimal fun & #optimal fun# \\ \hline
+	$\Lambda_0$ & #lambda0# \\ \hline 
+	$\Lambda$ & #lambda# \\ \hline 
+    opt time & #opt_time# \\ \hline 
+    lbfgs & #lbfgs# \\ \hline
+    lbfgs(val+gra) & #lbfgs_val_grad# \\ \hline
+    ipopt($K$) & #ipopt_K# \\ \hline
+    sqp & #sqp# \\ \hline
+    sqp(pre) & #prepare_for_new_x# \\ \hline
+    sqp(val) & #sqp_val# \\ \hline
+    sqp(gra) & #sqp_grad# \\ \hline
+    sqp(hes) & #sqp_hess# \\ \hline
+    sqp(ls, create) & #linear_solver::create# \\ \hline
+    sqp(ls, solve) & #linear_solver::solve# \\ \hline
+    sqp(J) & #EcZ_jacbian# \\ \hline    
+    sqp(NP) & #sqp_NP# \\ \hline    
+    sqp(TC) & #sqp_TC# \\ \hline    
+    sqp(DL) & #sqp_DL# \\ \hline    
+  \end{tabular}
+\end{center}

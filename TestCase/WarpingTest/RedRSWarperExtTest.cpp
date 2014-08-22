@@ -17,13 +17,8 @@ BOOST_AUTO_TEST_CASE(jacobianTest){
 
   LSW_WARPING::RedRSWarperGradAD gradAD;
   LSW_WARPING::RedRSWarperGrad grad;
-  for (int i = 0; i < 144*5*20; ++i){
-	gradAD.evaluateGrad(Sqrt_V, yj, rlstAD);
-  }
-
-  for (int i = 0; i < 144*5*20; ++i){
-	grad.grad(Sqrt_V, &yj(0,0), &rlst(0,0));
-  }
+  gradAD.evaluateGrad(Sqrt_V, yj, rlstAD);
+  grad.grad(Sqrt_V, &yj(0,0), &rlst(0,0));
 
   ASSERT_EQ_SMALL_MAT_TOL (rlst,rlstAD,1e-8);
 }
@@ -42,13 +37,9 @@ BOOST_AUTO_TEST_CASE(jacobianZTest){
   
   LSW_WARPING::RedRSWarperGradAD gradAD;
   LSW_WARPING::RedRSWarperGrad grad;
-  for (int i = 0; i < 5*100; ++i){
-	gradAD.jacobian(y,Sqrt_V,nodeId,hatW,BP,autoJz);
-  }
+  gradAD.jacobian(y,Sqrt_V,nodeId,hatW,BP,autoJz);
+  grad.jacobian(y,Sqrt_V,nodeId,hatW,BP,Jz);
 
-  for (int i = 0; i < 5*100; ++i){
-	grad.jacobian(y,Sqrt_V,nodeId,hatW,BP,Jz);
-  }
   ASSERT_EQ_SMALL_MAT_TOL (Jz,autoJz,1e-8);
 }
 

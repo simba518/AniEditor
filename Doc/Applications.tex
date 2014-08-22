@@ -1,0 +1,157 @@
+\documentclass[9pt]{extarticle}
+
+\usepackage[hmargin=0.5in,tmargin=0.5in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{times}
+
+\usepackage{cleveref}
+\usepackage{color}
+\usepackage{longtable}
+\newcommand{\TODO}[1]{\textcolor{red}{#1}}
+
+\newcommand{\FPP}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\argmin}{\operatornamewithlimits{arg\ min}}
+\author{Siwang Li}
+
+\title{Possible Applications of this approach}
+
+%% document begin here
+\begin{document}
+\maketitle
+
+\setlength{\parskip}{0.5ex}
+
+\section{Applications}
+\begin{itemize}
+\item Animation design with partial and keyframe constraints: much smaller
+  control forces, natural results even with unsuitable initial material,
+  consistent effects, tight partial constraints, large deformation, more compact
+  subspace, and the optimized material can be used in the following editing.
+\item Animation editing: interactive performance, produce consistent
+  periodically motions, support animations produced by hand or simulated
+  results, support local editing, and produce localized mode.
+\item Recover the elastic material: simulated results or even animation sequence
+  obtained from the real world can be used as input.
+\item Generate a compact subspace to represent the resulting animation.
+\item Adjust the motion of different objects, or the different parts of an
+  object.
+\item Static deformation, efficient shape design.
+\item Produce local deformation modes during the editing, and we can control
+  the frequency of each mode independently.
+\end{itemize}
+
+\section{Examples}
+\begin{center}
+    \begin{longtable}{ | p{1.7cm} | p{8.0cm} | p{8.0cm}|}
+    \hline
+    Model & Action & highlight \\ \hline 
+
+    flower& simulate a sequence with secondary dynamics, edit it to move around
+    a circle. & 1. trace prescribed path. 2. keep input details. \\ \hline
+
+    bird & open the mouth, open the mouth in such a way that the beak should
+    looks rigid. & 1. material study, 2. constraint a portion of the object.\\
+    \hline
+
+    dinosaur & given simulated results, recover the material. & material recover. \\ \hline
+
+    beam & given simulated results, recover the material. & material recover. \\ \hline
+
+    bird & swing the wings. & keyframe constraints, interactive editing. \\
+    \hline
+
+    beam and bird & transfer the motion from the bird to the beam. & motion
+    transfer \\ \hline
+
+    dinosaur & jumping or walking. & complicated results, including keyframe,
+    partial, material optimization, and motion transfer. \\ \hline
+
+    bottle & example based material. & example based material.  \\ \hline
+
+    monster & monster hit by a ball, edit it to response to the collision. &
+    handle collision by precise positional constraints.  \\ \hline
+
+    % bird & 1. swing the wings symmetrically. 2. open the mouth in such a way
+    % that the beak should looks rigid. 3. adjust the motion of the head and the
+    % wings. 3. compare the results with no material optimization. 4. adjust the
+    % frequency of the motion of wings and beak independently. & 1. constraint a
+    % portion of the object.  2. consistent effects.  3. avoid the artifacts due
+    % to unsuitable initial material.  4. interactive performance.
+    % 5. localized deformation. \\
+    % \hline
+
+    % flower uniform& 1. move periodically with different path: circle, 8 or
+    % wave. 2. adjust the motion of different parts. 3. compare the results with
+    % no material optimization.& 1. consistent periodically motions. 2. contract
+    % motion pattern. 3. trace prescribed path.\\ \hline
+
+    % dinosaur& walking or swing the tail.& 1. static deformation. 2. study the material. 3. material recover. \\ \hline
+
+    % flower non-uniform& 1. recover the material from simulated results. 2. compare the
+    % results with no material optimization.& elastic material recover.\\
+    % \hline
+
+    % flowers & many flowers move simultaneously to produce some pattern. & adjust
+    % the motion of different objects.\\
+    % \hline
+
+    % Character I &use keyframes as example to design material, then interactive
+    % edit the resulting animation with partial spacetime constraints. & 1. use
+    % keyframes as examples to design the elastic material, and use it in the
+    % spacetime optimal control framework. 2. interactive editing.\\
+    % \hline
+
+    % octopus & 1. jump with all legs move simultaneously. 2. large local
+    % deformation at the end of the legs. & 1. partial constraints. 2. large
+    % deformation. 3. adjust the motion of different parts.\\ \hline
+
+    % beam &1. swing two ends simultaneously. 2. swing one half with another half
+    % fixed. 3. interactive editing with the optimized material and
+    % modes. 4. material recover. 5. static deformation.& present all the
+    % advantages of our method.\\\hline
+
+    % & &animation editing with simulated results. \\ \hline
+
+    % simple plant& &material recovered from real world. \\ \hline
+
+    \end{longtable}
+\end{center}
+
+\section{Pipeline}
+\begin{center}
+    \begin{longtable}{ | p{3.0cm} | p{12.0cm} | p{2.0cm}|}
+    \hline
+    Task & Todo & People \\ \hline
+
+    design the examples & 1. show and discuss the examples with others. 2. ask
+    others to prepare the obj meshes.& zhou, yang.\\ \hline
+
+    prepare input data& teach zhang to use
+    the script to produce all the data.& zhang.\\ \hline
+    
+    live demo & 1. operate the bird to produce some results. 2. test the
+    record-replay operation. 3. teach zhang to produce other results. 4. screen
+    recording. 5. ask qiu to improve rendering. & zhang, qiu.\\ \hline
+
+    keyframes, partial & 1. write an application or script to
+    convert the keyframes into partial constraints. 2. produce some results
+    using keyframes. 3, teach zhang to do it.& zhang.\\ \hline
+
+    material recover &1. produce simulated results using reduced and full stvk
+    method. 2. write a script to do all automatically. 3. obtain the animation
+    sequence from real world. & \\ \hline
+
+    rendering &1. build a pipeline for rendering. 2. teach zhang to use it. & zhang.\\ \hline
+
+    demo, figures and table & 1. design the demo, figures and performance
+    table. 2. write script to produce figures and performance statistic
+    automatically. 2. ask zhang to compile the data in another computer.& zhang\\
+    \hline
+
+    
+
+    \end{longtable}
+\end{center}
+
+\end{document}
+

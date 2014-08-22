@@ -12,8 +12,6 @@ ADD_EXECUTABLE(${APPNAME}
 LINK_PROJECT(${APPNAME}
 
   warping
-  basesim
-  externallib
   basetestor
 )
 

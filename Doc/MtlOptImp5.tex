@@ -1,0 +1,93 @@
+\documentclass[9pt,twocolumn]{extarticle}
+
+\usepackage[hmargin=0.5in,tmargin=0.5in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{subfigure}
+
+\usepackage{cleveref}
+\usepackage{color}
+\newcommand{\TODO}[1]{\textcolor{red}{#1}}
+
+\newcommand{\FPP}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\argmin}{\operatornamewithlimits{arg\ min}}
+\author{Siwang Li}
+
+\title{Experiments results of Material optimization}
+
+%% document begin here
+\begin{document}
+\maketitle
+
+\setlength{\parskip}{0.5ex}
+
+\section{Experiments}
+We use five keyframes as shown in figure \ref{rlst}(a) to make the experiments
+with and without material optimization. With material optimization, We hope to
+generate one mode, which behaviors similar to these keyframes, e.g swing left
+half part, with the right half part fixed. We use 6 and 10 modes to produce the
+results using material optimization, and 10 modes without material optimization,
+the results are shown in figure \ref{rlst}(b) and the video. The curves for $z$
+are shown figure \ref{curves-z}, and the optimization process are shown in
+figure \ref{opt-6} and \ref{opt-10}.
+
+\begin{figure}
+  \centering
+  \subfigure[keyframes] { \label{fig:b}
+    \includegraphics[width=0.4\textwidth]{./figures/beam-fix-end-center-keyf.png}
+  }
+  \subfigure[results.] { \label{fig:b}
+    \includegraphics[width=0.4\textwidth]{./figures/beam-fix-end-center.png}
+  }
+  \caption{(a)Keyframes at frame 0,10,20,24,44, with the right half parts are
+    fixed. (b)Frame of resulting animation at frame 44.}
+  \label{rlst}
+\end{figure}
+
+\section{Analysis}
+\begin{itemize}
+\item If the modes is enough, we can obtain the desired modes using material
+optimization(see figure \ref{rlst}(b)).
+\item By only optimizing the $K$ in subspace, it is hard to generate a mode with
+  exactly one side fixed, and it will introduce some motions with high
+  frequency, especially when there are many modes to be optimized, as shown in
+  figure \ref{curves-z} and the video. 
+\end{itemize}
+We hope to improve the results by introducing the optimization of the modes $W$
+and rest shape $r$.
+
+\begin{figure}
+  \centering
+  \subfigure[no material optimization,10 modes.] { \label{fig:b}
+  \includegraphics[width=0.4\textwidth]{./figures/mtlopt_cen_keyf_swing_one_end_10_modes_Opt_Z_curveZ.png}}
+  \subfigure[material optimization,6 modes.] { \label{fig:b}
+  \includegraphics[width=0.4\textwidth]{./figures/mtlopt_cen_keyf_swing_one_end_06_modes_Opt_Z_AtA_curveZ.png}}
+  \subfigure[material optimization,10 modes.] { \label{fig:b}
+  \includegraphics[width=0.4\textwidth]{./figures/mtlopt_cen_keyf_swing_one_end_10_modes_Opt_Z_AtA_curveZ.png}}
+  \caption{Curves of $z$ with and without material optimization.}
+  \label{curves-z}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \subfigure[Inner iteration.] { \label{fig:b}
+  \includegraphics[width=0.48\textwidth]{./figures/mtlopt_cen_keyf_swing_one_end_06_modesOpt_Z_AtA-inner_py.png}}
+  \subfigure[Outer iteration.] { \label{fig:b}
+  \includegraphics[width=0.48\textwidth]{./figures/mtlopt_cen_keyf_swing_one_end_06_modesOpt_Z_AtA-outer_py.png}}
+  \caption{Energy-iteration curves for the material optimization with 6 modes.}
+  \label{opt-6}
+\end{figure}
+
+
+\begin{figure}
+  \centering
+  \subfigure[Inner iteration.] { \label{fig:b}
+  \includegraphics[width=0.48\textwidth]{./figures/mtlopt_cen_keyf_swing_one_end_10_modesOpt_Z_AtA-inner_py.png}}
+  \subfigure[Outer iteration.] { \label{fig:b}
+  \includegraphics[width=0.48\textwidth]{./figures/mtlopt_cen_keyf_swing_one_end_10_modesOpt_Z_AtA-outer_py.png}}
+  \caption{Energy-iteration curves for the material optimization with 10 modes.}
+  \label{opt-10}
+\end{figure}
+
+\end{document}

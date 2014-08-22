@@ -1,0 +1,229 @@
+\documentclass[9pt,twocolumn]{extarticle}
+
+\usepackage[hmargin=0.5in,tmargin=0.5in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{times}
+
+\usepackage{cleveref}
+\usepackage{color}
+\newcommand{\TODO}[1]{\textcolor{red}{#1}}
+\newcommand{\RED}[1]{\textcolor{red}{#1}}
+
+\newcommand{\FPP}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\argmin}{\operatornamewithlimits{arg\ min}}
+\author{Siwang Li}
+
+\title{Implementation of Material Optimization using adjoint method}
+
+%% document begin here
+\begin{document}
+\maketitle
+
+\setlength{\parskip}{0.5ex}
+
+\section{Introduction}
+The optimization problem is
+\begin{equation} \label{obj}
+  \argmin_{w,\alpha_m,\alpha_k,\Lambda} \frac{1}{2}\int_{0}^T \| w(t) \|_2^2dt +
+  \gamma_c \| Cu(z) - u^c \|_2^2 + \gamma_k\| z_i - z_i^k \|_2^2
+\end{equation}
+subject to
+\begin{eqnarray}
+  \ddot{z} + (\alpha_m+\alpha_k \Lambda)\dot{z} + \Lambda z &=& w \label{eq_con}
+\end{eqnarray}
+Here, we apply the partial constraints using penalty method, with
+$\gamma_c,\gamma_k$ are the penalty parameters.
+
+First, we fix $\alpha_m,\alpha_k,\Lambda$ and optimize for $w$ using nonlinear
+optimization method, such as nonlinear-CG or BFGS method, and we use adjoint
+method to compute the gradient. Then, we fix $z$ and optimize for
+$\alpha_m,\alpha_k,\Lambda$. The iterations continues until the changes of $z$
+is small than some tolerance.
+
+\section{Optimize control forces}
+Here, we fixed the materials, and optimize for $w$.  We use adjoint method to
+compute the gradient. Here, as the motion equation are decoupled, here we
+consider only one mode. Let $q = [v,z]^T$, and the integration function for step
+$k+1$ is
+\begin{equation} \label{mq2}
+  q_{k+1} = f_k(q_k,w_k) = Gq_{k} + Sw_{k}
+\end{equation}
+and $q_0 = f_0 = (v_0,z_0)$, where
+\begin{equation} \label{ab}
+  G = \left( \begin{array}{cc}
+      \gamma&-h\lambda \gamma \\
+      h \gamma& 1-h^2\lambda \gamma
+    \end{array} \right) \mbox{, }
+  S = \left( \begin{array}{c}
+      h\gamma\\
+      h^2\gamma
+    \end{array} \right)
+\end{equation}
+and $\gamma = \frac{1}{((h \alpha_k + h^2)\lambda + h \alpha_m + 1)}$.  Let
+$\bold{q} = [q_0,\cdots,q_{T-1}]$, and $\bold{f} = [f_0,\cdots,f_{T-1}]$, then
+we have $\bold{q} = \bold{f}(\bold{q},\bold{w})$. By using adjoint method, we
+obtain
+\begin{equation} \label{grad}
+  \frac{dE}{dw} = (\frac{\partial{\bold{f}}}{\partial{w}})^T\bold{r} +
+  \frac{\partial{E}}{\partial{w}} =
+  \left( \begin{array}{c}
+      S^Tr_0 + w_0\\
+      \vdots\\
+      S^Tr_{T-1} + w_{T-1}
+    \end{array} \right)
+\end{equation}
+where we compute the adjoint vector $\bold{r}$ using
+\begin{equation} \label{ad}
+  r_{i} = (\frac{\partial{f_i}}{\partial{q_i}})^Tr_{i+1} +
+  \frac{\partial{E}}{\partial{q_i}} = 
+  G^Tr_{i+1} + \left( \begin{array}{c}
+      0\\
+      \RED {\frac{\partial{E}}{\partial{z_i}}}
+    \end{array} \right)
+\end{equation}
+
+\subsection{Compute ${\frac{\partial{E}}{\partial{z_i}}}$} 
+\subsubsection{Key frames} 
+\begin{equation} \label{key_grad}
+  {\frac{\partial{E}}{\partial{z_i}}} = \gamma_k(z_i-z_k)
+\end{equation}
+
+\subsubsection{Partial constraints}
+The full RS method is equal to solve a linear system
+\begin{equation} \label{rs}
+  Au = b(y(z)).
+\end{equation}
+where $y(z) = \tilde{y} + \hat{W}z$. Let $B$ be some linear basis matrix, and
+$P=(B^TAB)^{-1}B^T$, then by using the Cubature scheme, obtain
+\begin{equation} \label{reduced_rs3}
+  u \approx B\sum_{e\in{S}}w_eP_e{b_e(y(z))}
+\end{equation}
+Then we can compute the displacement $u_i(z)$ of node $i$ using
+\begin{equation}
+  u_i(z) = (B_iP)b(\tilde{y} + \hat{W}z)
+\end{equation}
+and the gradient is
+\begin{equation}
+  \frac{\partial{u_i}}{\partial{z}} = P_i \frac{\partial{b}}{\partial{y}}
+  \hat{W} = P_i
+  \left( \begin{array}{c}
+      \frac{\partial{b}}{\partial{y_0}} \hat{W}_0\\
+      \vdots\\
+      \frac{\partial{b}}{\partial{y_N}} \hat{W}_N
+    \end{array} \right)_{9N\times r_2} = 
+  \sum(P_{ij}\frac{\partial{b}}{\partial{y_j}})\hat{W}_j
+\end{equation}
+where $P_{ij}\in R^{3\times 9}$, and
+\begin{equation}
+  b_j(y_j) = \sqrt{V_j}(exp(y_j^w)(I+y_j^e)-I)
+\end{equation}
+and $\frac{\partial{b_j}}{\partial{y_j}}$ is a $9\times9$ matrix. Finally we
+compute 
+\begin{equation} \label{compPePz}
+  {\frac{\partial{E}}{\partial{z_i}}} =
+  (\frac{\partial{u}}{\partial{z_i}})^Tu' =
+  \sum\hat{W}_j^T(\frac{\partial{b}}{\partial{y_j}})^TP_{ij}^Tu'
+\end{equation}
+where $u' = C^TCu-C^Tu^c$.
+
+\section{Optimize material}
+The implicit integration method is
+\begin{equation} \label{imp_integ}
+  \left\{ \begin{array}{rl}
+      v_{k+1} &= v_k + h(w_k-(\alpha_m+\alpha_kK)v_{k+1}-Kz_{k+1})\\
+      z_{k+1} &= z_k + h v_{k+1}
+    \end{array} \right.
+\end{equation}
+Then we have
+\begin{equation} \label{opt_w_eq}
+  hw_k = v_{k+1}-v_k + h (\alpha_m+\alpha_kK)v_{k+1} + hKz_{k+1}
+\end{equation}
+We define $K=A^TA$, then the optimization problem is
+\begin{equation} \label{opt_w}
+  \argmin_{\alpha_k,\alpha_m,A} \frac{1}{2}\sum_{k=0}^{T-2}\|v_{k+1}-v_k + h (\alpha_m+\alpha_kA^TA)v_{k+1} + hA^TAz_{k+1}\|_2^2
+\end{equation}
+Let
+\begin{eqnarray}\label{VZ}
+ V_0 &=& (v_0,\cdots,v_{T-2}) \nonumber \\
+ V_1 &=& (v_1,\cdots,v_{T-1}) \nonumber \\
+ Z_1 &=& (z_1,\cdots,z_{T-1}) \nonumber 
+\end{eqnarray}
+Then the objective function is 
+\begin{equation} \label{obj_w}
+  \Phi = \frac{1}{2}\| (\alpha_m+\alpha_kA^TA)(hV_1)+(A^TA)(hZ_1)+V_1-V_0\|_2^2
+\end{equation}
+\subsection{Gradient}
+\begin{eqnarray*}
+  E &=& hV_1 \\
+  F &=& (\alpha_kA^TA)(hV_1) + (A^TA)(hZ_1)+V_1-V_0\\
+  \Phi &=& \frac{1}{2}\| \alpha_mE + F \|_2^2 \\
+  &=&\frac{1}{2}(\alpha_m^{i{ }k}E_{k{ }j}+F_{i{ }j})^2\\
+  \frac{\partial{\Phi}}{\partial{\alpha_m^{l{ }l}}} &=&
+  E_{k{ }j}(\alpha_m^{i{ }k}E_{k{ }j}+F_{i{ }j})\delta_l^i\delta_l^k\\
+  &=&E_{l{ }j}F_{l{ }j} + \alpha_m^{l{ }l}E_{l{ }j}E_{l{ }j}\\
+  &=&\mbox{row}(E,l)\cdot \mbox{row}(F,l) + \alpha_m^{l{ }l}
+  \mbox{row}(E,l)\cdot \mbox{row}(E,l)\\
+  G &=& (A^TA)(hV_1)\\
+  H &=& (\alpha_mhV_1)+(A^TA)(hZ_1)+V_1-V_0\\
+  \Phi &=& \frac{1}{2}\|\alpha_kG+H\|_2^2\\
+  \frac{\partial{\Phi}}{\partial{\alpha_k^{l{ }l}}} &=&
+  \mbox{row}(G,l)\cdot \mbox{row}(H,l) + \alpha_k^{l{ }l}\mbox{row}(G,l)\cdot
+  \mbox{row}(G,l)\\
+\end{eqnarray*}
+
+\begin{eqnarray*}
+  J &=& \alpha_k\\
+  L &=& hZ_1\\
+  M &=& \alpha_m(hV_1)+(V_1-V_0)\\
+  \Phi &=& \frac{1}{2}\| J(A^TA)E + (A^TA)L + M \|_2^2\\
+  \Phi &=& \frac{1}{2}(A_{si}A_{st}L_{th}+A_{lj}A_{lk}J_{ik}E_{jh}+M_{ih})^2\\
+  \frac{\partial{\Phi}}{\partial{A_{xy}}}
+  &=&A_{st}L_{th}(A_{si}A_{st}L_{th}+A_{lj}A_{lk}J_{ik}E_{jh}+M_{ih})\delta_x^s\delta_y^i+\\
+  &&A_{si}L_{th}(A_{si}A_{st}L_{th}+A_{lj}A_{lk}J_{ik}E_{jh}+M_{ih})\delta_x^s\delta_y^t+\\
+  &&A_{lk}J_{ik}E_{jh}(A_{si}A_{st}L_{th}+A_{lj}A_{lk}J_{ik}E_{jh}+M_{ih})\delta_x^l\delta_y^j+\\
+  &&A_{lj}J_{ik}E_{jh}(A_{si}A_{st}L_{th}+A_{lj}A_{lk}J_{ik}E_{jh}+M_{ih})\delta_x^l\delta_y^k\\
+  &=&A_{xt}L_{th}(A_{xy}A_{xt}L_{th}+A_{lj}A_{lk}J_{yk}E_{jh}+M_{yh})+\\
+  &&A_{xi}L_{yh}(A_{xi}A_{xy}L_{yh}+A_{lj}A_{lk}J_{ik}E_{jh}+M_{ih})+\\
+  &&A_{xk}J_{ik}E_{yh}(A_{si}A_{st}L_{th}+A_{xy}A_{xk}J_{ik}E_{yh}+M_{ih})+\\
+  &&A_{xj}J_{iy}E_{jh}(A_{si}A_{st}L_{th}+A_{xj}A_{xy}J_{iy}E_{jh}+M_{ih})\\
+  &=&  (AL)_{xh}((A^TAL)_{yh}+(E^TA^TAJ^T)_{hy}+M_{yh})+\\
+  &&A_{xi}L_{yh}((A^TAL)_{ih}+(E^TA^TAJ^T)_{hi}+M_{ih})+\\
+  &&(AJ^T)_{xi}E_{yh}((A^TAL)_{ih}+(E^TA^TAJ^T)_{hi}+M_{ih})+\\
+  &&(AE)_{xh}J_{iy}((A^TAL)_{ih}+(E^TA^TAJ^T)_{hi}+M_{ih})\\
+  &=& ((A^TALL^TA^T)_{yx}+(ALE^TA^TAJ^T)_{xy}+(ALM^T)_{xy})+\\
+  &&((AA^TALL^T)_{xy}+(LE^TA^TAJ^TA^T)_{yx}+(AML^T)_{xy})+\\
+  &&((AJ^TA^TALE^T)_{xy}+(EE^TA^TAJ^TJA^T)_{yx}+(AJ^TME^T)_{xy})+\\
+  &&((J^TA^TALE^TA^T)_{yx}+(AEE^TA^TAJ^TJ)_{xy}+(AEM^TJ)_{xy})
+\end{eqnarray*}
+
+\subsection{Gradient of scalar $\alpha$}
+\begin{eqnarray*}
+  E &=& hV_1 \\
+  F &=& (\alpha_kA^TA)(hV_1) + (A^TA)(hZ_1)+V_1-V_0\\
+  \Phi &=& \frac{1}{2}\| \alpha_mE + F \|_2^2 \\
+  &=&\frac{1}{2}(\alpha_mE_{i{ }j}+F_{i{ }j})^2\\
+  \frac{\partial{\Phi}}{\partial{\alpha_m}} &=&
+  E_{i{ }j}(\alpha_mE_{i{ }j}+F_{i{ }j})\\
+  &=&E:(\alpha_mE+F)\\
+  G &=& (A^TA)(hV_1)\\
+  H &=& (\alpha_mhV_1)+(A^TA)(hZ_1)+V_1-V_0\\
+  \Phi &=& \frac{1}{2}\|\alpha_kG+H\|_2^2\\
+  \frac{\partial{\Phi}}{\partial{\alpha_k}} &=&G:(\alpha_kG+H)
+\end{eqnarray*}
+
+
+% And the gradient of this function is
+% \begin{eqnarray}\label{par_alpha}
+%   \frac{\partial{\Phi}}{\partial{\alpha_m}} &=& \\
+%   \frac{\partial{\Phi}}{\partial{\alpha_k}} &=& \\
+%   \frac{\partial{\Phi}}{\partial{A}} &=& 
+% \end{eqnarray}
+% And finally we use LBFGS or CG method to solve it.
+
+%% references
+% \begin{thebibliography}{99}
+% \bibitem{sig2011} Fast simulation of skeleton-driven deformable body
+%   characters.
+% \end{thebibliography}
+
+\end{document}

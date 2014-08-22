@@ -1,0 +1,97 @@
+\documentclass[9pt,twocolumn]{extarticle}
+
+\usepackage[hmargin=0.5in,tmargin=0.5in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{subfigure}
+
+\usepackage{cleveref}
+\usepackage{color}
+\newcommand{\TODO}[1]{\textcolor{red}{#1}}
+
+\newcommand{\FPP}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\argmin}{\operatornamewithlimits{arg\ min}}
+\author{Siwang Li}
+
+\title{Basis Optimization}
+
+%% document begin here
+\begin{document}
+\maketitle
+
+\setlength{\parskip}{0.5ex}
+
+\section{First approach}
+Firstly, we require that both the number of the initial modes in $B\in
+R^{3n\times r_b},W\in R^{3n\times r_w}$ and the cubature $T_{cub}$ are large
+enough to represent most of the important deformation, then we make our
+optimization in much smaller subspace $W'=WS$, where $S\in R^{r_w\times r_s}$ is
+a dense matrix used to further reduce the initial matrix $W$ with $r_s$ is much
+smaller than $r_w$. And initially we set $S=(I_{r_s\times r_s},O)^T$ to select
+the first $r_s$ modes in $W$. Given some positional constraints, we define our
+objective as
+\begin{equation} \label{obj_w}
+    \argmin_{z,K,S} \frac{1}{2}\int_{t=0}^{t=T}\|\ddot{z}+(\alpha_mI+\alpha_kK)\dot{z}+Kz\|_2^2+\gamma\|Cu(S,z_i)-u_i^c\|_2^2
+\end{equation}
+Here, we compute $u(S,z_i)$ using our Reduced-RS method,
+\begin{equation} \label{redrs_s}
+  u(S,z_i) = B\sum_{e\in T_{cub}}w_eP_eb_e(\hat{W}_eSz_i)
+\end{equation}
+Where $w_e$ is the cubature weighting for tetrahedron $e$, $P_e\in R^{r_b\times
+  12}$ is some precomputed matrix, $\hat{W}_e\in R^{12\times r_w}$ is the
+sub-matrix of the RS-basis computed from $W$, and $b_e(\cdot)$ is some nonlinear
+function, which maps the RS-coordinates $y_e=\hat{W}_eSz_i$ of tetrahedron $e$
+to its deformation gradient.
+
+We optimize for $z,K,S$ alternatively, and hope that, by introducing the basis
+selection matrix $S$, we can find some optimal sub-basis $W'$ of $W$ to
+represent the resulting animation.
+
+\section{Second approach}
+Let's begin with the linear motion equation in the full space
+\begin{equation} \label{full_eq}
+  \tilde{M}\ddot{u} + \tilde{K}u = 0
+\end{equation}
+Let $W'=WS$, where $W$ is a initial large basis matrix, and $S$ is the basis
+selection matrix as mentioned above, then we can replace $u=W'z = WSz$ to obtain
+a reduced motion equation
+\begin{eqnarray}\label{red_eq}
+  (S^TW^T)\tilde{M}(WS)\ddot{z} + (S^TW^T\tilde{K}WS)z &=& 0\\
+  (S^TS)\ddot{z} + (S^T\Lambda S)z &=& 0
+\end{eqnarray}
+then we formulate our objective function as
+\begin{eqnarray} \label{obj_w2}
+  \argmin_{z,\Lambda,S}\frac{1}{2}\int_{t=0}^{t=T}\|(S^TS)\ddot{z} +
+  (S^T\Lambda S)z\|_2^2+\gamma\|Cu(S,z_i)-u_i^c\|_2^2&&\\
+  \mbox{subject to } \Lambda_i\ge 0&&
+\end{eqnarray}
+here, we compute $u(S,z_i)$ using our Reduced-RS method,
+\begin{equation} \label{redrs_s}
+  u(S,z_i) = B\sum_{e\in T_{cub}}w_eP_eb_e(\hat{W}_eSz_i)
+\end{equation}
+In an outer iteration, we solve for $z,\Lambda,S$ respectively. And when we
+solve for $z$, we can further diagonalize (\ref{red_eq}) by solving a general
+eigen value problem
+\begin{equation} \label{red_general}
+  (S^T\Lambda S)w = \lambda (S^TS)w
+\end{equation}
+As the dimension of $S$ is small, this eigen value problem should be solved
+efficiently.
+
+\section{Experiment for the first approach}
+\paragraph{Setup.} We use a beam to make the experiment, with $r_b=80$, $r_w=5$,
+$r_s=1,2$, $100$ cubature, and the total frames is $T=200$. There are 2
+positional constraints at frame $129$, and 2 positional constraints at frame
+$147$, and we fix $z_0=z_{199}=0$. We hope that, by introducing $S$, we can
+approximate these constraints much better, and the optimal objective value of
+(\ref{obj_w}) is much smaller, and there is no artifacts in the resulting
+animation.
+
+\paragraph{Results.} By introduce $S$, and $r_s$ is large enough (here, $r_s=2$
+is enough), the constraints can be well approximated, and the optimal objective
+value is much smaller, and the convergence speed for solving (\ref{obj_w}) is
+much faster. However, there are noticeable artifacts in the resulting
+animation as shown in the video.
+
+\end{document}
